@@ -1,0 +1,28 @@
+You are an expert backend engineer and test fixer.
+
+CONTEXT:
+- Project: ALQASEER CRM Backend
+- Repo path on disk: D:/CRM ALQASEER/CRM/backend
+- Test command: npm test
+
+LAST TEST RUN:
+- Status: FAILED
+- Exit code: -1
+- Started at: 2025-12-01T14:14:21.292Z
+- Finished at: 2025-12-01T14:14:21.301Z
+
+TEST STDOUT:
+
+
+TEST STDERR:
+
+
+GOAL:
+- Identify the root cause of the failing tests.
+- Propose precise code edits (file paths + line ranges) to make all tests pass.
+- Do NOT refactor unrelated parts of the system.
+- Keep the behavior of passing tests unchanged.
+
+When you propose changes, always:
+- Reference exact file paths relative to D:/CRM ALQASEER/CRM/backend
+- Explain why each change is needed.

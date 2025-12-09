@@ -1,0 +1,19 @@
+{
+  "projectName": "AlJazeera",
+  "cwd": "D:/CRM ALQASEER/AlJazeera",
+  "timestamp": "2025-12-02T21:33:30.405Z",
+  "testStatus": "failed",
+  "buildStatus": "failed",
+  "testExitCode": 1,
+  "buildExitCode": 1,
+  "testStdout": "",
+  "testStderr": "[eval]:1\r\nconsole.log('AlJazeera:\r\n            ^^^^^^^^^^^\r\n\r\nSyntaxError: Invalid or unexpected token\r\n    at makeContextifyScript (node:internal/vm:185:14)\r\n    at node:internal/process/execution:107:22\r\n    at [eval]-wrapper:6:24\r\n    at runScript (node:internal/process/execution:101:62)\r\n    at evalScript (node:internal/process/execution:133:3)\r\n    at node:internal/main/eval_string:51:3\r\n\r\nNode.js v20.19.1\r\n",
+  "buildStdout": "",
+  "buildStderr": "[eval]:1\r\nconsole.log('AlJazeera:\r\n            ^^^^^^^^^^^\r\n\r\nSyntaxError: Invalid or unexpected token\r\n    at makeContextifyScript (node:internal/vm:185:14)\r\n    at node:internal/process/execution:107:22\r\n    at [eval]-wrapper:6:24\r\n    at runScript (node:internal/process/execution:101:62)\r\n    at evalScript (node:internal/process/execution:133:3)\r\n    at node:internal/main/eval_string:51:3\r\n\r\nNode.js v20.19.1\r\n",
+  "gitStatus": {
+    "exists": false,
+    "summary": "git repo not found",
+    "modified": [],
+    "untracked": []
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "runAt": "2025-12-02T21:33:30.405Z",
+  "projects": [
+    {
+      "name": "ALQASEER CRM Backend",
+      "testStatus": "passed",
+      "buildStatus": "passed",
+      "testExitCode": 0,
+      "buildExitCode": 0,
+      "notes": "Backend tests/build passed.",
+      "testStdout": "\n> crm2-backend@1.0.0 test\n> python -m pytest -q\n\n.............                                                            [100%]\r\n============================== warnings summary ===============================\r\nC:\\Users\\M S I\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\fastapi\\routing.py:233: 172 warnings\r\n  C:\\Users\\M S I\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\fastapi\\routing.py:233: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead\r\n    is_coroutine = asyncio.iscoroutinefunction(dependant.call)\r\n\r\nmain.py:67\r\n  D:\\CRM ALQASEER\\CRM\\backend\\main.py:67: DeprecationWarning: \r\n          on_event is deprecated, use lifespan event handlers instead.\r\n  \r\n          Read more about it in the\r\n          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).\r\n          \r\n    @app.on_event(\"startup\")\r\n\r\nC:\\Users\\M S I\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\fastapi\\applications.py:4495\r\n  C:\\Users\\M S I\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\fastapi\\applications.py:4495: DeprecationWarning: \r\n          on_event is deprecated, use lifespan event handlers instead.\r\n  \r\n          Read more about it in the\r\n          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).\r\n          \r\n    return self.router.on_event(event_type)\r\n\r\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\r\n13 passed, 174 warnings in 0.88s\r\n",
+      "testStderr": "",
+      "buildStdout": "\n> crm2-backend@1.0.0 build\n> set PYTHONPYCACHEPREFIX=%TEMP%&& python -m py_compile main.py\n\n",
+      "buildStderr": "",
+      "gitStatus": {
+        "exists": false,
+        "summary": "git repo not found",
+        "modified": [],
+        "untracked": []
+      }
+    },
+    {
+      "name": "ALQASEER CRM Frontend",
+      "testStatus": "passed",
+      "buildStatus": "passed",
+      "testExitCode": 0,
+      "buildExitCode": 0,
+      "notes": "test exitCode=0 | build exitCode=0",
+      "testStdout": "\n> frontend@1.0.0 test\n> set \"NODE_ENV=test\" && .\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false\n\n\n\u001b[7m\u001b[1m\u001b[36m RUN \u001b[39m\u001b[22m\u001b[27m \u001b[36mv1.6.1\u001b[39m \u001b[90mD:/CRM ALQASEER/CRM/frontend\u001b[39m\n\n \u001b[32m✓\u001b[39m src/App.test.jsx \u001b[2m (\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[90m 33\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m   Start at \u001b[22m 00:33:49\n\u001b[2m   Duration \u001b[22m 44.84s\u001b[2m (transform 1.33s, setup 6.61s, collect 15.96s, tests 33ms, environment 20.23s, prepare 1.64s)\u001b[22m\n\n",
+      "testStderr": "npm warn config production Use `--omit=dev` instead.\n\u001b[90mstderr\u001b[2m | src/App.test.jsx\u001b[2m > \u001b[22m\u001b[2mApp\u001b[2m > \u001b[22m\u001b[2mrenders the login screen when no user is authenticated\u001b[22m\u001b[39m\n⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.\n⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.\n\n",
+      "buildStdout": "\n> frontend@1.0.0 build\n> .\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build\n\n\u001b[36mvite v5.4.21 \u001b[32mbuilding for production...\u001b[36m\u001b[39m\ntransforming...\n\u001b[32m✓\u001b[39m 122 modules transformed.\nrendering chunks...\ncomputing gzip size...\n\u001b[2mdist/\u001b[22m\u001b[32mindex.html                 \u001b[39m\u001b[1m\u001b[2m  0.41 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.27 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[35massets/index-DsD6R-l2.css  \u001b[39m\u001b[1m\u001b[2m  8.77 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  2.18 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/index-C2QtSwzT.js   \u001b[39m\u001b[1m\u001b[2m268.14 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip: 80.75 kB\u001b[22m\n\u001b[32m✓ built in 1.90s\u001b[39m\n",
+      "buildStderr": "npm warn config production Use `--omit=dev` instead.\n",
+      "gitStatus": {
+        "exists": false,
+        "summary": "git repo not found",
+        "modified": [],
+        "untracked": []
+      }
+    },
+    {
+      "name": "Dopamine PWA",
+      "testStatus": "failed",
+      "buildStatus": "failed",
+      "testExitCode": 1,
+      "buildExitCode": 1,
+      "notes": "test exitCode=1 | build exitCode=1",
+      "testStdout": "\n> dopamine-pwa@0.2.0 test:vitest\n> set \"NODE_ENV=test\" && .\\\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false\n\n",
+      "testStderr": "node:internal/modules/cjs/loader:1215\r\n  throw err;\r\n  ^\r\n\r\nError: Cannot find module 'D:\\CRM ALQASEER\\ALQASEER-PWA\\node_modules\\vitest\\vitest.mjs'\r\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\r\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\r\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\r\n    at node:internal/main/run_main_module:28:49 {\r\n  code: 'MODULE_NOT_FOUND',\r\n  requireStack: []\r\n}\r\n\r\nNode.js v20.19.1\r\n",
+      "buildStdout": "\n> dopamine-pwa@0.2.0 build\n> .\\\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build\n\n",
+      "buildStderr": "node:internal/modules/cjs/loader:1215\r\n  throw err;\r\n  ^\r\n\r\nError: Cannot find module 'D:\\CRM ALQASEER\\ALQASEER-PWA\\node_modules\\vite\\bin\\vite.js'\r\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\r\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\r\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\r\n    at node:internal/main/run_main_module:28:49 {\r\n  code: 'MODULE_NOT_FOUND',\r\n  requireStack: []\r\n}\r\n\r\nNode.js v20.19.1\r\n",
+      "gitStatus": {
+        "exists": true,
+        "summary": "dirty",
+        "modified": [
+          "M .gitignore",
+          "M app/globals.css",
+          "M components/Sidebar.js",
+          "M lib/server-fetch.ts",
+          "M package-lock.json",
+          "M package.json",
+          "M public/manifest.webmanifest",
+          "M tsconfig.json",
+          "M vitest.config.mts"
+        ],
+        "untracked": [
+          "add_field_nav.py",
+          "app/field/",
+          "components/FieldNav.tsx",
+          "index.html",
+          "lib/api-config.ts",
+          "lib/client-fetch.ts",
+          "node_local.exe",
+          "scripts/windows-spawn-patch.cjs",
+          "src/pwa/",
+          "structure-pwa.txt",
+          "tests/pwa/",
+          "tests/setup.ts",
+          "vite.config.ts"
+        ],
+        "raw": " M .gitignore\n M app/globals.css\n M components/Sidebar.js\n M lib/server-fetch.ts\n M package-lock.json\n M package.json\n M public/manifest.webmanifest\n M tsconfig.json\n M vitest.config.mts\n?? add_field_nav.py\n?? app/field/\n?? components/FieldNav.tsx\n?? index.html\n?? lib/api-config.ts\n?? lib/client-fetch.ts\n?? node_local.exe\n?? scripts/windows-spawn-patch.cjs\n?? src/pwa/\n?? structure-pwa.txt\n?? tests/pwa/\n?? tests/setup.ts\n?? vite.config.ts\n"
+      }
+    },
+    {
+      "name": "AlJazeera",
+      "testStatus": "failed",
+      "buildStatus": "failed",
+      "testExitCode": 1,
+      "buildExitCode": 1,
+      "notes": "test exitCode=1 | build exitCode=1",
+      "testStdout": "",
+      "testStderr": "[eval]:1\r\nconsole.log('AlJazeera:\r\n            ^^^^^^^^^^^\r\n\r\nSyntaxError: Invalid or unexpected token\r\n    at makeContextifyScript (node:internal/vm:185:14)\r\n    at node:internal/process/execution:107:22\r\n    at [eval]-wrapper:6:24\r\n    at runScript (node:internal/process/execution:101:62)\r\n    at evalScript (node:internal/process/execution:133:3)\r\n    at node:internal/main/eval_string:51:3\r\n\r\nNode.js v20.19.1\r\n",
+      "buildStdout": "",
+      "buildStderr": "[eval]:1\r\nconsole.log('AlJazeera:\r\n            ^^^^^^^^^^^\r\n\r\nSyntaxError: Invalid or unexpected token\r\n    at makeContextifyScript (node:internal/vm:185:14)\r\n    at node:internal/process/execution:107:22\r\n    at [eval]-wrapper:6:24\r\n    at runScript (node:internal/process/execution:101:62)\r\n    at evalScript (node:internal/process/execution:133:3)\r\n    at node:internal/main/eval_string:51:3\r\n\r\nNode.js v20.19.1\r\n",
+      "gitStatus": {
+        "exists": false,
+        "summary": "git repo not found",
+        "modified": [],
+        "untracked": []
+      }
+    }
+  ],
+  "backendReportPath": "D:\\CRM ALQASEER\\CRM\\reports\\backend_tests_20251203_003337.json",
+  "codexPromptPaths": [
+    "D:\\CRM ALQASEER\\CRM\\prompts\\dopamine-pwa_fix_20251202T213439.txt"
+  ],
+  "notes": "Backend tests passed."
+}

@@ -1,0 +1,23 @@
+You are an expert engineer for the project "Dopamine PWA".
+
+PROJECT PATH:
+- D:/CRM ALQASEER/ALQASEER-PWA
+
+COMMANDS:
+- Test: npm run test:vitest
+- Build: npm run build
+
+LAST RUN STATUS:
+- Test exit code: -1
+- Build exit code: -1
+
+TEST LOGS (trimmed):
+Process blocked by OS (EPERM) while running "npm run test:vitest" in "D:/CRM ALQASEER/ALQASEER-PWA".
+
+BUILD LOGS (trimmed):
+Process blocked by OS (EPERM) while running "npm run build" in "D:/CRM ALQASEER/ALQASEER-PWA".
+
+REQUEST:
+- Fix the failing tests/build for this project.
+- Propose precise file-level edits (paths relative to D:/CRM ALQASEER/ALQASEER-PWA) and git-style patches.
+- Keep unrelated behavior unchanged.

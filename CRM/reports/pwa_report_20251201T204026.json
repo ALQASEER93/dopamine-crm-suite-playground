@@ -1,0 +1,20 @@
+{
+  "projectName": "Dopamine PWA",
+  "cwd": "D:/CRM ALQASEER/ALQASEER-PWA",
+  "timestamp": "2025-12-01T20:40:26.544Z",
+  "testStatus": "blocked",
+  "buildStatus": "blocked",
+  "testExitCode": -1,
+  "buildExitCode": -1,
+  "testStdout": "",
+  "testStderr": "Process blocked by OS (EPERM) while running \"npm run test:vitest\" in \"D:/CRM ALQASEER/ALQASEER-PWA\".",
+  "buildStdout": "",
+  "buildStderr": "Process blocked by OS (EPERM) while running \"npm run build\" in \"D:/CRM ALQASEER/ALQASEER-PWA\".",
+  "gitStatus": {
+    "exists": true,
+    "summary": "git status failed (exitCode=-1)",
+    "modified": [],
+    "untracked": [],
+    "raw": "Process blocked by OS (EPERM) while running \"git status --short\" in \"D:/CRM ALQASEER/ALQASEER-PWA\"."
+  }
+}

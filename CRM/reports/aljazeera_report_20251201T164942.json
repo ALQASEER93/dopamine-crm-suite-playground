@@ -1,0 +1,19 @@
+{
+  "projectName": "AlJazeera",
+  "cwd": "D:/CRM ALQASEER/AlJazeera",
+  "timestamp": "2025-12-01T16:49:42.722Z",
+  "testStatus": "blocked",
+  "buildStatus": "blocked",
+  "testExitCode": -1,
+  "buildExitCode": -1,
+  "testStdout": "",
+  "testStderr": "Process blocked by OS (EPERM) while running \"node -e console.log('AlJazeera: no tests defined')\" in \"D:/CRM ALQASEER/AlJazeera\".",
+  "buildStdout": "",
+  "buildStderr": "Process blocked by OS (EPERM) while running \"node -e console.log('AlJazeera: no build defined')\" in \"D:/CRM ALQASEER/AlJazeera\".",
+  "gitStatus": {
+    "exists": false,
+    "summary": "git repo not found",
+    "modified": [],
+    "untracked": []
+  }
+}

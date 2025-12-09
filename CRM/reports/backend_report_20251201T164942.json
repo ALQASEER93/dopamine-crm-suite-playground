@@ -1,0 +1,19 @@
+{
+  "projectName": "ALQASEER CRM Backend",
+  "cwd": "D:/CRM ALQASEER/CRM/backend",
+  "timestamp": "2025-12-01T16:49:42.722Z",
+  "testStatus": "blocked",
+  "buildStatus": "blocked",
+  "testExitCode": -1,
+  "buildExitCode": -1,
+  "testStdout": "",
+  "testStderr": "Process blocked by OS (EPERM) while running \"npm test\" in \"D:/CRM ALQASEER/CRM/backend\".",
+  "buildStdout": "",
+  "buildStderr": "Process blocked by OS (EPERM) while running \"npm run build\" in \"D:/CRM ALQASEER/CRM/backend\".",
+  "gitStatus": {
+    "exists": false,
+    "summary": "git repo not found",
+    "modified": [],
+    "untracked": []
+  }
+}

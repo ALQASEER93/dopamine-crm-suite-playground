@@ -1,0 +1,35 @@
+﻿# Node
+node_modules/
+dist/
+build/
+.next/
+
+# Python
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Env & secrets
+.env
+.env.*
+*.env
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Logs & tmp
+*.log
+*.bak_before_path_fix
+
+# Local archives
+ARCHIVE/
+
+# Binaries
+*.exe
+
+# Local OpenAI helper script (never commit real keys)
+AI-Orchestrator/set-ai-env.ps1

@@ -1,0 +1,44 @@
+{
+  "projectName": "Dopamine PWA",
+  "cwd": "D:/CRM ALQASEER/ALQASEER-PWA",
+  "timestamp": "2025-12-02T21:33:30.405Z",
+  "testStatus": "failed",
+  "buildStatus": "failed",
+  "testExitCode": 1,
+  "buildExitCode": 1,
+  "testStdout": "\n> dopamine-pwa@0.2.0 test:vitest\n> set \"NODE_ENV=test\" && .\\\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false\n\n",
+  "testStderr": "node:internal/modules/cjs/loader:1215\r\n  throw err;\r\n  ^\r\n\r\nError: Cannot find module 'D:\\CRM ALQASEER\\ALQASEER-PWA\\node_modules\\vitest\\vitest.mjs'\r\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\r\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\r\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\r\n    at node:internal/main/run_main_module:28:49 {\r\n  code: 'MODULE_NOT_FOUND',\r\n  requireStack: []\r\n}\r\n\r\nNode.js v20.19.1\r\n",
+  "buildStdout": "\n> dopamine-pwa@0.2.0 build\n> .\\\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build\n\n",
+  "buildStderr": "node:internal/modules/cjs/loader:1215\r\n  throw err;\r\n  ^\r\n\r\nError: Cannot find module 'D:\\CRM ALQASEER\\ALQASEER-PWA\\node_modules\\vite\\bin\\vite.js'\r\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\r\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\r\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\r\n    at node:internal/main/run_main_module:28:49 {\r\n  code: 'MODULE_NOT_FOUND',\r\n  requireStack: []\r\n}\r\n\r\nNode.js v20.19.1\r\n",
+  "gitStatus": {
+    "exists": true,
+    "summary": "dirty",
+    "modified": [
+      "M .gitignore",
+      "M app/globals.css",
+      "M components/Sidebar.js",
+      "M lib/server-fetch.ts",
+      "M package-lock.json",
+      "M package.json",
+      "M public/manifest.webmanifest",
+      "M tsconfig.json",
+      "M vitest.config.mts"
+    ],
+    "untracked": [
+      "add_field_nav.py",
+      "app/field/",
+      "components/FieldNav.tsx",
+      "index.html",
+      "lib/api-config.ts",
+      "lib/client-fetch.ts",
+      "node_local.exe",
+      "scripts/windows-spawn-patch.cjs",
+      "src/pwa/",
+      "structure-pwa.txt",
+      "tests/pwa/",
+      "tests/setup.ts",
+      "vite.config.ts"
+    ],
+    "raw": " M .gitignore\n M app/globals.css\n M components/Sidebar.js\n M lib/server-fetch.ts\n M package-lock.json\n M package.json\n M public/manifest.webmanifest\n M tsconfig.json\n M vitest.config.mts\n?? add_field_nav.py\n?? app/field/\n?? components/FieldNav.tsx\n?? index.html\n?? lib/api-config.ts\n?? lib/client-fetch.ts\n?? node_local.exe\n?? scripts/windows-spawn-patch.cjs\n?? src/pwa/\n?? structure-pwa.txt\n?? tests/pwa/\n?? tests/setup.ts\n?? vite.config.ts\n"
+  }
+}

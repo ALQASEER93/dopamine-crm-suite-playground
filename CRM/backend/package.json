@@ -1,0 +1,37 @@
+{
+  "name": "crm2-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "seed:roles": "node scripts/seedRoles.js",
+    "seed:users": "node scripts/seedUsers.js",
+    "seed:visits": "node scripts/seedVisits.js",
+    "convert:accounts": "node scripts/convertAccountsFromExcel.js",
+    "seed:accounts": "node scripts/seedAccounts.js",
+    "import:accounts": "node scripts/importAccountsFromExcel.js",
+    "test": "python -m pytest -q",
+    "lint": "echo \"lint skipped\"",
+    "build": "set PYTHONPYCACHEPREFIX=%TEMP%&& python -m py_compile main.py"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-stringify": "^6.6.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.0",
+    "sqlite3": "^5.1.7",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.1.1"
+  }
+}

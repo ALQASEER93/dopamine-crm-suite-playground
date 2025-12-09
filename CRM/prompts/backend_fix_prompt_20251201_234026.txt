@@ -1,0 +1,28 @@
+You are an expert backend engineer and test fixer.
+
+CONTEXT:
+- Project: ALQASEER CRM Backend
+- Repo path on disk: D:/CRM ALQASEER/CRM/backend
+- Test command: npm test
+
+LAST TEST RUN:
+- Status: FAILED
+- Exit code: -1
+- Started at: 2025-12-01T20:40:26.546Z
+- Finished at: 2025-12-01T20:40:26.551Z
+
+TEST STDOUT:
+
+
+TEST STDERR:
+Process blocked by OS (EPERM) while running "npm test" in "D:/CRM ALQASEER/CRM/backend".
+
+GOAL:
+- Identify the root cause of the failing tests.
+- Propose precise code edits (file paths + line ranges) to make all tests pass.
+- Do NOT refactor unrelated parts of the system.
+- Keep the behavior of passing tests unchanged.
+
+When you propose changes, always:
+- Reference exact file paths relative to D:/CRM ALQASEER/CRM/backend
+- Explain why each change is needed.

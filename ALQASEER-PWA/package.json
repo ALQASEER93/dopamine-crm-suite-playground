@@ -1,0 +1,38 @@
+{
+  "name": "dopamine-pwa",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": ".\\\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js",
+    "build": ".\\\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build",
+    "preview": ".\\\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js preview",
+    "test:vitest": "set \"NODE_ENV=test\" && .\\\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false",
+    "lint": "eslint . || echo \"lint skipped\""
+  },
+  "dependencies": {
+    "@react-google-maps/api": "^2.20.7",
+    "idb-keyval": "^6.2.1",
+    "picocolors": "^1.1.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "^6.28.0",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/google.maps": "^3.55.9",
+    "@types/node": "^20.12.7",
+    "@types/react": "18.3.27",
+    "@types/react-dom": "^18.2.25",
+    "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react-swc": "^4.2.2",
+    "eslint": "^8.57.0",
+    "jsdom": "^24.1.1",
+    "typescript": "5.9.3",
+    "vite": "^5.4.21",
+    "vite-plugin-pwa": "^0.20.5",
+    "vitest": "https://registry.npmjs.org/vitest/-/vitest-1.6.1.tgz"
+  }
+}

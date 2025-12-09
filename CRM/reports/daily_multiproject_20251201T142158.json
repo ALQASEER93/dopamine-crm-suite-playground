@@ -1,0 +1,47 @@
+{
+  "runAt": "2025-12-01T14:21:58.907Z",
+  "projects": [
+    {
+      "name": "ALQASEER CRM Backend",
+      "testStatus": "failed",
+      "buildStatus": "passed",
+      "testExitCode": -1,
+      "buildExitCode": 0,
+      "notes": "Backend tests failed.",
+      "testStdout": "",
+      "testStderr": "Spawn error (cmd /c npm test in D:/CRM ALQASEER/CRM/backend): spawnSync cmd EPERM [code=EPERM]"
+    },
+    {
+      "name": "ALQASEER CRM Frontend",
+      "testStatus": "failed",
+      "buildStatus": "failed",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test exitCode=-1 | build exitCode=-1",
+      "testStdout": "",
+      "testStderr": "Spawn error (cmd /c npm test in D:/CRM ALQASEER/CRM/frontend): spawnSync cmd EPERM [code=EPERM]",
+      "buildStdout": "",
+      "buildStderr": "Spawn error (cmd /c npm run build in D:/CRM ALQASEER/CRM/frontend): spawnSync cmd EPERM [code=EPERM]"
+    },
+    {
+      "name": "Dopamine PWA",
+      "testStatus": "failed",
+      "buildStatus": "failed",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test exitCode=-1 | build exitCode=-1",
+      "testStdout": "",
+      "testStderr": "Spawn error (cmd /c npm test in D:/CRM ALQASEER/ALQASEER-PWA): spawnSync cmd EPERM [code=EPERM]",
+      "buildStdout": "",
+      "buildStderr": "Spawn error (cmd /c npm run build in D:/CRM ALQASEER/ALQASEER-PWA): spawnSync cmd EPERM [code=EPERM]"
+    }
+  ],
+  "backendReportPath": "D:\\CRM ALQASEER\\CRM\\reports\\backend_tests_20251201_172158.json",
+  "codexPromptPath": "D:\\CRM ALQASEER\\CRM\\prompts\\backend_fix_prompt_20251201_172158.txt",
+  "codexPromptPaths": [
+    "D:\\CRM ALQASEER\\CRM\\prompts\\alqaseer-crm-backend_fix_20251201T142158.txt",
+    "D:\\CRM ALQASEER\\CRM\\prompts\\alqaseer-crm-frontend_fix_20251201T142158.txt",
+    "D:\\CRM ALQASEER\\CRM\\prompts\\dopamine-pwa_fix_20251201T142158.txt"
+  ],
+  "notes": "Prompt generated."
+}

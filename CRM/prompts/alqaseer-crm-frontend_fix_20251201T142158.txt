@@ -1,0 +1,23 @@
+You are an expert engineer for the project "ALQASEER CRM Frontend".
+
+PROJECT PATH:
+- D:/CRM ALQASEER/CRM/frontend
+
+COMMANDS:
+- Test: npm test
+- Build: npm run build
+
+LAST RUN STATUS:
+- Test exit code: -1
+- Build exit code: -1
+
+TEST LOGS (trimmed):
+Spawn error (cmd /c npm test in D:/CRM ALQASEER/CRM/frontend): spawnSync cmd EPERM [code=EPERM]
+
+BUILD LOGS (trimmed):
+Spawn error (cmd /c npm run build in D:/CRM ALQASEER/CRM/frontend): spawnSync cmd EPERM [code=EPERM]
+
+REQUEST:
+- Fix the failing tests/build for this project.
+- Propose precise file-level edits (paths relative to D:/CRM ALQASEER/CRM/frontend) and git-style patches.
+- Keep unrelated behavior unchanged.

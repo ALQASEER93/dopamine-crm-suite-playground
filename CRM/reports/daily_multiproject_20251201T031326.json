@@ -1,0 +1,31 @@
+{
+  "runAt": "2025-12-01T03:13:26.725Z",
+  "projects": [
+    {
+      "name": "ALQASEER CRM Backend",
+      "testStatus": "passed",
+      "buildStatus": "passed",
+      "testExitCode": 0,
+      "buildExitCode": 0,
+      "notes": "Backend tests passed."
+    },
+    {
+      "name": "ALQASEER CRM Frontend",
+      "testStatus": "failed",
+      "buildStatus": "failed",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test exitCode=-1 | build exitCode=-1"
+    },
+    {
+      "name": "Dopamine PWA",
+      "testStatus": "failed",
+      "buildStatus": "failed",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test exitCode=-1 | build exitCode=-1"
+    }
+  ],
+  "backendReportPath": "D:\\CRM ALQASEER\\CRM\\reports\\backend_tests_20251201_061330.json",
+  "notes": "Backend tests passed."
+}

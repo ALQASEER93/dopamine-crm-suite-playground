@@ -1,0 +1,86 @@
+{
+  "runAt": "2025-12-01T20:40:26.544Z",
+  "projects": [
+    {
+      "name": "ALQASEER CRM Backend",
+      "testStatus": "blocked",
+      "buildStatus": "blocked",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "tests blocked | build blocked",
+      "testStdout": "",
+      "testStderr": "Process blocked by OS (EPERM) while running \"npm test\" in \"D:/CRM ALQASEER/CRM/backend\".",
+      "buildStdout": "",
+      "buildStderr": "Process blocked by OS (EPERM) while running \"npm run build\" in \"D:/CRM ALQASEER/CRM/backend\".",
+      "gitStatus": {
+        "exists": false,
+        "summary": "git repo not found",
+        "modified": [],
+        "untracked": []
+      }
+    },
+    {
+      "name": "ALQASEER CRM Frontend",
+      "testStatus": "blocked",
+      "buildStatus": "blocked",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test blocked (EPERM) | build blocked (EPERM)",
+      "testStdout": "",
+      "testStderr": "Process blocked by OS (EPERM) while running \"npm test\" in \"D:/CRM ALQASEER/CRM/frontend\".",
+      "buildStdout": "",
+      "buildStderr": "Process blocked by OS (EPERM) while running \"npm run build\" in \"D:/CRM ALQASEER/CRM/frontend\".",
+      "gitStatus": {
+        "exists": false,
+        "summary": "git repo not found",
+        "modified": [],
+        "untracked": []
+      }
+    },
+    {
+      "name": "Dopamine PWA",
+      "testStatus": "blocked",
+      "buildStatus": "blocked",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test blocked (EPERM) | build blocked (EPERM)",
+      "testStdout": "",
+      "testStderr": "Process blocked by OS (EPERM) while running \"npm run test:vitest\" in \"D:/CRM ALQASEER/ALQASEER-PWA\".",
+      "buildStdout": "",
+      "buildStderr": "Process blocked by OS (EPERM) while running \"npm run build\" in \"D:/CRM ALQASEER/ALQASEER-PWA\".",
+      "gitStatus": {
+        "exists": true,
+        "summary": "git status failed (exitCode=-1)",
+        "modified": [],
+        "untracked": [],
+        "raw": "Process blocked by OS (EPERM) while running \"git status --short\" in \"D:/CRM ALQASEER/ALQASEER-PWA\"."
+      }
+    },
+    {
+      "name": "AlJazeera",
+      "testStatus": "blocked",
+      "buildStatus": "blocked",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test blocked (EPERM) | build blocked (EPERM)",
+      "testStdout": "",
+      "testStderr": "Process blocked by OS (EPERM) while running \"node -e console.log('AlJazeera: no tests defined')\" in \"D:/CRM ALQASEER/AlJazeera\".",
+      "buildStdout": "",
+      "buildStderr": "Process blocked by OS (EPERM) while running \"node -e console.log('AlJazeera: no build defined')\" in \"D:/CRM ALQASEER/AlJazeera\".",
+      "gitStatus": {
+        "exists": false,
+        "summary": "git repo not found",
+        "modified": [],
+        "untracked": []
+      }
+    }
+  ],
+  "backendReportPath": "D:\\CRM ALQASEER\\CRM\\reports\\backend_tests_20251201_234026.json",
+  "codexPromptPath": "D:\\CRM ALQASEER\\CRM\\prompts\\backend_fix_prompt_20251201_234026.txt",
+  "codexPromptPaths": [
+    "D:\\CRM ALQASEER\\CRM\\prompts\\alqaseer-crm-backend_fix_20251201T204026.txt",
+    "D:\\CRM ALQASEER\\CRM\\prompts\\alqaseer-crm-frontend_fix_20251201T204026.txt",
+    "D:\\CRM ALQASEER\\CRM\\prompts\\dopamine-pwa_fix_20251201T204026.txt"
+  ],
+  "notes": "Prompt generated."
+}

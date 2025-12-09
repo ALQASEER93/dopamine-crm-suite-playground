@@ -1,0 +1,47 @@
+{
+  "runAt": "2025-12-01T14:49:57.638Z",
+  "projects": [
+    {
+      "name": "ALQASEER CRM Backend",
+      "testStatus": "failed",
+      "buildStatus": "passed",
+      "testExitCode": -1,
+      "buildExitCode": 0,
+      "notes": "Backend tests failed.",
+      "testStdout": "",
+      "testStderr": ""
+    },
+    {
+      "name": "ALQASEER CRM Frontend",
+      "testStatus": "failed",
+      "buildStatus": "failed",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test exitCode=-1 | build exitCode=-1",
+      "testStdout": "",
+      "testStderr": "",
+      "buildStdout": "",
+      "buildStderr": ""
+    },
+    {
+      "name": "Dopamine PWA",
+      "testStatus": "failed",
+      "buildStatus": "failed",
+      "testExitCode": -1,
+      "buildExitCode": -1,
+      "notes": "test exitCode=-1 | build exitCode=-1",
+      "testStdout": "",
+      "testStderr": "",
+      "buildStdout": "",
+      "buildStderr": ""
+    }
+  ],
+  "backendReportPath": "D:\\CRM ALQASEER\\CRM\\reports\\backend_tests_20251201_174957.json",
+  "codexPromptPath": "D:\\CRM ALQASEER\\CRM\\prompts\\backend_fix_prompt_20251201_174957.txt",
+  "codexPromptPaths": [
+    "D:\\CRM ALQASEER\\CRM\\prompts\\alqaseer-crm-backend_fix_20251201T144957.txt",
+    "D:\\CRM ALQASEER\\CRM\\prompts\\alqaseer-crm-frontend_fix_20251201T144957.txt",
+    "D:\\CRM ALQASEER\\CRM\\prompts\\dopamine-pwa_fix_20251201T144957.txt"
+  ],
+  "notes": "Prompt generated."
+}

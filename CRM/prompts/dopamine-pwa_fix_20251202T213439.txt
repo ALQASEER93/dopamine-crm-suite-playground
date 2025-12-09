@@ -1,0 +1,61 @@
+You are an expert engineer for the project "Dopamine PWA".
+
+PROJECT PATH:
+- D:/CRM ALQASEER/ALQASEER-PWA
+
+COMMANDS:
+- Test: npm run test:vitest
+- Build: npm run build
+
+LAST RUN STATUS:
+- Test exit code: 1
+- Build exit code: 1
+
+TEST LOGS (trimmed):
+
+> dopamine-pwa@0.2.0 test:vitest
+> set "NODE_ENV=test" && .\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false
+
+
+node:internal/modules/cjs/loader:1215
+  throw err;
+  ^
+
+Error: Cannot find module 'D:\CRM ALQASEER\ALQASEER-PWA\node_modules\vitest\vitest.mjs'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+    at Module._load (node:internal/modules/cjs/loader:1043:27)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v20.19.1
+
+
+BUILD LOGS (trimmed):
+
+> dopamine-pwa@0.2.0 build
+> .\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build
+
+
+node:internal/modules/cjs/loader:1215
+  throw err;
+  ^
+
+Error: Cannot find module 'D:\CRM ALQASEER\ALQASEER-PWA\node_modules\vite\bin\vite.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+    at Module._load (node:internal/modules/cjs/loader:1043:27)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v20.19.1
+
+
+REQUEST:
+- Fix the failing tests/build for this project.
+- Propose precise file-level edits (paths relative to D:/CRM ALQASEER/ALQASEER-PWA) and git-style patches.
+- Keep unrelated behavior unchanged.

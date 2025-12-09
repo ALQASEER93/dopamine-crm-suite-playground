@@ -1,0 +1,29 @@
+# AI Agents Overview
+
+- **sales_trend_agent**  
+  - Purpose: summarize sales patterns once DPM Ledger → CRM mapping is finalized.  
+  - Inputs: Ledger SQLite exports, pharmacy mappings (planned).  
+  - Outputs: `ai_insights` rows with trend notes.
+- **credit_risk_agent**  
+  - Purpose: flag risky receivables based on ledger balances (placeholder until mapping available).  
+  - Inputs: Ledger balances, overdue cheques (planned).  
+  - Outputs: `ai_insights`, `ai_tasks` for follow-up.
+- **collection_planner_agent**  
+  - Purpose: propose collection visits and reminders.  
+  - Inputs: Ledger due dates (planned).  
+  - Outputs: `collection_plan`, `ai_insights`.
+- **stock_risk_agent**  
+  - Purpose: identify slow movers / stock-out risks from CRM inventory (pending integration).  
+  - Inputs: Inventory + movement history (planned).  
+  - Outputs: `ai_insights`.
+- **data_quality_agent**  
+  - Purpose: basic data hygiene checks (duplicate pharmacies by name/city/area).  
+  - Inputs: `pharmacies` table.  
+  - Outputs: `ai_insights` describing issues.
+- **content_helper_agent**  
+  - Purpose: draft polite payment reminders (AR/EN) without sending.  
+  - Inputs: LLM via `ai_core.llm_client`, ledger balances (planned).  
+  - Outputs: `ai_message_drafts`.
+- **scheduler**  
+  - Entry: `python -m ai_agents.scheduler` (respects `AI_SCHEDULER_ENABLED=1`).  
+  - Runs agents sequentially; logs failures but keeps going.
