@@ -9,23 +9,25 @@ export const doctorKeys = {
 
 export interface DoctorListParams {
   page?: number;
-  pageSize?: number;
+  page_size?: number;
   search?: string;
   city?: string;
-  specialty?: string;
-  territoryId?: string | number;
+  area?: string;
+  classification?: string;
 }
 
 export const listDoctors = async (params: DoctorListParams) => {
   const query = new URLSearchParams();
   if (params.page) query.set('page', String(params.page));
-  if (params.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params.page_size) query.set('page_size', String(params.page_size));
   if (params.search) query.set('search', params.search.trim());
   if (params.city) query.set('city', params.city);
-  if (params.specialty) query.set('specialty', params.specialty);
-  if (params.territoryId) query.set('territoryId', String(params.territoryId));
+  if (params.area) query.set('area', params.area);
+  if (params.classification) query.set('classification', params.classification);
 
-  const { data } = await apiClient.get<ApiListResponse<Doctor>>(`/doctors?${query.toString()}`);
+  const qs = query.toString();
+  const path = qs ? `/doctors?${qs}` : '/doctors';
+  const { data } = await apiClient.get<ApiListResponse<Doctor>>(path);
   return data;
 };
 
@@ -39,11 +41,11 @@ export interface DoctorPayload {
   specialty?: string | null;
   city?: string | null;
   area?: string | null;
-  territoryId?: string | number | null;
+  classification?: string | null;
   phone?: string | null;
+  mobile?: string | null;
   email?: string | null;
   notes?: string | null;
-  segment?: string | null;
 }
 
 export const createDoctor = async (payload: DoctorPayload) => {

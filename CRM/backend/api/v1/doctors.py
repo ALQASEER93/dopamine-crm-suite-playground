@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
 from core.security import get_current_user, require_roles
-from models.crm import Doctor, User
+from models.crm import Doctor, RouteAccount
 from schemas.common import PaginatedResponse
 from schemas.crm import DoctorCreate, DoctorOut, DoctorUpdate
 
@@ -26,6 +26,7 @@ def list_doctors(
     city: str | None = None,
     classification: str | None = Query(None, pattern="^[ABC]$"),
     search: str | None = None,
+    route_id: int | None = None,
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[DoctorOut]:
     query = db.query(Doctor)
@@ -37,7 +38,13 @@ def list_doctors(
         query = query.filter(Doctor.classification == classification)
     if search:
         lowered = f"%{search.lower()}%"
-        query = query.filter(func.lower(Doctor.name).like(lowered))
+        query = query.filter(or_(func.lower(Doctor.name).like(lowered), func.lower(Doctor.clinic).like(lowered)))
+    if route_id:
+        query = (
+            query.join(RouteAccount, RouteAccount.doctor_id == Doctor.id)
+            .filter(RouteAccount.route_id == route_id, RouteAccount.account_type == "doctor")
+            .distinct()
+        )
 
     page_size = clamp_page_size(page_size)
     doctors, total = paginate(query.order_by(Doctor.name.asc()), page, page_size)
@@ -85,3 +92,18 @@ def update_doctor(doctor_id: int, payload: DoctorUpdate, db: Session = Depends(g
     db.commit()
     db.refresh(doctor)
     return doctor
+
+
+@router.delete(
+    "/{doctor_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    dependencies=[Depends(require_roles("sales_manager", "admin"))],
+)
+def delete_doctor(doctor_id: int, db: Session = Depends(get_db)) -> Response:
+    doctor = db.get(Doctor, doctor_id)
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found.")
+    db.delete(doctor)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

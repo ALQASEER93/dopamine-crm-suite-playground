@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": ".\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js",
-    "build": ".\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build",
-    "preview": ".\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js preview",
-    "test": "set \"NODE_ENV=test\" && .\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false",
+    "dev": "node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js",
+    "build": "node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build",
+    "preview": "node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js preview",
+    "test": "set \"NODE_ENV=test\" && node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -32,3 +32,5 @@
     "vitest": "^1.6.1"
   }
 }
+
+

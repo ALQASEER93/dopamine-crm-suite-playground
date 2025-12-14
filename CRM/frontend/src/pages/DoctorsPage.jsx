@@ -6,38 +6,18 @@ import DetailDrawer from '../components/DetailDrawer';
 import './EntityListPage.css';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
+const CLASSIFICATIONS = ['A', 'B', 'C'];
+
 const DEFAULT_FORM = {
   name: '',
   specialty: '',
   city: '',
   area: '',
-  territoryId: '',
+  classification: '',
   phone: '',
+  mobile: '',
   email: '',
   notes: '',
-  segment: '',
-};
-
-const normalizeDoctor = doctor => {
-  const name =
-    doctor?.name ||
-    [doctor?.firstName, doctor?.lastName].filter(Boolean).join(' ').trim() ||
-    'Unnamed doctor';
-
-  return {
-    id: doctor?.id ?? doctor?._id ?? doctor?.doctorId ?? name,
-    name,
-    specialty: doctor?.specialty || doctor?.speciality || '',
-    city: doctor?.city || doctor?.region || '',
-    area: doctor?.area || doctor?.areaTag || '',
-    segment: doctor?.segment || doctor?.tag || doctor?.clientTag || '',
-    phone: doctor?.phone || doctor?.mobile || '',
-    email: doctor?.email || '',
-    notes: doctor?.comment || doctor?.notes || '',
-    territoryId: doctor?.territoryId || doctor?.territory_id || doctor?.territory?.id || '',
-    territoryName: doctor?.territory?.name || '',
-    raw: doctor || {},
-  };
 };
 
 const DoctorForm = ({ initialValues, onSubmit, onCancel, submitting, error }) => {
@@ -54,11 +34,11 @@ const DoctorForm = ({ initialValues, onSubmit, onCancel, submitting, error }) =>
       specialty: form.specialty || null,
       city: form.city || null,
       area: form.area || null,
-      territoryId: form.territoryId || null,
+      classification: form.classification || null,
       phone: form.phone || null,
+      mobile: form.mobile || null,
       email: form.email || null,
       notes: form.notes || null,
-      segment: form.segment || null,
     });
   };
 
@@ -81,21 +61,23 @@ const DoctorForm = ({ initialValues, onSubmit, onCancel, submitting, error }) =>
         <input type="text" value={form.area} onChange={e => updateField('area', e.target.value)} />
       </label>
       <label className="form__label">
-        Territory ID
-        <input
-          type="text"
-          value={form.territoryId}
-          onChange={e => updateField('territoryId', e.target.value)}
-          placeholder="Optional"
-        />
-      </label>
-      <label className="form__label">
-        Segment
-        <input type="text" value={form.segment} onChange={e => updateField('segment', e.target.value)} />
+        Classification
+        <select value={form.classification} onChange={e => updateField('classification', e.target.value)}>
+          <option value="">Select</option>
+          {CLASSIFICATIONS.map(option => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="form__label">
         Phone
         <input type="tel" value={form.phone} onChange={e => updateField('phone', e.target.value)} />
+      </label>
+      <label className="form__label">
+        Mobile
+        <input type="tel" value={form.mobile} onChange={e => updateField('mobile', e.target.value)} />
       </label>
       <label className="form__label">
         Email
@@ -129,8 +111,8 @@ const DoctorsPage = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('');
-  const [specialtyFilter, setSpecialtyFilter] = useState('');
-  const [segmentFilter, setSegmentFilter] = useState('');
+  const [areaFilter, setAreaFilter] = useState('');
+  const [classificationFilter, setClassificationFilter] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[1]);
   const [selected, setSelected] = useState(null);
@@ -141,13 +123,13 @@ const DoctorsPage = () => {
   const queryParams = useMemo(
     () => ({
       page,
-      pageSize,
+      page_size: pageSize,
       search,
       city: cityFilter,
-      specialty: specialtyFilter,
-      segment: segmentFilter,
+      area: areaFilter,
+      classification: classificationFilter,
     }),
-    [cityFilter, page, pageSize, search, segmentFilter, specialtyFilter],
+    [areaFilter, classificationFilter, cityFilter, page, pageSize, search],
   );
 
   const doctorsQuery = useQuery({
@@ -156,8 +138,9 @@ const DoctorsPage = () => {
     enabled: !!token,
     keepPreviousData: true,
     select: data => {
-      const rows = Array.isArray(data?.data) ? data.data.map(normalizeDoctor) : [];
-      const total = data?.meta?.total ?? data?.pagination?.total ?? data?.total ?? rows.length;
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      const pagination = data?.pagination || data?.meta;
+      const total = pagination?.total ?? rows.length;
       return { rows, total };
     },
   });
@@ -203,11 +186,11 @@ const DoctorsPage = () => {
       specialty: doctor.specialty || '',
       city: doctor.city || '',
       area: doctor.area || '',
-      territoryId: doctor.territoryId || '',
+      classification: doctor.classification || '',
       phone: doctor.phone || '',
+      mobile: doctor.mobile || '',
       email: doctor.email || '',
       notes: doctor.notes || '',
-      segment: doctor.segment || '',
     });
     setFormError(null);
   };
@@ -221,7 +204,8 @@ const DoctorsPage = () => {
     }
   };
 
-  const { rows: doctors = [], total = 0 } = doctorsQuery.data || {};
+  const doctors = doctorsQuery.data?.rows || [];
+  const total = doctorsQuery.data?.total || 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const distinctCities = useMemo(() => {
@@ -230,22 +214,16 @@ const DoctorsPage = () => {
     return Array.from(values).sort();
   }, [doctors]);
 
-  const distinctSpecialties = useMemo(() => {
+  const distinctAreas = useMemo(() => {
     const values = new Set();
-    doctors.forEach(doctor => doctor.specialty && values.add(doctor.specialty));
-    return Array.from(values).sort();
-  }, [doctors]);
-
-  const distinctSegments = useMemo(() => {
-    const values = new Set();
-    doctors.forEach(doctor => doctor.segment && values.add(doctor.segment));
+    doctors.forEach(doctor => doctor.area && values.add(doctor.area));
     return Array.from(values).sort();
   }, [doctors]);
 
   const resetFilters = () => {
     setCityFilter('');
-    setSpecialtyFilter('');
-    setSegmentFilter('');
+    setAreaFilter('');
+    setClassificationFilter('');
     setSearch('');
     setPage(1);
   };
@@ -261,7 +239,7 @@ const DoctorsPage = () => {
           <input
             type="search"
             className="input"
-            placeholder="Search by name, specialty, or city"
+            placeholder="Search by name or clinic"
             value={search}
             onChange={event => {
               setSearch(event.target.value);
@@ -283,27 +261,23 @@ const DoctorsPage = () => {
             </option>
           ))}
         </select>
-        <select
-          className="input"
-          value={specialtyFilter}
-          onChange={event => setSpecialtyFilter(event.target.value)}
-        >
-          <option value="">All specialties</option>
-          {distinctSpecialties.map(specialty => (
-            <option key={specialty} value={specialty}>
-              {specialty}
+        <select className="input" value={areaFilter} onChange={event => setAreaFilter(event.target.value)}>
+          <option value="">All areas</option>
+          {distinctAreas.map(area => (
+            <option key={area} value={area}>
+              {area}
             </option>
           ))}
         </select>
         <select
           className="input"
-          value={segmentFilter}
-          onChange={event => setSegmentFilter(event.target.value)}
+          value={classificationFilter}
+          onChange={event => setClassificationFilter(event.target.value)}
         >
-          <option value="">All segments</option>
-          {distinctSegments.map(segment => (
-            <option key={segment} value={segment}>
-              {segment}
+          <option value="">All classifications</option>
+          {CLASSIFICATIONS.map(option => (
+            <option key={option} value={option}>
+              {option}
             </option>
           ))}
         </select>
@@ -330,7 +304,7 @@ const DoctorsPage = () => {
                 <th>Specialty</th>
                 <th>City</th>
                 <th>Area</th>
-                <th>Segment</th>
+                <th>Class</th>
                 <th>Phone</th>
               </tr>
             </thead>
@@ -341,8 +315,8 @@ const DoctorsPage = () => {
                   <td>{doctor.specialty || '-'}</td>
                   <td>{doctor.city || '-'}</td>
                   <td>{doctor.area || '-'}</td>
-                  <td>{doctor.segment || '-'}</td>
-                  <td>{doctor.phone || '-'}</td>
+                  <td>{doctor.classification || '-'}</td>
+                  <td>{doctor.phone || doctor.mobile || '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -403,13 +377,10 @@ const DoctorsPage = () => {
               <strong>Area:</strong> {selected.area || '-'}
             </p>
             <p>
-              <strong>Segment:</strong> {selected.segment || '-'}
+              <strong>Class:</strong> {selected.classification || '-'}
             </p>
             <p>
-              <strong>Territory:</strong> {selected.territoryName || selected.territoryId || '-'}
-            </p>
-            <p>
-              <strong>Phone:</strong> {selected.phone || '-'}
+              <strong>Phone:</strong> {selected.phone || selected.mobile || '-'}
             </p>
             <p>
               <strong>Email:</strong> {selected.email || '-'}

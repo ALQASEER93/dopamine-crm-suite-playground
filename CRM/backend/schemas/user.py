@@ -41,3 +41,21 @@ class UserOut(BaseModel):
     role: RoleOut
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RepCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+    is_active: bool = True
+    role_slug: str = "medical_rep"
+    role_id: Optional[int] = None
+
+
+class RepUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = Field(default=None, min_length=6)
+    is_active: Optional[bool] = None
+    role_slug: Optional[str] = None
+    role_id: Optional[int] = None

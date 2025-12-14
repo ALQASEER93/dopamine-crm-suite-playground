@@ -81,6 +81,15 @@ class PharmacyOut(PharmacyBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PharmacyMini(BaseModel):
+    id: int
+    name: str
+    city: Optional[str] = None
+    area: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProductBase(BaseModel):
     code: str = Field(..., min_length=1, max_length=50)
     name: str = Field(..., min_length=2, max_length=150)
@@ -140,10 +149,32 @@ class VisitCreate(VisitBase):
     ...
 
 
+class VisitUpdate(BaseModel):
+    visit_date: Optional[date] = None
+    rep_id: Optional[int] = None
+    doctor_id: Optional[int] = None
+    pharmacy_id: Optional[int] = None
+    notes: Optional[str] = None
+    samples_given: Optional[str] = None
+    next_action: Optional[str] = None
+    next_action_date: Optional[date] = None
+
+    @field_validator("pharmacy_id")
+    @classmethod
+    def ensure_one_account(cls, v, info):  # noqa: D401
+        """Ensure either doctor or pharmacy is provided when updating customer link."""
+        data = info.data
+        doctor_id = data.get("doctor_id")
+        pharmacy_id = v
+        if doctor_id and pharmacy_id:
+            raise ValueError("Provide only one of doctor_id or pharmacy_id.")
+        return v
+
+
 class VisitOut(VisitBase):
     id: int
     doctor: Optional[DoctorOut] = None
-    pharmacy: Optional[PharmacyOut] = None
+    pharmacy: Optional[PharmacyMini] = None
 
     model_config = ConfigDict(from_attributes=True)
 

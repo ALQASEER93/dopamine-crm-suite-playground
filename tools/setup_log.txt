@@ -1,0 +1,103 @@
+
+[2025-12-12 01:25:57] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND' EXIT: 0
+[2025-12-12 01:25:57] CMD: New-Item -ItemType Directory -Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools' -Force EXIT: 0
+[2025-12-12 01:25:57] CMD: Set-Content -Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools\setup_log.txt' -Value '' EXIT: 0
+[2025-12-12 01:25:57] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND' EXIT: 0
+[2025-12-12 01:25:57] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend' EXIT: 0
+[2025-12-12 01:25:57] CMD: Get-ChildItem EXIT: 0
+[2025-12-12 01:30:17] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND' EXIT: 0
+[2025-12-12 01:30:17] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND' EXIT: 0
+[2025-12-12 01:30:17] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend' EXIT: 0
+[2025-12-12 01:30:17] CMD: Get-ChildItem EXIT: 0
+[2025-12-12 01:30:18] CMD: . 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\.venv\Scripts\Activate.ps1' EXIT: 0
+[2025-12-12 01:30:40] CMD: python -m pip install --upgrade pip EXIT: 0
+[2025-12-12 01:30:40] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\requirements.txt' EXIT: 0
+[2025-12-12 01:30:40] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\pyproject.toml' EXIT: 1
+[2025-12-12 01:32:06] CMD: python -m pip install -r requirements.txt EXIT: 0
+[2025-12-12 01:32:06] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\manage.py' EXIT: 1
+[2025-12-12 01:32:07] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\alembic.ini' EXIT: 1
+[2025-12-12 01:32:07] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\tests' EXIT: 0
+[2025-12-12 01:32:10] CMD: pytest -q EXIT: 4
+[2025-12-12 01:32:10] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend' EXIT: 0
+[2025-12-12 01:32:10] CMD: Get-ChildItem EXIT: 0
+[2025-12-12 01:32:10] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend\package-lock.json' EXIT: 0
+[2025-12-12 01:32:10] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend\pnpm-lock.yaml' EXIT: 1
+[2025-12-12 01:32:10] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend\yarn.lock' EXIT: 1
+[2025-12-12 01:32:30] CMD: npm install EXIT: 0
+[2025-12-12 01:32:30] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend\package.json' EXIT: 0
+[2025-12-12 01:32:30] CMD: Get-Content -Raw package.json EXIT: 0
+[2025-12-12 01:32:32] CMD: npm run lint EXIT: 0
+[2025-12-12 01:32:33] CMD: npm run build EXIT: 1
+[2025-12-12 01:32:33] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools' EXIT: 0
+[2025-12-12 01:32:33] CMD: Set-Content -Path 'dev_backend.ps1' -Value param()
+$ErrorActionPreference = "Stop"
+$backendPath = "D:\\ALQASEER_DEV\\dopamine-crm-suite_PLAYGROUND\\CRM\\backend"
+if (-not (Test-Path $backendPath)) { Write-Host "Backend path not found: $backendPath"; exit 1 }
+Set-Location $backendPath
+$venvActivate = Join-Path $backendPath '.venv\\Scripts\\Activate.ps1'
+if (Test-Path $venvActivate) {
+    . $venvActivate
+    Write-Host "Activated venv at $venvActivate"
+} else {
+    Write-Host "Virtual env not found at $venvActivate"
+}
+if (Test-Path 'manage.py') {
+    Write-Host "Starting Django dev server..."
+    python manage.py runserver
+} elseif (Get-ChildItem -Filter '*.py' -Recurse | Select-String -Pattern 'uvicorn' -SimpleMatch | Select-Object -First 1) {
+    Write-Host "Starting uvicorn on main:app (override inside script if different)..."
+    uvicorn main:app --reload --host 0.0.0.0 --port 8000
+} else {
+    Write-Host "Unable to auto-detect backend entrypoint. Start manually from $backendPath."
+} EXIT: 1
+[2025-12-12 01:32:33] CMD: Set-Content -Path 'dev_frontend.ps1' -Value param()
+$ErrorActionPreference = "Stop"
+$frontendPath = "D:\\ALQASEER_DEV\\dopamine-crm-suite_PLAYGROUND\\CRM\\frontend"
+if (-not (Test-Path $frontendPath)) { Write-Host "Frontend path not found: $frontendPath"; exit 1 }
+Set-Location $frontendPath
+if (Test-Path 'package.json') {
+    $pkg = Get-Content -Raw package.json | ConvertFrom-Json
+    if ($pkg.scripts -and $pkg.scripts.dev) {
+        Write-Host "Running npm run dev..."
+        npm run dev
+    } else {
+        Write-Host "No dev script found in package.json. Start manually from $frontendPath."
+    }
+} else {
+    Write-Host "package.json not found in $frontendPath"
+} EXIT: 1
+[2025-12-12 01:35:14] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND' EXIT: 0
+[2025-12-12 01:35:14] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend' EXIT: 0
+[2025-12-12 01:35:14] CMD: Test-Path 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\.venv\\Scripts\\Activate.ps1' EXIT: 0
+[2025-12-12 01:35:14] CMD: . 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\.venv\\Scripts\\Activate.ps1' EXIT: 0
+[2025-12-12 01:35:16] CMD: pytest -q EXIT: 4
+[2025-12-12 01:35:16] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend' EXIT: 0
+[2025-12-12 01:35:16] CMD: npm run build EXIT: 1
+[2025-12-12 01:35:16] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools' EXIT: 0
+[2025-12-12 01:35:17] CMD: Set-Content -Path 'dev_backend.ps1' -Value <backend script> EXIT: 0
+[2025-12-12 01:35:17] CMD: Set-Content -Path 'dev_frontend.ps1' -Value <frontend script> EXIT: 0
+[2025-12-12 01:37:20] CMD: Get-Content -Tail 200 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools\setup_log.txt' EXIT: 0
+[2025-12-12 01:41:28] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend' EXIT: 0
+[2025-12-12 01:41:28] CMD: . 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\\.venv\\Scripts\\Activate.ps1' EXIT: 0
+[2025-12-12 01:41:30] CMD: python -m pytest --version EXIT: 0
+[2025-12-12 01:41:31] CMD: pytest -q -vv *> "D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools\backend_pytest_output.txt" EXIT: 4
+[2025-12-12 01:41:31] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend' EXIT: 0
+[2025-12-12 01:41:32] CMD: npm run build -- --debug *> "D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools\frontend_build_output.txt" EXIT: 1
+[2025-12-12 01:41:32] CMD: .\\node_local.exe -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build --debug *> "D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools\frontend_build_output.txt" EXIT: 0
+[2025-12-12 01:46:39] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend' EXIT: 0
+[2025-12-12 01:46:39] CMD: . 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\backend\\.venv\\Scripts\\Activate.ps1' EXIT: 0
+[2025-12-12 01:46:48] CMD: python -m pip install "pydantic[email]" EXIT: 0
+[2025-12-12 01:46:48] CMD: Add-Content -Path 'requirements.txt' -Value 'email-validator' EXIT: 0
+[2025-12-12 01:46:51] CMD: pytest -q -vv *> "D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools\backend_pytest_output_fix.txt" EXIT: 0
+[2025-12-12 01:46:52] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend' EXIT: 0
+[2025-12-12 01:46:52] CMD: replace node_local.exe->node in package.json EXIT: 0
+[2025-12-12 01:46:52] CMD: npm run build *> "D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools\frontend_build_output_fix.txt" EXIT: 1
+[2025-12-12 01:55:57] CMD: Set-Location 'D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\CRM\frontend' EXIT: 0
+[2025-12-12 01:55:57] CMD: patched package.json (.\\node/.\\node.exe -> node) EXIT: 0
+[2025-12-12 01:56:00] CMD: npm run build *> "D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\tools\frontend_build_output_fix2.txt" EXIT: 0
+[2025-12-12 02:01:49] CMD: created/updated dev_all.ps1 EXIT: 0
+[2025-12-12 02:01:49] CMD: created/updated test_all.ps1 EXIT: 0
+rewrote dev_all.ps1
+rewrote test_all.ps1
+rewrote dev_all.ps1
+rewrote test_all.ps1

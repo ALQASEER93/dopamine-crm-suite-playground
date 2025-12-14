@@ -179,6 +179,7 @@ class Visit(Base):
     samples_given = Column(Text, nullable=True)
     next_action = Column(Text, nullable=True)
     next_action_date = Column(Date, nullable=True)
+    is_deleted = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
