@@ -33,3 +33,7 @@ ARCHIVE/
 
 # Local OpenAI helper script (never commit real keys)
 AI-Orchestrator/set-ai-env.ps1
+
+# Local logs
+/tools/*.txt
+
