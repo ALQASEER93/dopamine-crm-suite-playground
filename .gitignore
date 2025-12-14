@@ -37,3 +37,6 @@ AI-Orchestrator/set-ai-env.ps1
 # Local logs
 /tools/*.txt
 
+
+CRM/package-lock.ROOT_UNUSED.json
+
