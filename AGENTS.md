@@ -1,23 +1,28 @@
-# AGENTS.md — CRM Commands
+# AGENTS.md — dopamine-crm-suite-playground
 
-## Backend (FastAPI)
-- Create/activate venv (Windows):
-  - .\.venv\Scripts\Activate.ps1
-- Run server:
-  - .\.venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000
-- Tests:
-  - .\.venv\Scripts\python.exe -m pytest -q
+## Project layout
+- CRM/backend = FastAPI (Python)
+- CRM/frontend = Vite/React (Node)
 
-## Frontend (Vite/React)
-- Install:
-  - npm ci
-- Run:
-  - npm run dev
-- Build:
-  - npm run build
+## How to run tests (must run before PR)
+### Backend
+cd CRM/backend
+python -m venv .venv || true
+# Linux/mac:
+. .venv/bin/activate || true
+# Windows (if available):
+# .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m pytest -q
 
-## Notes
-- API base: http://127.0.0.1:8000/api/v1
-- Default creds:
-  - admin@example.com / password
-  - rep@example.com / password
+### Frontend
+cd CRM/frontend
+npm ci
+npm run build
+npm test --if-present
+
+## Definition of Done for any task
+- Backend pytest passes (python -m pytest -q)
+- Frontend build passes (npm run build)
+- Update README if behavior or run steps changed
+- Keep API base URL stable: http://127.0.0.1:8000/api/v1
