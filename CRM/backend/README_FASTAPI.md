@@ -24,6 +24,12 @@ From `C:\\Users\\M\ S\ I\\ALQASEER_CRM_SUITE_FINAL\CRM\backend`:
 2. Start dev server: `python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
    - Or use the helper script: `.\run-backend-dev.ps1`
 
+## Frontend pairing and default login
+- Backend: run uvicorn on port 8000 (above). It seeds default users into `data/fastapi.db`.
+- Frontend: from `../frontend`, run `npm install` (first time) then `npm run dev -- --host --port 5173`. The SPA defaults to `http://127.0.0.1:8000/api/v1` (configurable via `VITE_API_BASE_URL`).
+- Default credentials: `admin@example.com` / `password` (admin) and `rep@example.com` / `password` (medical rep).
+- Smoke test (FastAPI must be running): `python scripts/smoke_login.py` (override target with `API_BASE_URL`, `SMOKE_LOGIN_EMAIL`, `SMOKE_LOGIN_PASSWORD`).
+
 ## Configuration
 - Settings live in `config/settings.py` and load from `.env` (see `.env.example`).
 - Default profile: `APP_ENV=development` uses `DATABASE_URL` (SQLite path by default) and `ECHO_SQL` for SQLAlchemy logging.

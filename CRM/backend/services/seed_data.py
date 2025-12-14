@@ -12,6 +12,7 @@ from models.crm import (
     OrderLine,
     Pharmacy,
     Product,
+    Role,
     Route,
     RouteAccount,
     StockLocation,
@@ -65,7 +66,14 @@ def seed_reference_data(db: Session) -> None:
 
     db.commit()
 
-    rep = db.query(User).filter(User.email == "rep@dpm.test").first()
+    rep = (
+        db.query(User)
+        .filter(User.email.in_(["rep@example.com", "rep@dopaminepharma.com", "rep@dpm.test"]))
+        .first()
+    )
+    if not rep:
+        rep = db.query(User).join(Role).filter(Role.slug == "medical_rep").first()
+
     if rep:
         route = db.query(Route).filter(Route.name == "Amman North").first()
         if not route:

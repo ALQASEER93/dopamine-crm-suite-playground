@@ -76,45 +76,51 @@ def seed_default_roles(db: Session) -> dict[str, Role]:
 
 
 def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
-    # Normalize legacy emails and role slugs from earlier iterations.
-    legacy_users = db.query(User).filter(User.email.ilike("%@dpm.test")).all()
-    for legacy in legacy_users:
-        legacy.email = legacy.email.replace("@dpm.test", "@dopaminepharma.com")
-
     legacy_sales_reps = db.query(User).join(Role).filter(Role.slug == "sales_rep").all()
     for rep in legacy_sales_reps:
         rep.role_id = roles["medical_rep"].id
 
     default_users = [
-        ("admin@dopaminepharma.com", "Admin User", "admin", "admin123"),
-        ("manager@dopaminepharma.com", "Sales Manager", "sales_manager", "manager123"),
-        ("rep@dopaminepharma.com", "Medical Rep", "medical_rep", "rep123"),
+        (
+            "admin@example.com",
+            "Admin User",
+            "admin",
+            "password",
+            ["admin@dopaminepharma.com", "admin@dpm.test"],
+        ),
+        (
+            "manager@example.com",
+            "Sales Manager",
+            "sales_manager",
+            "password",
+            ["manager@dopaminepharma.com"],
+        ),
+        (
+            "rep@example.com",
+            "Medical Rep",
+            "medical_rep",
+            "password",
+            ["rep@dopaminepharma.com", "rep@dpm.test"],
+        ),
     ]
 
-    for email, name, role_slug, password in default_users:
+    for email, name, role_slug, password, aliases in default_users:
         role_id = roles[role_slug].id
-        user = db.query(User).filter(User.email == email).first()
-        if user:
-            user.name = name
-            user.role_id = role_id
-            user.is_active = True
-            user.password_hash = hash_password(password)
-        else:
-            existing_by_role = db.query(User).filter(User.role_id == role_id).first()
-            if existing_by_role:
-                existing_by_role.email = email
-                existing_by_role.name = name
-                existing_by_role.is_active = True
-                existing_by_role.password_hash = hash_password(password)
-            else:
-                user = User(
-                    email=email,
-                    name=name,
-                    role_id=role_id,
-                    password_hash=hash_password(password),
-                    is_active=True,
-                )
-                db.add(user)
+        candidates = [email, *aliases]
+
+        user = db.query(User).filter(User.email.in_(candidates)).first()
+        if not user:
+            user = db.query(User).filter(User.role_id == role_id).first()
+
+        if not user:
+            user = User(email=email, name=name, role_id=role_id, is_active=True, password_hash="")
+            db.add(user)
+
+        user.email = email
+        user.name = name
+        user.role_id = role_id
+        user.is_active = True
+        user.password_hash = hash_password(password)
     db.commit()
 
 
