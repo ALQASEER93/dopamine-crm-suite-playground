@@ -60,10 +60,13 @@ def call_endpoint(path: str, token: str, params: dict | None = None) -> bool:
     except Exception:  # noqa: BLE001
         body = response.text
 
-    print(f"[smoke] GET {url} -> {response.status_code}")
-    print(body)
+    if response.status_code != 200:
+        print(f"[smoke] GET {url} -> {response.status_code}")
+        print(body)
+        return False
 
-    return response.status_code == 200
+    print(f"[smoke] GET {url} -> 200 OK")
+    return True
 
 
 def main() -> int:

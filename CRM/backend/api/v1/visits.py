@@ -162,7 +162,7 @@ def _get_visit(db: Session, visit_id: int) -> Visit:
     return visit
 
 
-@router.get("/{visit_id}", response_model=VisitOut)
+@router.get("/{visit_id:int}", response_model=VisitOut)
 def get_visit(visit_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Visit:
     visit = _get_visit(db, visit_id)
     if has_any_role(current_user, ["medical_rep"]) and visit.rep_id != current_user.id:
@@ -171,7 +171,7 @@ def get_visit(visit_id: int, current_user: User = Depends(get_current_user), db:
 
 
 @router.put(
-    "/{visit_id}",
+    "/{visit_id:int}",
     response_model=VisitOut,
     dependencies=[Depends(require_roles("sales_manager", "medical_rep", "admin"))],
 )
@@ -219,7 +219,7 @@ def update_visit(
 
 
 @router.delete(
-    "/{visit_id}",
+    "/{visit_id:int}",
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
     dependencies=[Depends(require_roles("sales_manager", "medical_rep", "admin"))],
