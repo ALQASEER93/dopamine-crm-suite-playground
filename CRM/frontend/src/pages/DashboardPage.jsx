@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -6,13 +6,27 @@ import VisitsSummaryCards from '../visits/VisitsSummaryCards';
 import { apiClient } from '../api/client';
 import './DashboardPage.css';
 
+const formatQueryError = error => {
+  if (!error) return null;
+  const status = error.status || error?.response?.status;
+  const message = error.message || 'Unable to load data';
+  return status ? `${message} (${status})` : message;
+};
+
+const logValidationError = (error, label) => {
+  if (error?.status === 422) {
+    const detail = error.payload?.detail || error.payload;
+    console.error(`${label} validation error`, detail);
+  }
+};
+
 const DashboardPage = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const summaryQuery = useQuery({
-    queryKey: ['dashboard', 'summary'],
+    queryKey: ['dashboard', 'summary', token || user?.id || null],
     queryFn: async () => {
-      const { data } = await apiClient.get('/visits/summary');
+      const { data } = await apiClient.get('/visits/summary', { token });
       return data?.data ?? data;
     },
     enabled: !!token,
@@ -20,14 +34,22 @@ const DashboardPage = () => {
   });
 
   const recentVisitsQuery = useQuery({
-    queryKey: ['dashboard', 'recentVisits'],
+    queryKey: ['dashboard', 'recentVisits', token || user?.id || null],
     queryFn: async () => {
-      const { data } = await apiClient.get('/visits/latest?pageSize=5');
+      const { data } = await apiClient.get('/visits/latest?pageSize=5', { token });
       return Array.isArray(data?.data) ? data.data : [];
     },
     enabled: !!token,
     staleTime: 30_000,
   });
+
+  useEffect(() => {
+    logValidationError(summaryQuery.error, 'Visits summary');
+  }, [summaryQuery.error]);
+
+  useEffect(() => {
+    logValidationError(recentVisitsQuery.error, 'Recent visits');
+  }, [recentVisitsQuery.error]);
 
   const recentVisits = useMemo(() => recentVisitsQuery.data ?? [], [recentVisitsQuery.data]);
 
@@ -46,7 +68,7 @@ const DashboardPage = () => {
       <VisitsSummaryCards
         summary={summaryQuery.data}
         isLoading={summaryQuery.isLoading}
-        error={summaryQuery.error?.message || null}
+        error={formatQueryError(summaryQuery.error)}
       />
 
       <section className="table-card">
@@ -61,7 +83,7 @@ const DashboardPage = () => {
         </div>
         {recentVisitsQuery.error && (
           <div className="table-card__empty">
-            Unable to load latest visits: {recentVisitsQuery.error.message}
+            Unable to load latest visits: {formatQueryError(recentVisitsQuery.error)}
           </div>
         )}
         {!recentVisitsQuery.error && recentVisits.length === 0 && !recentVisitsQuery.isLoading && (
