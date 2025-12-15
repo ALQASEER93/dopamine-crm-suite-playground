@@ -110,7 +110,9 @@ export async function apiFetch<T = unknown>(path: string, options: ApiRequestOpt
     finalHeaders.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(buildUrl(path), {
+  const requestUrl = buildUrl(path);
+
+  const response = await fetch(requestUrl, {
     method,
     headers: finalHeaders,
     body: requestBody as BodyInit | null | undefined,
@@ -132,6 +134,11 @@ export async function apiFetch<T = unknown>(path: string, options: ApiRequestOpt
 
   if (!response.ok) {
     const message = normalizeErrorMessage(data, `${response.status} ${response.statusText}`);
+    if (response.status === 422) {
+      // Surface backend validation payloads to aid debugging in the browser console.
+      // eslint-disable-next-line no-console
+      console.error('API validation error', { url: requestUrl, payload: data });
+    }
     throw new ApiError(message, { status: response.status, payload: data, response });
   }
 

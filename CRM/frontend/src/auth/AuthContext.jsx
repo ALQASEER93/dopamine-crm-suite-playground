@@ -37,7 +37,14 @@ function parseStoredState() {
 
 export const AuthProvider = ({ children }) => {
   const isMountedRef = useRef(false);
-  const [authState, setAuthState] = useState(() => parseStoredState());
+  const [authState, setAuthState] = useState(() => {
+    const parsed = parseStoredState();
+    if (parsed.token) {
+      // Ensure the API client has the token before any queries fire on first render.
+      setAuthToken(parsed.token);
+    }
+    return parsed;
+  });
   const { user, token } = authState;
 
   useEffect(() => {
