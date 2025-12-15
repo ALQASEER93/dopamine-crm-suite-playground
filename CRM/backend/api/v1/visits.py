@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
@@ -82,6 +82,77 @@ def create_visit(
     db.commit()
     db.refresh(visit)
     return visit
+
+
+@router.get("/summary")
+def visits_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    query = db.query(Visit).filter(Visit.is_deleted.is_(False))
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(Visit.rep_id == current_user.id)
+
+    total_visits = query.count()
+    # Status is not modeled yet; treat all existing records as completed for now.
+    data = {
+        "totalVisits": total_visits,
+        "completedVisits": total_visits,
+        "scheduledVisits": 0,
+        "cancelledVisits": 0,
+    }
+    return {"data": data}
+
+
+def _serialize_dashboard_visit(visit: Visit) -> dict:
+    rep = None
+    if visit.rep:
+        rep = {"id": visit.rep.id, "name": visit.rep.name or visit.rep.email}
+
+    hcp = None
+    account = None
+    if visit.doctor:
+        hcp = {"id": visit.doctor.id, "name": visit.doctor.name, "type": "doctor"}
+        account = {"type": "doctor", "id": visit.doctor.id, "name": visit.doctor.name}
+    elif visit.pharmacy:
+        hcp = {"id": visit.pharmacy.id, "name": visit.pharmacy.name, "type": "pharmacy"}
+        account = {"type": "pharmacy", "id": visit.pharmacy.id, "name": visit.pharmacy.name}
+
+    return {
+        "id": visit.id,
+        "visitDate": visit.visit_date.isoformat(),
+        "rep": rep,
+        "hcp": hcp,
+        "account": account,
+        "status": "completed",
+        "durationMinutes": 0,
+        "notes": visit.notes,
+        "samplesGiven": visit.samples_given,
+        "nextAction": visit.next_action,
+        "nextActionDate": visit.next_action_date.isoformat() if visit.next_action_date else None,
+    }
+
+
+@router.get("/latest")
+def latest_visits(
+    page_size: int = Query(5, alias="pageSize", ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    page_size = clamp_page_size(page_size)
+    query = (
+        db.query(Visit)
+        .options(joinedload(Visit.rep), joinedload(Visit.doctor), joinedload(Visit.pharmacy))
+        .filter(Visit.is_deleted.is_(False))
+        .order_by(Visit.visit_date.desc(), Visit.id.desc())
+    )
+
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(Visit.rep_id == current_user.id)
+
+    visits = query.limit(page_size).all()
+    data = [_serialize_dashboard_visit(visit) for visit in visits]
+    return {"data": data}
 
 
 def _get_visit(db: Session, visit_id: int) -> Visit:
