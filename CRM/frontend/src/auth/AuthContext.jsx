@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch, setAuthToken, setUnauthorizedHandler } from '../api/client';
 
@@ -36,18 +37,36 @@ function parseStoredState() {
 }
 
 export const AuthProvider = ({ children }) => {
+  const queryClient = useQueryClient();
   const isMountedRef = useRef(false);
-  const [authState, setAuthState] = useState(() => parseStoredState());
+  const [authState, setAuthState] = useState(() => {
+    const parsed = parseStoredState();
+    if (parsed.token) {
+      setAuthToken(parsed.token);
+    }
+    return parsed;
+  });
   const { user, token } = authState;
 
   useEffect(() => {
     setAuthToken(token);
-  }, [token]);
+
+    if (token) {
+      queryClient.resetQueries();
+      queryClient.invalidateQueries();
+    } else {
+      queryClient.clear();
+    }
+  }, [token, queryClient]);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => () => setAuthState(defaultState));
+    setUnauthorizedHandler(() => () => {
+      setAuthState(defaultState);
+      queryClient.clear();
+    });
+
     return () => setUnauthorizedHandler(null);
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     if (!isMountedRef.current) {
