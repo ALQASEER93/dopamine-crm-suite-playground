@@ -2,7 +2,7 @@
 
 ## Commands
 - Install: `npm ci`
-- Test: `npm test`
+- Test: `npm test` (must be CI-friendly, no watch)
 - Build: `npm run build`
 
 ## UI rules

@@ -1,0 +1,46 @@
+name: Codex Review Bot
+
+on:
+  pull_request:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@codex review'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Codex review
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          safety-strategy: read-only
+          prompt: |
+            Read and obey AGENTS.md. Focus on P0/P1 issues only (RBAC/security, visits + GPS, offline sync, reporting/exports, secrets). Provide concise, actionable review feedback.
+
+      - name: Post review comment
+        if: steps.codex.outputs.final-message != ''
+        uses: actions/github-script@v7
+        env:
+          FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.eventName === 'pull_request'
+              ? context.payload.pull_request.number
+              : context.payload.issue.number;
+
+            const body = `### 🤖 Codex Review Bot\n${process.env.FINAL_MESSAGE}`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });

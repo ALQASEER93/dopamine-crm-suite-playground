@@ -1,35 +1,6 @@
-# AGENTS.md — dopamine-crm-suite-playground
-
-## Project layout
-- CRM/backend = FastAPI (Python)
-- CRM/frontend = Vite/React (Node)
-
-## How to run tests (must run before PR)
-### Backend
-cd CRM/backend
-python -m venv .venv || true
-# Linux/mac:
-. .venv/bin/activate || true
-# Windows (if available):
-# .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python -m pytest -q
-
-### Frontend
-cd CRM/frontend
-npm ci
-npm run build
-npm test --if-present
-
-## Definition of Done for any task
-- Backend pytest passes (python -m pytest -q)
-- Frontend build passes (npm run build)
-- Update README if behavior or run steps changed
-- Keep API base URL stable: http://127.0.0.1:8000/api/v1
-
 # AGENTS.md — DOPAMINE CRM SUITE (DPM)
 
-> This file is authoritative for agents (Codex CLI/Cloud/Review).  
+> This file is authoritative for agents (Codex CLI/Cloud/Review).
 > Closest AGENTS.md to the changed file wins.
 
 ---
@@ -81,7 +52,7 @@ npm test --if-present
 #### CRM Frontend (Vite/React)
 - `cd CRM/frontend`
 - `npm ci` (أو npm i إذا ما فيه lock)
-- `npm test`
+- `npm test` (يجب أن يكون headless/CI-friendly)
 - `npm run build`
 
 #### ALQASEER-PWA
@@ -121,8 +92,8 @@ npm test --if-present
 - RBAC: Admin / Rep(Med) / Rep(Sales) / Supervisor(optional)
 
 ### Standard commands
-Backend: `cd CRM/backend && python -m pytest -q`  
-Frontend: `cd CRM/frontend && npm ci && npm test && npm run build`  
+Backend: `cd CRM/backend && python -m pytest -q`
+Frontend: `cd CRM/frontend && npm ci && npm test && npm run build`
 PWA: `cd ALQASEER-PWA && npm ci && npm run build`
 
 ### Review guidelines

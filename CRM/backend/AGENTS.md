@@ -5,6 +5,6 @@
 
 ## Rules
 - All endpoints must be RBAC protected.
-- Add/adjust Pydantic schemas when models change.
-- Prefer small migrations and seed updates.
+- Update Pydantic schemas when models change.
+- Prefer small migrations and safe seed updates.
 - No secrets in code/logs.

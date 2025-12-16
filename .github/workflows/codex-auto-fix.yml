@@ -1,0 +1,110 @@
+name: Codex AutoFix
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types:
+      - completed
+
+jobs:
+  autofix:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BOT_BRANCH: codex/auto-fix-${{ github.event.workflow_run.id }}
+    steps:
+      - name: Checkout failing branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        working-directory: CRM/backend
+        run: pip install -r requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            CRM/frontend/package-lock.json
+            ALQASEER-PWA/package-lock.json
+
+      - name: Install frontend dependencies
+        if: hashFiles('CRM/frontend/package-lock.json') != ''
+        working-directory: CRM/frontend
+        run: npm ci
+
+      - name: Install frontend dependencies (no lock)
+        if: hashFiles('CRM/frontend/package-lock.json') == ''
+        working-directory: CRM/frontend
+        run: npm install
+
+      - name: Install PWA dependencies
+        if: hashFiles('ALQASEER-PWA/package.json') != ''
+        working-directory: ALQASEER-PWA
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Run Codex autofix
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          safety-strategy: patch
+          prompt: |
+            Read and obey AGENTS.md. Apply the minimal changes needed to fix the failing CI workflow (backend pytest, frontend tests/build, PWA build). Do not introduce new features.
+
+      - name: Rerun backend tests
+        working-directory: CRM/backend
+        run: python -m pytest -q
+
+      - name: Rerun frontend tests
+        working-directory: CRM/frontend
+        run: npm run test:ci
+
+      - name: Rerun frontend build
+        working-directory: CRM/frontend
+        run: npm run build
+
+      - name: Rerun PWA build
+        if: hashFiles('ALQASEER-PWA/package.json') != ''
+        working-directory: ALQASEER-PWA
+        run: npm run build
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if git status --porcelain | grep .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: success() && steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: codex autofix"
+          branch: ${{ env.BOT_BRANCH }}
+          base: ${{ github.event.workflow_run.head_branch }}
+          title: "Codex AutoFix for CI run ${{ github.event.workflow_run.id }}"
+          body: |
+            Automated fix for failing CI run ${{ github.event.workflow_run.id }}.
+            Triggered by workflow_run event. Changes produced by Codex autofix and verified by re-running CI commands.
