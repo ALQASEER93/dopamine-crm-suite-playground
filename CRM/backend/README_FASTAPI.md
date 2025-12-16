@@ -18,17 +18,20 @@
 - `tests/test_hcps.py` â€” Placeholder pytest smoke test.
 - `requirements.txt` â€” FastAPI + SQLAlchemy + Pydantic deps.
 
-## How to run
-From `C:\\Users\\M\ S\ I\\ALQASEER_CRM_SUITE_FINAL\CRM\backend`:
-1. Install deps (first run): `python -m pip install -r requirements.txt`
-2. Start dev server: `python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
-   - Or use the helper script: `.\run-backend-dev.ps1`
+## How to run (Windows-friendly)
+From `C:\\Users\\<you>\\ALQASEER_CRM_SUITE_FINAL\\CRM\\backend`:
+1. Create a venv (one time): `python -m venv .venv`
+2. Activate it: `.\.venv\Scripts\activate`
+3. Install deps: `python -m pip install -r requirements.txt`
+4. Ensure the schema is current: `python -m alembic -c alembic.ini upgrade head` (auto-creates tables on first start)
+5. Launch the API: `python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
+   - Or use the helper script: `.\run-backend-dev.ps1` (it reads `DATABASE_URL`/`.env` and will run migrations at startup)
 
 ## Frontend pairing and default login
 - Backend: run uvicorn on port 8000 (above). It seeds default users into `data/fastapi.db`.
 - Frontend: from `../frontend`, run `npm install` (first time) then `npm run dev -- --host --port 5173`. The SPA defaults to `http://127.0.0.1:8000/api/v1` (configurable via `VITE_API_BASE_URL`).
 - Default credentials: `admin@example.com` / `password` (admin) and `rep@example.com` / `password` (medical rep).
-- Smoke test (FastAPI must be running): `python scripts/smoke_login.py` (override target with `API_BASE_URL`, `SMOKE_LOGIN_EMAIL`, `SMOKE_LOGIN_PASSWORD`).
+- Smoke test (FastAPI must be running): `python scripts/smoke_login.py` (override target with `API_BASE_URL`, `SMOKE_LOGIN_EMAIL`, `SMOKE_LOGIN_PASSWORD`). It now logs `/visits/summary`, `/visits/latest`, and `/visits` responses.
 
 ## Configuration
 - Settings live in `config/settings.py` and load from `.env` (see `.env.example`).
@@ -76,5 +79,4 @@ From `C:\\Users\\M\ S\ I\\ALQASEER_CRM_SUITE_FINAL\CRM\backend`:
 - Add auth/JWT and role-based guards in `core/security.py`.
 - Extend modules: pharmacies, sales reps, visits, reports.
 - Flesh out pytest suite with TestClient for the new endpoints.
-- Add migrations/alembic if schema changes become frequent.
 

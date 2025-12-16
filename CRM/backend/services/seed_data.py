@@ -104,6 +104,8 @@ def seed_reference_data(db: Session) -> None:
                     visit_date=date.today(),
                     rep_id=rep.id,
                     doctor_id=doctor.id,
+                    status="completed",
+                    duration_minutes=30,
                     notes="Introductory visit.",
                     samples_given="Starter pack",
                     next_action="Follow-up call",

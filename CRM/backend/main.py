@@ -10,6 +10,7 @@ from sqlalchemy.exc import OperationalError
 from api import api_router
 from core.config import settings
 from core.db import Base, SessionLocal, build_fallback_engine, engine, swap_engine
+from core.migrations import run_migrations
 from services.seed_data import seed_reference_data
 
 logger = logging.getLogger(__name__)
@@ -43,12 +44,12 @@ def init_database() -> None:
     db_url = str(engine.url)
     logger.info("Initializing database at %s", db_url)
     try:
-        Base.metadata.create_all(bind=engine)
+        run_migrations(engine)
     except OperationalError as exc:
         if "disk i/o error" in str(exc).lower():
             fallback_engine = build_fallback_engine()
             swap_engine(fallback_engine)
-            Base.metadata.create_all(bind=fallback_engine)
+            run_migrations(fallback_engine)
             logger.warning(
                 "Database I/O error on primary path (%s); using fallback %s. "
                 "Consider moving DB to a writable drive.",
@@ -57,8 +58,17 @@ def init_database() -> None:
             )
         else:
             raise
+    except Exception:
+        logger.exception("Alembic migration failed, attempting metadata create_all().")
+        Base.metadata.create_all(bind=engine)
+
     with SessionLocal() as session:
-        seed_reference_data(session)
+        try:
+            seed_reference_data(session)
+        except Exception:
+            session.rollback()
+            logger.exception("Seeding reference data failed.")
+            raise
     logger.info("Database schema ensured and seeded.")
 
 
