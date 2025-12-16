@@ -34,8 +34,11 @@ jobs:
         id: run_codex
         uses: openai/codex-action@v1
         with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt: |
+        - name: Run Codex review
+  uses: openai/codex-action@v1
+  with:
+    openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+    prompt: |
             You are the Codex review bot for Dopamine Pharma CRM. Read and obey AGENTS.md instructions in scope.
             Review PR #${{ env.PR_NUMBER }} with focus on P0/P1 issues (security, RBAC, visits + GPS/offline/PWA, Arabic dark UI, exports).
             Summarize risks and actionable fixes only; avoid nitpicks.
