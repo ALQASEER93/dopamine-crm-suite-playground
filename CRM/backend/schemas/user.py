@@ -59,3 +59,21 @@ class RepUpdate(BaseModel):
     is_active: Optional[bool] = None
     role_slug: Optional[str] = None
     role_id: Optional[int] = None
+
+
+class AdminUserPayload(BaseModel):
+    name: str
+    email: EmailStr
+    userType: str = Field(..., pattern="^(admin|manager|medical_rep|sales_rep)$")
+    territoryId: Optional[int] = None
+    password: Optional[str] = Field(default=None, min_length=6)
+    isActive: Optional[bool] = True
+
+
+class AdminUserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    userType: Optional[str] = Field(default=None, pattern="^(admin|manager|medical_rep|sales_rep)$")
+    territoryId: Optional[int] = None
+    password: Optional[str] = Field(default=None, min_length=6)
+    isActive: Optional[bool] = None

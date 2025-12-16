@@ -199,6 +199,28 @@ class RouteAccountBase(BaseModel):
         return v
 
 
+class TerritoryOut(BaseModel):
+    id: int
+    name: str
+    code: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TerritoryCreate(BaseModel):
+    name: str
+    code: str
+
+
+class SalesRepOut(BaseModel):
+    id: int
+    rep_type: Optional[str] = None
+    territory_id: Optional[int] = None
+    territory_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class RouteAccountCreate(RouteAccountBase):
     ...
 
