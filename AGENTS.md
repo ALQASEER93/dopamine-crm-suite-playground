@@ -1,5 +1,12 @@
 # AGENTS.md — dopamine-crm-suite-playground
 
+## Phase 0 guardrails (must stay in future phases)
+- No destructive operations (no `rm -rf`, no folder wipes).
+- Always branch + PR; keep commits small and traceable.
+- Arabic-first UI with Dark Mode default across frontend/PWA surfaces.
+- Visits + GPS + offline/PWA support are always in scope; never regress these paths.
+- Maps + exports are strategic; keep CSV/Excel/PDF paths intact when touching reports.
+
 ## Project layout
 - CRM/backend = FastAPI (Python)
 - CRM/frontend = Vite/React (Node)
