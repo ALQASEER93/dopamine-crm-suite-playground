@@ -11,6 +11,18 @@ import NewVisitForm from './NewVisitForm';
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
 const FILTER_COLLECTION_LIMIT = 500;
+const formatQueryError = error => {
+  if (!error) return null;
+  const status = error.status || error?.response?.status;
+  const message = error.message || 'Unable to load data';
+  return status ? `${message} (${status})` : message;
+};
+const logValidationError = (error, label) => {
+  if (error?.status === 422) {
+    const detail = error.payload?.detail || error.payload;
+    console.error(`${label} validation error`, detail);
+  }
+};
 
 const extractCollection = payload => {
   if (!payload) {
@@ -212,9 +224,9 @@ const VisitsDashboard = () => {
   );
 
   const summaryQuery = useQuery({
-    queryKey: ['visits', 'summary', filtersQueryString],
+    queryKey: ['visits', 'summary', token || null, filtersQueryString],
     queryFn: async () => {
-      const { data: payload } = await apiClient.get(`/visits/summary?${filtersQueryString}`);
+      const { data: payload } = await apiClient.get(`/visits/summary?${filtersQueryString}`, { token });
       return payload?.data ?? payload;
     },
     enabled: !!token,
@@ -222,9 +234,9 @@ const VisitsDashboard = () => {
   });
 
   const visitsQuery = useQuery({
-    queryKey: ['visits', 'list', visitsQueryString],
+    queryKey: ['visits', 'list', token || null, visitsQueryString],
     queryFn: async () => {
-      const { data: payload } = await apiClient.get(`/visits?${visitsQueryString}`);
+      const { data: payload } = await apiClient.get(`/visits?${visitsQueryString}`, { token });
       const rows = Array.isArray(payload?.data) ? payload.data : payload?.visits || [];
       const totalFromPayload =
         payload?.meta?.total ??
@@ -244,7 +256,7 @@ const VisitsDashboard = () => {
   });
 
   const referenceQuery = useQuery({
-    queryKey: ['visits', 'reference'],
+    queryKey: ['visits', 'reference', token || null],
     queryFn: async () => {
       const endpoints = [
         { key: 'reps', path: `/sales-reps?page=1&pageSize=${FILTER_COLLECTION_LIMIT}` },
@@ -252,7 +264,9 @@ const VisitsDashboard = () => {
         { key: 'territories', path: `/territories?page=1&pageSize=${FILTER_COLLECTION_LIMIT}` },
       ];
 
-      const responses = await Promise.allSettled(endpoints.map(endpoint => apiClient.get(endpoint.path)));
+      const responses = await Promise.allSettled(
+        endpoints.map(endpoint => apiClient.get(endpoint.path, { token })),
+      );
 
       const nextOptions = {};
       let partialError = null;
@@ -316,10 +330,14 @@ const VisitsDashboard = () => {
     setExporting(true);
 
     try {
-      const { data: blob, response } = await apiClient.get(`/visits/export?${buildQueryString(filters, { sort })}`, {
-        responseType: 'blob',
-        headers: { Accept: 'text/csv' },
-      });
+      const { data: blob, response } = await apiClient.get(
+        `/visits/export?${buildQueryString(filters, { sort })}`,
+        {
+          responseType: 'blob',
+          headers: { Accept: 'text/csv' },
+          token,
+        },
+      );
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -347,15 +365,24 @@ const VisitsDashboard = () => {
   const safeVisits = useMemo(() => (Array.isArray(visitsQuery.data?.rows) ? visitsQuery.data.rows.filter(Boolean) : []), [
     visitsQuery.data,
   ]);
+  const summaryError = formatQueryError(summaryQuery.error);
 
   const canCreateVisit = ['sales_rep', 'medical-sales-rep', 'salesman'].includes(userRole);
 
-  const visitsError = visitsQuery.error;
+  const visitsErrorMessage = formatQueryError(visitsQuery.error);
   const visitsLoading = visitsQuery.isLoading || visitsQuery.isFetching;
   const totalVisitsCount = visitsQuery.data?.total || 0;
 
   const referenceLoading = referenceQuery.isLoading;
-  const referenceError = referenceQuery.error;
+  const referenceErrorMessage = formatQueryError(referenceQuery.error);
+
+  useEffect(() => {
+    logValidationError(summaryQuery.error, 'Visits summary');
+  }, [summaryQuery.error]);
+
+  useEffect(() => {
+    logValidationError(visitsQuery.error, 'Visits list');
+  }, [visitsQuery.error]);
 
   return (
     <div style={{ padding: '24px', fontFamily: 'Arial, sans-serif', color: '#1f2933' }}>
@@ -390,10 +417,10 @@ const VisitsDashboard = () => {
       <VisitsFilters
         isLoading={visitsLoading && safeVisits.length === 0}
         referenceLoading={referenceLoading}
-        referenceError={referenceError?.message || null}
+        referenceError={referenceErrorMessage}
       />
 
-      <VisitsSummaryCards summary={summaryQuery.data} isLoading={summaryQuery.isLoading} error={summaryQuery.error?.message || null} />
+      <VisitsSummaryCards summary={summaryQuery.data} isLoading={summaryQuery.isLoading} error={summaryError} />
 
       {exportMessage && (
         <div
@@ -412,7 +439,7 @@ const VisitsDashboard = () => {
       <VisitsTable
         visits={safeVisits}
         isLoading={visitsLoading}
-        error={visitsError?.message || null}
+        error={visitsErrorMessage}
         page={page}
         pageSize={pageSize}
         total={totalVisitsCount}

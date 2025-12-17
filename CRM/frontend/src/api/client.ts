@@ -34,6 +34,28 @@ export class ApiError extends Error {
 
 let authToken: string | null = null;
 let unauthorizedHandler: (() => void) | null = null;
+const AUTH_STORAGE_KEY = 'crm.activeUser';
+const readStoredToken = (): string | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.token) {
+      return parsed.token as string;
+    }
+  } catch (_error) {
+    // Ignore storage parse errors and fall back to in-memory token.
+  }
+  return null;
+};
+
+// Seed the in-memory token from storage so first-load queries still attach Authorization.
+authToken = readStoredToken();
 
 const API_PREFIX = '/api/v1';
 
@@ -96,7 +118,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiRequestOpt
   const { method = 'GET', headers = {}, body, token, responseType = 'json', signal } = options;
 
   const finalHeaders = new Headers(headers);
-  const effectiveToken = token ?? authToken;
+  const effectiveToken = token ?? authToken ?? readStoredToken();
   if (effectiveToken && !finalHeaders.has('Authorization')) {
     finalHeaders.set('Authorization', `Bearer ${effectiveToken}`);
   }
@@ -110,7 +132,9 @@ export async function apiFetch<T = unknown>(path: string, options: ApiRequestOpt
     finalHeaders.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(buildUrl(path), {
+  const requestUrl = buildUrl(path);
+
+  const response = await fetch(requestUrl, {
     method,
     headers: finalHeaders,
     body: requestBody as BodyInit | null | undefined,
@@ -132,6 +156,11 @@ export async function apiFetch<T = unknown>(path: string, options: ApiRequestOpt
 
   if (!response.ok) {
     const message = normalizeErrorMessage(data, `${response.status} ${response.statusText}`);
+    if (response.status === 422) {
+      // Surface backend validation payloads to aid debugging in the browser console.
+      // eslint-disable-next-line no-console
+      console.error('API validation error', { url: requestUrl, payload: data });
+    }
     throw new ApiError(message, { status: response.status, payload: data, response });
   }
 
