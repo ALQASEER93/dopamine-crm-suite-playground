@@ -148,7 +148,7 @@ def visits_summary(
         "cancelledVisits": _percent_change(previous_week_cancelled, current_week_cancelled),
     }
 
-    return {
+    summary = {
         "totalVisits": total,
         "completedVisits": completed,
         "scheduledVisits": scheduled,
@@ -159,6 +159,7 @@ def visits_summary(
         "scheduledVisitsDelta": week_over_week["scheduledVisits"],
         "cancelledVisitsDelta": week_over_week["cancelledVisits"],
     }
+    return {"data": summary, **summary}
 
 
 @router.get("/latest")
