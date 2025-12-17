@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch, setAuthToken, setUnauthorizedHandler } from '../api/client';
+import { queryClient } from '../api/queryClient';
 
 const storageKey = 'crm.activeUser';
 
@@ -41,9 +42,8 @@ export const AuthProvider = ({ children }) => {
   const isMountedRef = useRef(false);
   const [authState, setAuthState] = useState(() => {
     const parsed = parseStoredState();
-    if (parsed.token) {
-      setAuthToken(parsed.token);
-    }
+    // Ensure the API client has the token before any queries fire on first render.
+    setAuthToken(parsed.token ?? null);
     return parsed;
   });
   const { user, token } = authState;
@@ -113,6 +113,8 @@ export const AuthProvider = ({ children }) => {
       user: resolvedUser,
       token: resolvedToken,
     });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['visits'] });
 
     return resolvedUser;
   }, []);

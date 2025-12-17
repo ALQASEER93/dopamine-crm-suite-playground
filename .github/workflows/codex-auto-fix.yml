@@ -1,0 +1,95 @@
+name: Codex Auto Fix
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  autofix:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Guard when OPENAI_API_KEY is missing
+        if: env.OPENAI_API_KEY == ''
+        run: |
+          echo "OPENAI_API_KEY not set; skipping Codex auto-fix safely."
+          exit 0
+
+      - name: Checkout failing ref
+        if: env.OPENAI_API_KEY != ''
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Download CI logs
+        if: env.OPENAI_API_KEY != ''
+        run: |
+          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" "${{ github.event.workflow_run.logs_url }}" -o ci-logs.zip
+          unzip -q ci-logs.zip -d ci-logs
+
+      - name: Run Codex auto-fix
+        if: env.OPENAI_API_KEY != ''
+        id: codex_autofix
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt: |
+            CI workflow failed (run ${{ github.event.workflow_run.id }}). Read and obey AGENTS.md.
+            Review ci-logs/ for failing job output. Apply minimal, safe fixes to make backend pytest, frontend test:ci + build, and PWA build pass. Preserve Arabic + dark UI defaults, visits with GPS/offline focus, and avoid destructive changes.
+
+      - name: Set up Python
+        if: env.OPENAI_API_KEY != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run backend tests
+        if: env.OPENAI_API_KEY != ''
+        working-directory: CRM/backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pytest -q
+
+      - name: Set up Node.js
+        if: env.OPENAI_API_KEY != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Run frontend tests and build
+        if: env.OPENAI_API_KEY != ''
+        working-directory: CRM/frontend
+        run: |
+          npm ci
+          npm run test:ci
+          npm run build
+
+      - name: Build PWA
+        if: env.OPENAI_API_KEY != ''
+        working-directory: ALQASEER-PWA
+        run: |
+          npm ci
+          npm run build
+
+      - name: Create auto-fix PR
+        if: env.OPENAI_API_KEY != ''
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: codex/autofix-${{ github.run_id }}
+          title: "Codex auto-fix for CI failure"
+          body: |
+            Automated Codex attempt to repair CI failure from run ${{ github.event.workflow_run.id }}.
+
+            - Reviewed AGENTS.md guardrails.
+            - Used ci-logs artifacts to guide minimal fixes.
+            - Re-ran backend pytest, frontend test:ci + build, and PWA build.
+          commit-message: "chore: codex auto-fix for CI failure"
