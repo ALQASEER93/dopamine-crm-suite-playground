@@ -8,22 +8,30 @@ import './DashboardPage.css';
 
 const formatDashboardError = error => {
   if (!error) return null;
-  const status = typeof error.status === 'number' ? error.status : null;
+  const status = typeof error.status === 'number' ? error.status : error?.response?.status ?? null;
   const payloadDetail =
     error?.payload && typeof error.payload === 'object'
       ? error.payload.detail || error.payload.message
       : null;
-  const baseMessage = typeof payloadDetail === 'string' && payloadDetail.trim() ? payloadDetail : error.message;
-  return status ? `${status}: ${baseMessage || 'Request failed'}` : baseMessage || 'Request failed';
+  const baseMessage =
+    typeof payloadDetail === 'string' && payloadDetail.trim() ? payloadDetail : error.message || 'Unable to load data';
+  return status ? `${baseMessage} (${status})` : baseMessage;
+};
+
+const logValidationError = (error, label) => {
+  if (error?.status === 422) {
+    const detail = error.payload?.detail || error.payload;
+    console.error(`${label} validation error`, detail);
+  }
 };
 
 const DashboardPage = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const summaryQuery = useQuery({
-    queryKey: ['dashboard', 'summary', token ? 'auth' : 'guest'],
+    queryKey: ['dashboard', 'summary', token || user?.id || null],
     queryFn: async () => {
-      const { data } = await apiClient.get('/visits/summary');
+      const { data } = await apiClient.get('/visits/summary', { token });
       return data?.data ?? data;
     },
     enabled: !!token,
@@ -31,9 +39,9 @@ const DashboardPage = () => {
   });
 
   const recentVisitsQuery = useQuery({
-    queryKey: ['dashboard', 'recentVisits', token ? 'auth' : 'guest'],
+    queryKey: ['dashboard', 'recentVisits', token || user?.id || null],
     queryFn: async () => {
-      const { data } = await apiClient.get('/visits/latest?pageSize=5');
+      const { data } = await apiClient.get('/visits/latest?pageSize=5', { token });
       return Array.isArray(data?.data) ? data.data : [];
     },
     enabled: !!token,
@@ -41,11 +49,12 @@ const DashboardPage = () => {
   });
 
   useEffect(() => {
-    if (token) {
-      summaryQuery.refetch();
-      recentVisitsQuery.refetch();
-    }
-  }, [recentVisitsQuery.refetch, summaryQuery.refetch, token]);
+    logValidationError(summaryQuery.error, 'Visits summary');
+  }, [summaryQuery.error]);
+
+  useEffect(() => {
+    logValidationError(recentVisitsQuery.error, 'Recent visits');
+  }, [recentVisitsQuery.error]);
 
   const summaryErrorMessage = formatDashboardError(summaryQuery.error);
   const recentVisitsErrorMessage = formatDashboardError(recentVisitsQuery.error);

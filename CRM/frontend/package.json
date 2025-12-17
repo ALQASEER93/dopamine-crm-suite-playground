@@ -8,8 +8,10 @@
     "build": "node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build",
     "preview": "node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js preview",
     "test": "set \"NODE_ENV=test\" && node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false",
-    "lint": "eslint .",
-    "smoke:dashboard": "node ./scripts/smoke-dashboard.mjs"
+    "test:ci": "node ./scripts/vitest-ci.cjs",
+    "smoke:dashboard": "set \"RUN_SMOKE_DASHBOARD=1\" && node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false src/pages/DashboardPage.smoke.test.jsx",
+    "smoke:dashboard:node": "node ./scripts/smoke-dashboard.mjs",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.11",
