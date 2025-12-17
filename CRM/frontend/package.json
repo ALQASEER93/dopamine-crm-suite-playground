@@ -8,6 +8,8 @@
     "build": "node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js build",
     "preview": "node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vite/bin/vite.js preview",
     "test": "set \"NODE_ENV=test\" && node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false",
+    "test:ci": "NODE_ENV=test node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false",
+    "smoke:dashboard": "set \"RUN_SMOKE_DASHBOARD=1\" && node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false src/pages/DashboardPage.smoke.test.jsx",
     "lint": "eslint ."
   },
   "dependencies": {

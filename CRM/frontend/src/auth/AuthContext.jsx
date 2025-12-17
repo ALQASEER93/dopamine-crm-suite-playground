@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch, setAuthToken, setUnauthorizedHandler } from '../api/client';
+import { queryClient } from '../api/queryClient';
 
 const storageKey = 'crm.activeUser';
 
@@ -37,7 +38,11 @@ function parseStoredState() {
 
 export const AuthProvider = ({ children }) => {
   const isMountedRef = useRef(false);
-  const [authState, setAuthState] = useState(() => parseStoredState());
+  const [authState, setAuthState] = useState(() => {
+    const parsed = parseStoredState();
+    setAuthToken(parsed.token ?? null);
+    return parsed;
+  });
   const { user, token } = authState;
 
   useEffect(() => {
@@ -94,6 +99,8 @@ export const AuthProvider = ({ children }) => {
       user: resolvedUser,
       token: resolvedToken,
     });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['visits'] });
 
     return resolvedUser;
   }, []);
