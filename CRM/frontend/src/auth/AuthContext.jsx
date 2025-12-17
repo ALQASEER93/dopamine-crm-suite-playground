@@ -40,6 +40,7 @@ export const AuthProvider = ({ children }) => {
   const isMountedRef = useRef(false);
   const [authState, setAuthState] = useState(() => {
     const parsed = parseStoredState();
+    // Ensure the API client has the token before any queries fire on first render.
     setAuthToken(parsed.token ?? null);
     return parsed;
   });

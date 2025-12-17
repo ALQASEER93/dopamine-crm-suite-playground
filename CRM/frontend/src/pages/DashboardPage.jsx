@@ -6,11 +6,16 @@ import VisitsSummaryCards from '../visits/VisitsSummaryCards';
 import { apiClient } from '../api/client';
 import './DashboardPage.css';
 
-const formatQueryError = error => {
+const formatDashboardError = error => {
   if (!error) return null;
-  const status = error.status || error?.response?.status;
-  const message = error.message || 'Unable to load data';
-  return status ? `${message} (${status})` : message;
+  const status = typeof error.status === 'number' ? error.status : error?.response?.status ?? null;
+  const payloadDetail =
+    error?.payload && typeof error.payload === 'object'
+      ? error.payload.detail || error.payload.message
+      : null;
+  const baseMessage =
+    typeof payloadDetail === 'string' && payloadDetail.trim() ? payloadDetail : error.message || 'Unable to load data';
+  return status ? `${baseMessage} (${status})` : baseMessage;
 };
 
 const logValidationError = (error, label) => {
@@ -51,6 +56,8 @@ const DashboardPage = () => {
     logValidationError(recentVisitsQuery.error, 'Recent visits');
   }, [recentVisitsQuery.error]);
 
+  const summaryErrorMessage = formatDashboardError(summaryQuery.error);
+  const recentVisitsErrorMessage = formatDashboardError(recentVisitsQuery.error);
   const recentVisits = useMemo(() => recentVisitsQuery.data ?? [], [recentVisitsQuery.data]);
 
   return (
@@ -68,7 +75,7 @@ const DashboardPage = () => {
       <VisitsSummaryCards
         summary={summaryQuery.data}
         isLoading={summaryQuery.isLoading}
-        error={formatQueryError(summaryQuery.error)}
+        error={summaryErrorMessage}
       />
 
       <section className="table-card">
@@ -82,9 +89,7 @@ const DashboardPage = () => {
           </Link>
         </div>
         {recentVisitsQuery.error && (
-          <div className="table-card__empty">
-            Unable to load latest visits: {formatQueryError(recentVisitsQuery.error)}
-          </div>
+          <div className="table-card__empty">Unable to load latest visits: {recentVisitsErrorMessage}</div>
         )}
         {!recentVisitsQuery.error && recentVisits.length === 0 && !recentVisitsQuery.isLoading && (
           <div className="table-card__empty">No visits recorded yet.</div>
