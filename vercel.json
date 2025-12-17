@@ -1,0 +1,6 @@
+{
+  "installCommand": "cd CRM/frontend && npm ci",
+  "buildCommand": "cd CRM/frontend && npm run build",
+  "outputDirectory": "CRM/frontend/dist",
+  "framework": "vite"
+}
