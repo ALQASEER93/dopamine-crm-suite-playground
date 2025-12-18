@@ -12,7 +12,9 @@ if (Test-Path $venvPath) {
 $projectRoot = Split-Path $PSScriptRoot -Parent
 Set-Location $projectRoot
 
-$dbPath = "C:\\Users\\M\ S\ I\\ALQASEER_CRM_SUITE_FINAL\CRM\data\crm_backend.db"
+# Database path is relative to backend root (data/fastapi.db by default)
+# FastAPI settings handle the path automatically via DATABASE_URL
+$dbPath = Join-Path $projectRoot "data\fastapi.db"
 $dbDir = Split-Path $dbPath -Parent
 if (-not (Test-Path $dbDir)) {
   Write-Host "Creating data directory at $dbDir"
