@@ -1,2 +1,8 @@
-cd "D:\projects 2\crm2\frontend"
-npm run dev *>&1 | Tee-Object -FilePath "D:\projects 2\crm2\frontend\vite-live.log"
+$ErrorActionPreference = "Stop"
+
+# Get script directory and set working directory to frontend root
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $scriptDir
+
+# Run the development server
+npm run dev
