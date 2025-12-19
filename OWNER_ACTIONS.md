@@ -28,10 +28,13 @@ If any are disabled, click the workflow name → click **"..." menu** → **"Ena
 
 ### ⚠️ CRITICAL: Current Situation
 
-**PR #8, #3, #5 are BLOCKED** because:
-- Ruleset `protect-main` exists but requires checks that don't match actual workflow outputs
-- Check names in workflows are: `CRM Backend (FastAPI)`, `CRM Frontend (Vite/React)`, `ALQASEER PWA` (NO "CI /" prefix)
-- CodeQL checks don't exist yet (workflow only in PR branch, not merged to main)
+**PR #8 ✅ MERGED** (completed 2025-12-19)
+
+**PR #3 and #5 are BLOCKED** because:
+- Ruleset `protect-main` requires check names with "CI/" prefix, but actual checks have NO prefix
+- **Required by Ruleset**: `CI/CRM Backend (FastAPI)`, `CI/CRM Frontend (Vite/React)`, `CI/ALQASEER PWA`, `Vercel`
+- **Actual check names**: `CRM Backend (FastAPI)`, `CRM Frontend (Vite/React)`, `ALQASEER PWA`, `Vercel` (context: "Vercel")
+- **"Require branches to be up to date"** is ON - PRs may be out-of-date with main
 
 ### Option A: Using GitHub Rulesets (Current Setup)
 
@@ -39,15 +42,19 @@ If any are disabled, click the workflow name → click **"..." menu** → **"Ena
 2. Find the `protect-main` ruleset
 3. Click **Edit**
 4. Under **"Status checks"** section:
-   - **REMOVE** any existing required checks (especially ones showing in gray/stale)
-   - **ADD** these EXACT check names (as shown on PR #8):
-     - ✅ `CRM Backend (FastAPI)`
-     - ✅ `CRM Frontend (Vite/React)`
-     - ✅ `ALQASEER PWA`
-5. **DO NOT** require CodeQL checks yet (they don't exist until PR #8 merges)
+   - **REMOVE** all existing required checks (especially `CI/CRM Backend (FastAPI)`, `CI/CRM Frontend (Vite/React)`, `CI/ALQASEER PWA`)
+   - **ADD** these EXACT check names (as shown on PR #3/#5):
+     - ✅ `CRM Backend (FastAPI)` (NO "CI/" prefix)
+     - ✅ `CRM Frontend (Vite/React)` (NO "CI/" prefix)
+     - ✅ `ALQASEER PWA` (NO "CI/" prefix)
+   - **For Vercel**: 
+     - If you want to require Vercel, use context: `Vercel` (not name)
+     - **Recommendation**: Remove Vercel from required checks (it's a deployment check, not a CI check)
+5. **"Require branches to be up to date"**: 
+   - **Recommendation**: Keep it ON (ensures PRs are rebased/merged with latest main)
+   - If PRs are blocked due to out-of-date, they need to be updated (see Step 3)
 6. **If "Require code quality results" is enabled**: 
-   - Either **DISABLE** it temporarily, OR
-   - Wait for PR #8 to merge (CodeQL workflow will then exist on main)
+   - **DISABLE** it (CodeQL checks may not appear on all PRs)
 7. Click **"Save changes"**
 
 ### Option B: Using Classic Branch Protection (Alternative)
@@ -67,32 +74,68 @@ If any are disabled, click the workflow name → click **"..." menu** → **"Ena
 
 ---
 
-## Step 3: Verify Check Names Match
+## Step 3: Update Out-of-Date PRs
 
-After pushing a PR from `cursor/audit-stabilize` → `main`, verify the check names in the PR:
+If PRs are blocked due to "Require branches to be up to date":
+
+### For PR #3:
+```bash
+# Check if PR #3 branch is out-of-date
+gh pr view 3 --json headRefName,baseRefName
+
+# Update PR #3 branch (if needed)
+git fetch origin
+git checkout codex/implement-crm-mvp-to-100%
+git merge origin/main
+# OR: git rebase origin/main
+git push origin codex/implement-crm-mvp-to-100%
+```
+
+### For PR #5:
+```bash
+# Check if PR #5 branch is out-of-date
+gh pr view 5 --json headRefName,baseRefName
+
+# Update PR #5 branch (if needed)
+git fetch origin
+git checkout <PR-5-branch-name>
+git merge origin/main
+# OR: git rebase origin/main
+git push origin <PR-5-branch-name>
+```
+
+**After updating branches**, checks will re-run automatically.
+
+## Step 4: Verify Check Names Match
+
+After fixing ruleset, verify check names in PR #3 or #5:
 
 1. Open the PR
 2. Scroll to **"Checks"** section
 3. Verify you see these exact names:
-   - `CI / CRM Backend (FastAPI)`
-   - `CI / CRM Frontend (Vite/React)`
-   - `CI / ALQASEER PWA`
-   - `CodeQL / Analyze (python)`
-   - `CodeQL / Analyze (javascript)`
+   - `CRM Backend (FastAPI)` (NO "CI/" prefix)
+   - `CRM Frontend (Vite/React)` (NO "CI/" prefix)
+   - `ALQASEER PWA` (NO "CI/" prefix)
+   - `Vercel` (optional, context: "Vercel")
 
 **If check names don't match**, update branch protection rules to use the exact names shown in the PR.
 
 ---
 
-## Step 4: Test Merge Readiness
+## Step 5: Test Merge Readiness
 
-1. Create a test PR (or use `cursor/audit-stabilize` PR)
+1. After fixing ruleset, refresh PR #3 or #5
 2. Wait for all checks to complete (should show ✅ green)
-3. Try to merge the PR
-4. **Expected**: PR should merge successfully if all checks pass
-5. **If blocked**: Check the error message:
+3. Check merge status:
+   ```bash
+   gh pr view 3 --json mergeStateStatus,mergeable
+   gh pr view 5 --json mergeStateStatus,mergeable
+   ```
+4. **Expected**: `mergeStateStatus` should be `CLEAN` or `UNSTABLE` (not `BLOCKED`)
+5. **If still blocked**: Check the error message:
    - **"Expected — Waiting for status to be reported"** → A required check name doesn't match; update branch protection rules
    - **"Required status check is missing"** → The workflow didn't run; check Actions tab for errors
+   - **"Branch is out of date"** → Update PR branch (see Step 3)
 
 ---
 
@@ -155,7 +198,7 @@ Before marking this complete, verify:
 
 ## Quick Reference: Required Check Names
 
-**⚠️ IMPORTANT**: Use the EXACT check names as shown on PR #8:
+**⚠️ CRITICAL**: Use the EXACT check names as shown on PR #3/#5 (NOT with "CI/" prefix):
 
 ```
 CRM Backend (FastAPI)
@@ -163,15 +206,21 @@ CRM Frontend (Vite/React)
 ALQASEER PWA
 ```
 
-**Note**: CodeQL checks will appear AFTER PR #8 is merged (CodeQL workflow is only in the PR branch currently).
-
-After PR #8 merges, you may optionally add:
+**DO NOT use** (these are WRONG):
 ```
-CodeQL / Analyze (python)
-CodeQL / Analyze (javascript)
+CI/CRM Backend (FastAPI)  ❌
+CI/CRM Frontend (Vite/React)  ❌
+CI/ALQASEER PWA  ❌
 ```
 
-But these are NOT required to unblock PR #8.
+**Vercel** (optional):
+- Context: `Vercel`
+- **Recommendation**: Remove from required checks (deployment check, not CI)
+
+**CodeQL** (optional, after PR #8 merged):
+- `CodeQL / Analyze (python)`
+- `CodeQL / Analyze (javascript)`
+- These may not appear on all PRs, so don't require them
 
 ---
 
