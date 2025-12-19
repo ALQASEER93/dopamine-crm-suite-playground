@@ -127,6 +127,8 @@ class VisitBase(BaseModel):
     rep_id: int
     doctor_id: Optional[int] = None
     pharmacy_id: Optional[int] = None
+    status: Literal["scheduled", "completed", "cancelled"] = "completed"
+    duration_minutes: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
     samples_given: Optional[str] = None
     next_action: Optional[str] = None
@@ -154,6 +156,8 @@ class VisitUpdate(BaseModel):
     rep_id: Optional[int] = None
     doctor_id: Optional[int] = None
     pharmacy_id: Optional[int] = None
+    status: Optional[Literal["scheduled", "completed", "cancelled"]] = None
+    duration_minutes: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
     samples_given: Optional[str] = None
     next_action: Optional[str] = None
@@ -175,6 +179,7 @@ class VisitOut(VisitBase):
     id: int
     doctor: Optional[DoctorOut] = None
     pharmacy: Optional[PharmacyMini] = None
+    rep: Optional[UserOut] = None
 
     model_config = ConfigDict(from_attributes=True)
 

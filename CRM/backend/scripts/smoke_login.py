@@ -14,6 +14,11 @@ PASSWORD = os.getenv("SMOKE_LOGIN_PASSWORD", "password")
 TIMEOUT = float(os.getenv("SMOKE_LOGIN_TIMEOUT", "5"))
 
 
+def _get_with_token(path: str, token: str) -> httpx.Response:
+    url = f"{API_BASE_URL}{path}"
+    return httpx.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT)
+
+
 def main() -> int:
     login_url = f"{API_BASE_URL}/auth/login"
     try:
@@ -44,6 +49,25 @@ def main() -> int:
     user = payload.get("user") or payload.get("data") or {}
     user_email = user.get("email") if isinstance(user, dict) else user
     print(f"[smoke] Login OK user={user_email} token={str(token)[:8]}...")
+
+    summary_resp = _get_with_token("/visits/summary", token)
+    print(f"[smoke] /visits/summary -> {summary_resp.status_code}")
+    if summary_resp.status_code != 200:
+        print(summary_resp.text)
+        return 1
+
+    latest_resp = _get_with_token("/visits/latest?pageSize=5", token)
+    print(f"[smoke] /visits/latest -> {latest_resp.status_code}")
+    if latest_resp.status_code != 200:
+        print(latest_resp.text)
+        return 1
+
+    visits_resp = _get_with_token("/visits?page_size=5", token)
+    print(f"[smoke] /visits -> {visits_resp.status_code}")
+    if visits_resp.status_code != 200:
+        print(visits_resp.text)
+        return 1
+
     return 0
 
 

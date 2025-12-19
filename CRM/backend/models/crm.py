@@ -175,6 +175,8 @@ class Visit(Base):
     rep_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True)
     pharmacy_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=True)
+    status = Column(String(20), nullable=False, default="completed", server_default="completed")
+    duration_minutes = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
     samples_given = Column(Text, nullable=True)
     next_action = Column(Text, nullable=True)
