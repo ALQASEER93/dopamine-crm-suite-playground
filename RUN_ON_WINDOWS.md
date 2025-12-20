@@ -19,6 +19,30 @@ From a PowerShell window at the repo root:
 cd D:\ALQASEER_DEV\dopamine-crm-suite-playground_CURSORSAFE
 ```
 
+## One-click startup
+
+Use the one-click helpers to start backend + frontend, wait for ports, and open the browser:
+
+```powershell
+.\tools\START_CRM_DEV.cmd
+```
+
+Smoke test visits GPS start/end (requires backend running):
+
+```powershell
+.\tools\SMOKE_VISIT_GPS.ps1
+```
+
+**Default credentials**:
+- **Admin**: `admin@example.com` / `password`
+- **Rep**: `rep@example.com` / `password`
+
+**URLs**:
+- Backend API: `http://127.0.0.1:8000/api/v1`
+- Frontend: `http://127.0.0.1:5173`
+
+**Idempotent behavior**: If ports `8000` or `5173` are already in use, the script skips starting that service and continues waiting for the ports to be reachable.
+
 ---
 
 ## 1) Backend (FastAPI)
