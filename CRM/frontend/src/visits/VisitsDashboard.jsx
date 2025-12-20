@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { apiClient } from '../api/client';
+import { listVisits, normalizeVisit } from '../api/visits';
 import { DEFAULT_AVAILABLE_FILTERS, useVisitsFilters } from './VisitsFilterContext';
 import VisitsFilters from './VisitsFilters';
 import VisitsSummaryCards from './VisitsSummaryCards';
@@ -51,16 +52,16 @@ const extractCollection = payload => {
 const buildQueryString = (filters, options = {}) => {
   const params = new URLSearchParams();
   if (filters.startDate) {
-    params.append('dateFrom', filters.startDate);
+    params.append('date_from', filters.startDate);
   }
   if (filters.endDate) {
-    params.append('dateTo', filters.endDate);
+    params.append('date_to', filters.endDate);
   }
   if (Array.isArray(filters.repIds)) {
-    filters.repIds.filter(Boolean).forEach(repId => params.append('repId', repId));
+    filters.repIds.filter(Boolean).forEach(repId => params.append('rep_id', repId));
   }
   if (filters.hcpId) {
-    params.append('hcpId', filters.hcpId);
+    params.append('doctor_id', filters.hcpId);
   }
   if (Array.isArray(filters.statuses)) {
     filters.statuses.filter(Boolean).forEach(status => params.append('status', status));
@@ -73,11 +74,7 @@ const buildQueryString = (filters, options = {}) => {
     params.append('page', String(options.page));
   }
   if (options.pageSize) {
-    params.append('pageSize', String(options.pageSize));
-  }
-  if (options.sort && options.sort.field) {
-    params.append('sortBy', options.sort.field);
-    params.append('sortDirection', options.sort.direction || 'asc');
+    params.append('page_size', String(options.pageSize));
   }
 
   return params.toString();
@@ -236,15 +233,22 @@ const VisitsDashboard = () => {
   const visitsQuery = useQuery({
     queryKey: ['visits', 'list', token || null, visitsQueryString],
     queryFn: async () => {
-      const { data: payload } = await apiClient.get(`/visits?${visitsQueryString}`, { token });
-      const rows = Array.isArray(payload?.data) ? payload.data : payload?.visits || [];
-      const totalFromPayload =
-        payload?.meta?.total ??
-        payload?.pagination?.total ??
-        payload?.total ??
-        (Array.isArray(payload?.data) ? payload.data.length : 0);
-      const filterOptions = payload?.meta?.availableFilters || payload?.availableFilters || payload?.filters || null;
-      return { rows, total: totalFromPayload, filterOptions };
+      const payload = await listVisits({
+        rep_ids: safeFilters.repIds,
+        doctor_id: safeFilters.hcpId || undefined,
+        date_from: safeFilters.startDate || undefined,
+        date_to: safeFilters.endDate || undefined,
+        statuses: safeFilters.statuses,
+        page,
+        page_size: pageSize,
+      });
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const pagination = payload?.pagination || {};
+      const totalFromPayload = pagination?.total ?? rows.length;
+      const filterOptions = payload?.availableFilters || null;
+      const totalPages =
+        pagination?.total_pages ?? Math.max(1, Math.ceil(totalFromPayload / Math.max(1, pageSize)));
+      return { rows, total: totalFromPayload, filterOptions, totalPages };
     },
     enabled: !!token,
     keepPreviousData: true,

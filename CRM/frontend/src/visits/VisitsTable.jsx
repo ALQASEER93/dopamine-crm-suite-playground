@@ -5,8 +5,15 @@ const COLUMN_CONFIG = [
     key: 'visitDate',
     label: 'Visit Date',
     sortable: true,
-    accessor: row => row.visitDate || row.date || row.startTime || null,
-    formatter: value => (value ? new Date(value).toLocaleString() : '—'),
+    accessor: row =>
+      row.startedAt ||
+      row.started_at ||
+      row.visitDate ||
+      row.visit_date ||
+      row.date ||
+      row.startTime ||
+      null,
+    formatter: value => (value ? new Date(value).toLocaleString() : 'N/A'),
   },
   {
     key: 'account',
@@ -23,9 +30,12 @@ const COLUMN_CONFIG = [
       if (row.pharmacy && typeof row.pharmacy === 'object') {
         return `[Pharmacy] ${row.pharmacy.name || ''}`.trim();
       }
-      return row.accountName || '—';
+      if (row.doctor && typeof row.doctor === 'object') {
+        return `[HCP] ${row.doctor.name || ''}`.trim();
+      }
+      return row.accountName || 'N/A';
     },
-    formatter: value => (value && typeof value !== 'object' ? value : '—'),
+    formatter: value => (value && typeof value !== 'object' ? value : 'N/A'),
   },
   {
     key: 'representative',
@@ -33,18 +43,18 @@ const COLUMN_CONFIG = [
     sortable: true,
     accessor: row => {
       if (row.rep && typeof row.rep === 'object') {
-        return row.rep.name || row.rep.email || '—';
+        return row.rep.name || row.rep.email || 'N/A';
       }
-      return row.repName || row.representative || row.repEmail || row.rep || '—';
+      return row.repName || row.representative || row.repEmail || row.rep || 'N/A';
     },
-    formatter: value => (value && typeof value !== 'object' ? value : '—'),
+    formatter: value => (value && typeof value !== 'object' ? value : 'N/A'),
   },
   {
     key: 'status',
     label: 'Status',
     sortable: true,
     accessor: row => row.status,
-    formatter: value => (value ? value.replace(/_/g, ' ') : '—'),
+    formatter: value => (value ? value.replace(/_/g, ' ') : 'N/A'),
   },
   {
     key: 'visitPurpose',
@@ -52,7 +62,7 @@ const COLUMN_CONFIG = [
     sortable: true,
     accessor: row => row.visitPurpose || row.purpose || null,
     formatter: value => {
-      if (!value) return '—';
+      if (!value) return 'N/A';
       return value
         .replace(/_/g, ' ')
         .replace(/\b\w/g, ch => ch.toUpperCase());
@@ -64,7 +74,7 @@ const COLUMN_CONFIG = [
     sortable: true,
     accessor: row => row.visitChannel || row.channel || null,
     formatter: value => {
-      if (!value) return '—';
+      if (!value) return 'N/A';
       if (value === 'in_person') return 'In person';
       return value.charAt(0).toUpperCase() + value.slice(1);
     },
@@ -73,8 +83,14 @@ const COLUMN_CONFIG = [
     key: 'durationMinutes',
     label: 'Duration',
     sortable: true,
-    accessor: row => row.durationMinutes ?? row.duration ?? row.visitDurationMinutes,
-    formatter: value => (value != null ? `${value} min` : '—'),
+    accessor: row => {
+      if (row.durationMinutes != null) return row.durationMinutes;
+      if (row.duration_minutes != null) return row.duration_minutes;
+      if (row.durationSeconds != null) return Number((row.durationSeconds / 60).toFixed(1));
+      if (row.duration_seconds != null) return Number((row.duration_seconds / 60).toFixed(1));
+      return row.visitDurationMinutes ?? row.duration ?? null;
+    },
+    formatter: value => (value != null ? `${value} min` : 'N/A'),
   },
   {
     key: 'orderValueJOD',
@@ -82,9 +98,9 @@ const COLUMN_CONFIG = [
     sortable: true,
     accessor: row => row.orderValueJOD ?? row.orderValue ?? null,
     formatter: value => {
-      if (value == null || value === '') return '—';
+      if (value == null || value === '') return 'N/A';
       const num = Number(value);
-      if (!Number.isFinite(num)) return '—';
+      if (!Number.isFinite(num)) return 'N/A';
       return `${num.toFixed(2)} JD`;
     },
   },
@@ -93,7 +109,7 @@ const COLUMN_CONFIG = [
     label: 'Rating',
     sortable: true,
     accessor: row => row.rating ?? null,
-    formatter: value => (value != null ? String(value) : '—'),
+    formatter: value => (value != null ? String(value) : 'N/A'),
   },
 ];
 
@@ -161,9 +177,9 @@ const VisitsTable = ({
 
   const renderSortLabel = columnKey => {
     if (sort.field !== columnKey) {
-      return '▲';
+      return '';
     }
-    return sort.direction === 'asc' ? '▲' : '▼';
+    return sort.direction === 'asc' ? '^' : 'v';
   };
 
   const handlePrevious = () => {
@@ -204,7 +220,7 @@ const VisitsTable = ({
               fontWeight: 600,
             }}
           >
-            {exporting ? 'Preparing export…' : 'Export CSV'}
+            {exporting ? 'Preparing export...' : 'Export CSV'}
           </button>
         )}
       </div>
@@ -231,7 +247,7 @@ const VisitsTable = ({
             {isLoading && (
               <tr>
                 <td colSpan={COLUMN_CONFIG.length} style={{ ...bodyCellStyle, textAlign: 'center', color: '#52606d' }}>
-                  Loading visits…
+                  Loading visits...
                 </td>
               </tr>
             )}
@@ -255,8 +271,8 @@ const VisitsTable = ({
                 <tr key={visit.id || visit.visitId}>
                   {COLUMN_CONFIG.map(column => {
                     const rawValue = column.accessor ? column.accessor(visit) : visit[column.key];
-                    const safeValue = rawValue && typeof rawValue === 'object' ? '—' : rawValue;
-                    const displayValue = column.formatter ? column.formatter(safeValue) : safeValue ?? '—';
+                    const safeValue = rawValue && typeof rawValue === 'object' ? 'N/A' : rawValue;
+                    const displayValue = column.formatter ? column.formatter(safeValue) : safeValue ?? 'N/A';
                     return (
                       <td key={column.key} style={bodyCellStyle}>
                         {displayValue}
@@ -309,11 +325,10 @@ const VisitsTable = ({
           fontSize: '13px',
         }}
       >
-        <strong>Applied filters:</strong> {appliedFilters.join(' · ')}
+        <strong>Applied filters:</strong> {appliedFilters.join(' | ')}
       </div>
     </section>
   );
 };
 
 export default VisitsTable;
-
