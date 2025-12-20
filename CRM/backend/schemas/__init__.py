@@ -37,5 +37,8 @@ from schemas.crm import (  # noqa: F401
     TargetCreate,
     TargetOut,
     VisitCreate,
+    VisitEnd,
     VisitOut,
+    VisitStart,
+    VisitUpdate,
 )

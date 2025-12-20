@@ -179,6 +179,21 @@ class Visit(Base):
     samples_given = Column(Text, nullable=True)
     next_action = Column(Text, nullable=True)
     next_action_date = Column(Date, nullable=True)
+    status = Column(
+        Enum("scheduled", "in_progress", "completed", "cancelled", name="visit_status"),
+        nullable=False,
+        default="scheduled",
+        server_default="scheduled",
+    )
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    start_lat = Column(Float, nullable=True)
+    start_lng = Column(Float, nullable=True)
+    start_accuracy = Column(Float, nullable=True)
+    end_lat = Column(Float, nullable=True)
+    end_lng = Column(Float, nullable=True)
+    end_accuracy = Column(Float, nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(

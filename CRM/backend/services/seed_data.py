@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -99,6 +99,8 @@ def seed_reference_data(db: Session) -> None:
 
         visit = db.query(Visit).first()
         if not visit and doctor and pharmacy:
+            started_at = datetime.now(timezone.utc) - timedelta(hours=2)
+            ended_at = started_at + timedelta(minutes=35)
             db.add(
                 Visit(
                     visit_date=date.today(),
@@ -107,6 +109,16 @@ def seed_reference_data(db: Session) -> None:
                     notes="Introductory visit.",
                     samples_given="Starter pack",
                     next_action="Follow-up call",
+                    status="completed",
+                    started_at=started_at,
+                    ended_at=ended_at,
+                    start_lat=31.9539,
+                    start_lng=35.9106,
+                    end_lat=31.9566,
+                    end_lng=35.9450,
+                    start_accuracy=12.5,
+                    end_accuracy=15.3,
+                    duration_seconds=int((ended_at - started_at).total_seconds()),
                 )
             )
 
