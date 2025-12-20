@@ -7,7 +7,17 @@ def test_visits_summary_endpoint(client, auth_headers):
     payload = response.json()
     assert "data" in payload
     summary = payload["data"] or {}
-    for key in ("totalVisits", "completedVisits", "scheduledVisits", "cancelledVisits"):
+    for key in (
+        "totalVisits",
+        "completedVisits",
+        "scheduledVisits",
+        "cancelledVisits",
+        "inProgressVisits",
+        "completionRate",
+        "avgDurationMinutes",
+        "lastActivityAt",
+        "visitsByRep",
+    ):
         assert key in summary
     # Regression: ensure static path is not treated as visit_id and does not return validation 422
     assert response.status_code != 422
