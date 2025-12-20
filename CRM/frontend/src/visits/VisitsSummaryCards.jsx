@@ -1,25 +1,22 @@
 import PropTypes from 'prop-types';
 
 const CARD_CONFIG = [
+  { key: 'totalVisits', label: 'Total Visits', emphasisColor: '#3f83f8' },
+  { key: 'completedVisits', label: 'Completed Visits', emphasisColor: '#0e9f6e' },
+  { key: 'inProgressVisits', label: 'In Progress', emphasisColor: '#2cb1bc' },
+  { key: 'scheduledVisits', label: 'Scheduled Visits', emphasisColor: '#f6ad55' },
+  { key: 'cancelledVisits', label: 'Cancelled Visits', emphasisColor: '#c53030' },
   {
-    key: 'totalVisits',
-    label: 'Total Visits',
-    emphasisColor: '#3f83f8',
+    key: 'completionRate',
+    label: 'Completion Rate',
+    emphasisColor: '#7c3aed',
+    formatter: value => `${Number(value ?? 0).toFixed(1)}%`,
   },
   {
-    key: 'completedVisits',
-    label: 'Completed Visits',
-    emphasisColor: '#0e9f6e',
-  },
-  {
-    key: 'scheduledVisits',
-    label: 'Scheduled Visits',
-    emphasisColor: '#f6ad55',
-  },
-  {
-    key: 'cancelledVisits',
-    label: 'Cancelled Visits',
-    emphasisColor: '#c53030',
+    key: 'avgDurationMinutes',
+    label: 'Avg Duration (min)',
+    emphasisColor: '#0ea5e9',
+    formatter: value => (value == null ? 'N/A' : `${Number(value).toFixed(1)} min`),
   },
 ];
 
@@ -36,7 +33,7 @@ const formatValue = (value, formatter) => {
     return formatter(value);
   }
   if (value == null) {
-    return '—';
+    return 'N/A';
   }
   return value.toLocaleString();
 };
@@ -72,7 +69,7 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
         const value = summary ? summary[card.key] : undefined;
         const delta = summary ? getDeltaForCard(summary, card.key) : undefined;
         const formatter = card.formatter;
-        const displayValue = isLoading ? '…' : formatValue(value, formatter);
+        const displayValue = isLoading ? '...' : formatValue(value, formatter);
         const deltaDisplay =
           typeof delta === 'number'
             ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% WoW`
@@ -97,9 +94,7 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
             <span style={{ color: '#52606d', fontSize: '14px', fontWeight: 600 }}>{card.label}</span>
             <strong style={{ fontSize: '28px', color: card.emphasisColor, minHeight: '36px' }}>{displayValue}</strong>
             <span style={{ color: '#9aa5b1', fontSize: '12px' }}>
-              {isLoading
-                ? 'Refreshing metrics…'
-                : deltaDisplay || 'Week-over-week change pending'}
+              {isLoading ? 'Refreshing metrics...' : deltaDisplay || 'Week-over-week change pending'}
             </span>
           </article>
         );
@@ -108,6 +103,10 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
   );
 };
 
+VisitsSummaryCards.propTypes = {
+  summary: PropTypes.object,
+  isLoading: PropTypes.bool,
+  error: PropTypes.string,
+};
+
 export default VisitsSummaryCards;
-
-

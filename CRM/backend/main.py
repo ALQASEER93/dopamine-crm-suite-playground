@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -62,7 +63,14 @@ def init_database() -> None:
     logger.info("Database schema ensured and seeded.")
 
 
-app = FastAPI(title=settings.app_name, openapi_tags=tags_metadata)
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Initialize database and seed reference data once on startup."""
+    init_database()
+    yield
+
+
+app = FastAPI(title=settings.app_name, openapi_tags=tags_metadata, lifespan=lifespan)
 
 allowed_origins = [
     "http://localhost:5173",
@@ -77,12 +85,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# TODO: migrate this startup hook to a lifespan context once FastAPI on_event is removed.
-@app.on_event("startup")
-def on_startup() -> None:
-    init_database()
 
 
 @app.get("/", tags=["default"])

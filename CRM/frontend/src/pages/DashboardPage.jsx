@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import VisitsSummaryCards from '../visits/VisitsSummaryCards';
 import { apiClient } from '../api/client';
+import { normalizeVisit } from '../api/visits';
 import './DashboardPage.css';
 
 const formatDashboardError = error => {
@@ -42,7 +43,8 @@ const DashboardPage = () => {
     queryKey: ['dashboard', 'recentVisits', token || user?.id || null],
     queryFn: async () => {
       const { data } = await apiClient.get('/visits/latest?pageSize=5', { token });
-      return Array.isArray(data?.data) ? data.data : [];
+      const raw = Array.isArray(data?.data) ? data.data : [];
+      return raw.map(normalizeVisit).filter(Boolean);
     },
     enabled: !!token,
     staleTime: 30_000,
@@ -78,6 +80,49 @@ const DashboardPage = () => {
         error={summaryErrorMessage}
       />
 
+      {summaryQuery.data?.lastActivityAt && (
+        <div className="table-card__empty" style={{ textAlign: 'left' }}>
+          Last activity: {new Date(summaryQuery.data.lastActivityAt).toLocaleString()}
+        </div>
+      )}
+
+      <section className="table-card">
+        <div className="table-card__header">
+          <div>
+            <h2>Visits per rep</h2>
+            <p>Completion rate and average duration by representative.</p>
+          </div>
+        </div>
+        {summaryQuery.isLoading ? (
+          <div className="table-card__empty">Loading rep metrics...</div>
+        ) : Array.isArray(summaryQuery.data?.visitsByRep) && summaryQuery.data.visitsByRep.length > 0 ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Rep</th>
+                <th>Total</th>
+                <th>Completed</th>
+                <th>Avg duration</th>
+                <th>Last visit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summaryQuery.data.visitsByRep.map(rep => (
+                <tr key={rep.repId}>
+                  <td>{rep.repName}</td>
+                  <td>{rep.totalVisits}</td>
+                  <td>{rep.completedVisits}</td>
+                  <td>{rep.avgDurationMinutes != null ? `${rep.avgDurationMinutes} min` : 'N/A'}</td>
+                  <td>{rep.lastVisitAt ? new Date(rep.lastVisitAt).toLocaleString() : 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="table-card__empty">No rep metrics available yet.</div>
+        )}
+      </section>
+
       <section className="table-card">
         <div className="table-card__header">
           <div>
@@ -103,7 +148,7 @@ const DashboardPage = () => {
                 <tr>
                   <th>Date</th>
                   <th>Representative</th>
-                  <th>HCP</th>
+                  <th>Account</th>
                   <th>Status</th>
                   <th>Duration</th>
                 </tr>
@@ -111,13 +156,13 @@ const DashboardPage = () => {
               <tbody>
                 {recentVisits.map(visit => (
                   <tr key={visit.id}>
-                    <td>{new Date(visit.visitDate).toLocaleDateString()}</td>
-                    <td>{visit.rep?.name || '-'}</td>
-                    <td>{visit.hcp?.name || '-'}</td>
+                    <td>{visit.visitDate ? new Date(visit.visitDate).toLocaleString() : '-'}</td>
+                    <td>{visit.rep?.name || visit.rep?.email || '-'}</td>
+                    <td>{visit.doctor?.name || visit.pharmacy?.name || '-'}</td>
                     <td>
-                      <span className="badge">{visit.status.replace(/_/g, ' ')}</span>
+                      <span className="badge">{(visit.status || 'scheduled').replace(/_/g, ' ')}</span>
                     </td>
-                    <td>{visit.durationMinutes} min</td>
+                    <td>{visit.durationMinutes != null ? `${visit.durationMinutes} min` : 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>

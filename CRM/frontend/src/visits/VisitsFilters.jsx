@@ -5,6 +5,7 @@ import './VisitsFilters.css';
 
 const STATIC_STATUS_OPTIONS = [
   { value: 'scheduled', label: 'Scheduled' },
+  { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];

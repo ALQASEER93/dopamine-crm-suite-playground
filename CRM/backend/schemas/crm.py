@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 from schemas.user import RoleOut, UserOut
 
@@ -131,6 +131,7 @@ class VisitBase(BaseModel):
     samples_given: Optional[str] = None
     next_action: Optional[str] = None
     next_action_date: Optional[date] = None
+    status: Literal["scheduled", "in_progress", "completed", "cancelled"] = "scheduled"
 
     @field_validator("pharmacy_id")
     @classmethod
@@ -158,6 +159,16 @@ class VisitUpdate(BaseModel):
     samples_given: Optional[str] = None
     next_action: Optional[str] = None
     next_action_date: Optional[date] = None
+    status: Optional[Literal["scheduled", "in_progress", "completed", "cancelled"]] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    start_lat: Optional[float] = None
+    start_lng: Optional[float] = None
+    start_accuracy: Optional[float] = None
+    end_lat: Optional[float] = None
+    end_lng: Optional[float] = None
+    end_accuracy: Optional[float] = None
+    duration_seconds: Optional[int] = Field(default=None, ge=0)
 
     @field_validator("pharmacy_id")
     @classmethod
@@ -173,10 +184,48 @@ class VisitUpdate(BaseModel):
 
 class VisitOut(VisitBase):
     id: int
+    rep: Optional[UserOut] = None
     doctor: Optional[DoctorOut] = None
     pharmacy: Optional[PharmacyMini] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    start_lat: Optional[float] = None
+    start_lng: Optional[float] = None
+    start_accuracy: Optional[float] = None
+    end_lat: Optional[float] = None
+    end_lng: Optional[float] = None
+    end_accuracy: Optional[float] = None
+    duration_seconds: Optional[int] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def duration_minutes(self) -> Optional[float]:
+        """Expose duration in minutes for UI consumption."""
+        if self.duration_seconds is not None:
+            return round(self.duration_seconds / 60, 2)
+        if self.started_at and self.ended_at:
+            return round((self.ended_at - self.started_at).total_seconds() / 60, 2)
+        return None
+
+
+class VisitStart(BaseModel):
+    started_at: Optional[datetime] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    accuracy: Optional[float] = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class VisitEnd(BaseModel):
+    ended_at: Optional[datetime] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    accuracy: Optional[float] = None
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RouteAccountBase(BaseModel):

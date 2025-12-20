@@ -4,7 +4,7 @@ export const DEFAULT_AVAILABLE_FILTERS = Object.freeze({
   reps: [],
   hcps: [],
   territories: [],
-  statuses: ['scheduled', 'completed', 'cancelled'],
+  statuses: ['scheduled', 'in_progress', 'completed', 'cancelled'],
 });
 
 const VisitsFilterContext = createContext(undefined);

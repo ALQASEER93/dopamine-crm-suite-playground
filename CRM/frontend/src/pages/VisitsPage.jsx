@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { listReps, repKeys } from '../api/reps';
 import { doctorKeys, listDoctors } from '../api/endpoints/doctors';
-import { createVisit, deleteVisit, listVisits, updateVisit, visitKeys } from '../api/visits';
+import { createVisit, deleteVisit, endVisit, listVisits, startVisit, updateVisit, visitKeys } from '../api/visits';
 import DetailDrawer from '../components/DetailDrawer';
 import './EntityListPage.css';
 
@@ -123,6 +123,7 @@ const VisitsPage = () => {
   const [formMode, setFormMode] = useState(null);
   const [formInitial, setFormInitial] = useState(DEFAULT_VISIT_FORM);
   const [formError, setFormError] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
   const repQuery = useQuery({
     queryKey: repKeys.all,
@@ -159,11 +160,7 @@ const VisitsPage = () => {
       }),
     enabled: !!token,
     select: payload => {
-      const rows = Array.isArray(payload?.data)
-        ? payload.data
-        : Array.isArray(payload)
-        ? payload
-        : payload?.visits || [];
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
       const pagination = payload?.pagination || payload?.meta;
       const total = pagination?.total ?? rows.length;
       const effectivePageSize = pagination?.page_size || pageSize;
@@ -200,6 +197,50 @@ const VisitsPage = () => {
     },
   });
 
+  const captureLocation = async () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      throw new Error('GPS not available in this browser.');
+    }
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        position =>
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          }),
+        error => reject(new Error(error.message || 'Unable to capture location')),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+      );
+    });
+  };
+
+  const startMutation = useMutation({
+    mutationFn: async id => {
+      const coords = await captureLocation();
+      return startVisit(id, coords);
+    },
+    onSuccess: data => {
+      queryClient.invalidateQueries({ queryKey: visitKeys.all });
+      setSelected(data);
+      setActionError(null);
+    },
+    onError: error => setActionError(error.message || 'Unable to start visit'),
+  });
+
+  const endMutation = useMutation({
+    mutationFn: async id => {
+      const coords = await captureLocation();
+      return endVisit(id, coords);
+    },
+    onSuccess: data => {
+      queryClient.invalidateQueries({ queryKey: visitKeys.all });
+      setSelected(data);
+      setActionError(null);
+    },
+    onError: error => setActionError(error.message || 'Unable to end visit'),
+  });
+
   const openCreate = () => {
     setFormMode('create');
     setFormInitial({
@@ -230,6 +271,26 @@ const VisitsPage = () => {
     setFormError(null);
   };
 
+  const handleStartWithGps = async () => {
+    if (!selected) return;
+    setActionError(null);
+    try {
+      await startMutation.mutateAsync(selected.id);
+    } catch (error) {
+      setActionError(error.message || 'Unable to start visit');
+    }
+  };
+
+  const handleEndWithGps = async () => {
+    if (!selected) return;
+    setActionError(null);
+    try {
+      await endMutation.mutateAsync(selected.id);
+    } catch (error) {
+      setActionError(error.message || 'Unable to end visit');
+    }
+  };
+
   const handleSubmit = payload => {
     setFormError(null);
     if (formMode === 'edit' && selected) {
@@ -249,6 +310,17 @@ const VisitsPage = () => {
     if (visit.doctor) return `Doctor: ${visit.doctor.name}`;
     if (visit.pharmacy) return `Pharmacy: ${visit.pharmacy.name}`;
     return 'N/A';
+  };
+
+  const formatTimestamp = value => (value ? new Date(value).toLocaleString() : 'Not captured');
+
+  const formatLocation = location => {
+    if (!location || location.lat == null || location.lng == null) return 'Not captured';
+    const accuracyText =
+      location.accuracy != null && Number.isFinite(Number(location.accuracy))
+        ? ` (±${Number(location.accuracy).toFixed(1)}m)`
+        : '';
+    return `${Number(location.lat).toFixed(5)}, ${Number(location.lng).toFixed(5)}${accuracyText}`;
   };
 
   const resetFilters = () => {
@@ -336,16 +408,26 @@ const VisitsPage = () => {
                 <th>Date</th>
                 <th>Rep</th>
                 <th>Account</th>
+                <th>Status</th>
+                <th>Duration</th>
                 <th>Notes</th>
                 <th>Next action</th>
               </tr>
             </thead>
             <tbody>
               {visits.map(visit => (
-                <tr key={visit.id} onClick={() => setSelected(visit)}>
-                  <td>{visit.visit_date}</td>
+                <tr
+                  key={visit.id}
+                  onClick={() => {
+                    setActionError(null);
+                    setSelected(visit);
+                  }}
+                >
+                  <td>{visit.visitDate || visit.visit_date}</td>
                   <td>{visit.rep?.name || visit.rep_id || '-'}</td>
                   <td>{renderAccount(visit)}</td>
+                  <td>{visit.status ? visit.status.replace(/_/g, ' ') : '-'}</td>
+                  <td>{visit.durationMinutes != null ? `${visit.durationMinutes} min` : '-'}</td>
                   <td>{visit.notes || '-'}</td>
                   <td>
                     {visit.next_action || '-'} {visit.next_action_date ? `(${visit.next_action_date})` : ''}
@@ -399,7 +481,7 @@ const VisitsPage = () => {
       </section>
 
       <DetailDrawer
-        title={selected ? `Visit on ${selected.visit_date}` : ''}
+        title={selected ? `Visit on ${selected.visitDate || selected.visit_date}` : ''}
         isOpen={Boolean(selected)}
         onClose={() => setSelected(null)}
       >
@@ -415,12 +497,36 @@ const VisitsPage = () => {
               <strong>Pharmacy:</strong> {selected.pharmacy?.name || '-'}
             </p>
             <p>
+              <strong>Status:</strong> {selected.status ? selected.status.replace(/_/g, ' ') : '-'}
+            </p>
+            <p>
+              <strong>Duration:</strong>{' '}
+              {selected.durationMinutes != null ? `${selected.durationMinutes} min` : 'Not finished'}
+            </p>
+            <p>
+              <strong>Started:</strong> {formatTimestamp(selected.startedAt || selected.started_at)}
+            </p>
+            <p>
+              <strong>Start GPS:</strong> {formatLocation(selected.startLocation)}
+            </p>
+            <p>
+              <strong>Ended:</strong> {formatTimestamp(selected.endedAt || selected.ended_at)}
+            </p>
+            <p>
+              <strong>End GPS:</strong> {formatLocation(selected.endLocation)}
+            </p>
+            <p>
               <strong>Notes:</strong> {selected.notes || '-'}
             </p>
             <p>
               <strong>Next action:</strong> {selected.next_action || '-'} {selected.next_action_date || ''}
             </p>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            {actionError && (
+              <div className="alert alert-danger" style={{ gridColumn: '1 / -1' }}>
+                {actionError}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
               <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
                 Edit
               </button>
@@ -431,6 +537,27 @@ const VisitsPage = () => {
                 disabled={deleteMutation.isPending}
               >
                 Delete
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleStartWithGps}
+                disabled={
+                  startMutation.isPending ||
+                  !!selected.startedAt ||
+                  selected.status === 'completed' ||
+                  selected.status === 'cancelled'
+                }
+              >
+                {startMutation.isPending ? 'Starting...' : 'Start with GPS'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleEndWithGps}
+                disabled={endMutation.isPending || selected.status === 'completed' || selected.status === 'cancelled'}
+              >
+                {endMutation.isPending ? 'Ending...' : 'End visit'}
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
                 Close
