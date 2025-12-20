@@ -24,6 +24,8 @@ __pycache__/
 # Logs & tmp
 *.log
 *.bak_before_path_fix
+FINAL_STATUS.md
+PR_BLOCKER_ANALYSIS.md
 
 # Local archives
 ARCHIVE/
