@@ -74,7 +74,8 @@ export type OrderPayload = {
 };
 
 export type LoginResponse = {
-  access_token: string;
+  access_token?: string;
+  token?: string;
   token_type?: string;
   user: User;
 };
