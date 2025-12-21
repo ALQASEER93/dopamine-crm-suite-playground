@@ -4,7 +4,7 @@ from __future__ import annotations
 def test_login_and_me(client):
     login_resp = client.post(
         "/api/v1/auth/login",
-        json={"email": "admin@example.com", "password": "password"},
+        json={"email": "admin@example.com", "password": "Admin12345!"},
     )
     assert login_resp.status_code == 200
     body = login_resp.json()

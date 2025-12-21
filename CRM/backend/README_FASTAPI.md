@@ -27,7 +27,7 @@ From `C:\\Users\\M\ S\ I\\ALQASEER_CRM_SUITE_FINAL\CRM\backend`:
 ## Frontend pairing and default login
 - Backend: run uvicorn on port 8000 (above). It seeds default users into `data/fastapi.db`.
 - Frontend: from `../frontend`, run `npm install` (first time) then `npm run dev -- --host --port 5173`. The SPA defaults to `http://127.0.0.1:8000/api/v1` (configurable via `VITE_API_BASE_URL`).
-- Default credentials: `admin@example.com` / `password` (admin) and `rep@example.com` / `password` (medical rep).
+- Default credentials: `admin@example.com` / `Admin12345!` (admin) and `rep@example.com` / `Rep12345!` (medical rep).
 - Smoke test (FastAPI must be running): `python scripts/smoke_login.py` (override target with `API_BASE_URL`, `SMOKE_LOGIN_EMAIL`, `SMOKE_LOGIN_PASSWORD`).
 
 ## Configuration

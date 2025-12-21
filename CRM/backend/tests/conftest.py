@@ -49,7 +49,7 @@ def client() -> Generator[TestClient, None, None]:
 
 @pytest.fixture
 def auth_headers(client: TestClient) -> dict[str, str]:
-    payload = {"email": "admin@example.com", "password": "password"}
+    payload = {"email": "admin@example.com", "password": "Admin12345!"}
     resp = client.post("/api/v1/auth/login", json=payload)
     assert resp.status_code == 200, resp.text
     token = resp.json()["token"]

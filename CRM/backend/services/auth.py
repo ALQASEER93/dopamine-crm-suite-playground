@@ -85,7 +85,7 @@ def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
             "admin@example.com",
             "Admin User",
             "admin",
-            "password",
+            "Admin12345!",
             ["admin@dopaminepharma.com", "admin@dpm.test"],
         ),
         (
@@ -99,7 +99,7 @@ def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
             "rep@example.com",
             "Medical Rep",
             "medical_rep",
-            "password",
+            "Rep12345!",
             ["rep@dopaminepharma.com", "rep@dpm.test"],
         ),
     ]
