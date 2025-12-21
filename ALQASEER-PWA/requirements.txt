@@ -1,0 +1,1 @@
+-r ../CRM/backend/requirements.txt

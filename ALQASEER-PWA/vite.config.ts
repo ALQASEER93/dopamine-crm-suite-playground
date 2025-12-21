@@ -3,9 +3,17 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const apiBase = process.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
-const apiUrl = new URL(apiBase);
-const apiPrefix = `${apiUrl.origin}${apiUrl.pathname.replace(/\/$/, "")}`;
+const apiBase = process.env.VITE_API_BASE_URL || "/api/v1";
+const apiPrefix = apiBase.startsWith("http")
+  ? (() => {
+      const apiUrl = new URL(apiBase);
+      return `${apiUrl.origin}${apiUrl.pathname.replace(/\/$/, "")}`;
+    })()
+  : apiBase.replace(/\/$/, "");
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 export default defineConfig({
   resolve: {
@@ -37,7 +45,7 @@ export default defineConfig({
         navigateFallback: "/index.html",
         runtimeCaching: [
           {
-            urlPattern: new RegExp(`${apiPrefix}/(routes/today|customers|visits)`),
+            urlPattern: new RegExp(`${escapeRegExp(apiPrefix)}/(routes/today|customers|visits)`),
             handler: "NetworkFirst",
             options: {
               cacheName: "dpm-api-data",
