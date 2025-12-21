@@ -72,7 +72,11 @@ export async function login(credentials: { email: string; password: string }) {
     method: "POST",
     body: JSON.stringify(credentials),
   });
-  useAuthStore.getState().setSession(data.access_token, data.user);
+  const token = data.access_token || data.token;
+  if (!token) {
+    throw new Error("Login succeeded but no token was returned.");
+  }
+  useAuthStore.getState().setSession(token, data.user);
   return data;
 }
 
