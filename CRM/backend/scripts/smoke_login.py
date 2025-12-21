@@ -10,7 +10,7 @@ import httpx
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000/api/v1").rstrip("/")
 EMAIL = os.getenv("SMOKE_LOGIN_EMAIL", "admin@example.com")
-PASSWORD = os.getenv("SMOKE_LOGIN_PASSWORD", "password")
+PASSWORD = os.getenv("SMOKE_LOGIN_PASSWORD", "Admin12345!")
 TIMEOUT = float(os.getenv("SMOKE_LOGIN_TIMEOUT", "5"))
 
 
