@@ -4,14 +4,14 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
 from core.security import get_current_user, require_roles
 from models.crm import Role, Route, RouteAccount, User
 from schemas.common import PaginatedResponse
-from schemas.crm import RouteCreate, RouteOut
+from schemas.crm import RouteCreate, RouteOut, RouteStopOut
 from schemas.user import RepCreate, RepUpdate, UserOut
 from services.auth import hash_password
 
@@ -44,6 +44,11 @@ def _get_rep_or_404(db: Session, rep_id: int) -> User:
     if not rep:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rep not found.")
     return rep
+
+
+def _format_address(*parts: Optional[str]) -> Optional[str]:
+    cleaned = [part.strip() for part in parts if part and part.strip()]
+    return ", ".join(cleaned) if cleaned else None
 
 
 @router.get("/reps", response_model=list[UserOut])
@@ -194,6 +199,51 @@ def create_route(payload: RouteCreate, db: Session = Depends(get_db)) -> Route:
     db.commit()
     db.refresh(route)
     return route
+
+
+@router.get("/routes/today", response_model=list[RouteStopOut])
+def get_today_route(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[RouteStopOut]:
+    query = (
+        db.query(Route)
+        .options(
+            joinedload(Route.accounts).joinedload(RouteAccount.doctor),
+            joinedload(Route.accounts).joinedload(RouteAccount.pharmacy),
+        )
+        .filter(Route.rep_id == current_user.id)
+        .order_by(Route.id.asc())
+    )
+    route = query.first()
+    if not route:
+        return []
+
+    stops: list[RouteStopOut] = []
+    for account in route.accounts:
+        if account.account_type == "doctor" and account.doctor:
+            customer = account.doctor
+            address = _format_address(customer.clinic, customer.area, customer.city)
+        elif account.account_type == "pharmacy" and account.pharmacy:
+            customer = account.pharmacy
+            address = _format_address(customer.area, customer.city)
+        else:
+            continue
+
+        stops.append(
+            RouteStopOut(
+                id=account.id,
+                customer_id=customer.id,
+                customer_name=customer.name,
+                customer_type=account.account_type,
+                address=address,
+                status="planned",
+                scheduled_for=None,
+                location=None,
+            )
+        )
+
+    return stops
 
 
 @router.get("/routes/{route_id}", response_model=RouteOut)

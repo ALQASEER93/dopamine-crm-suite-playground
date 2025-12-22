@@ -276,6 +276,26 @@ class RouteOut(RouteBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class RouteStopLocation(BaseModel):
+    lat: float
+    lng: float
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class RouteStopOut(BaseModel):
+    id: int
+    customer_id: int = Field(..., alias="customerId")
+    customer_name: str = Field(..., alias="customerName")
+    customer_type: Literal["doctor", "pharmacy"] = Field(..., alias="customerType")
+    address: Optional[str] = None
+    status: Literal["planned", "in-progress", "done", "skipped"] = "planned"
+    scheduled_for: Optional[datetime] = Field(None, alias="scheduledFor")
+    location: Optional[RouteStopLocation] = None
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
 class OrderLineBase(BaseModel):
     product_id: int
     quantity: int = Field(..., ge=1)
