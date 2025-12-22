@@ -32,7 +32,18 @@ def _create_engine(url: str) -> Engine:
             if not db_path.is_absolute():
                 db_path = Path(__file__).resolve().parent.parent / relative_db_path
             db_path = db_path.resolve()
-            db_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                db_path.parent.mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                msg = str(exc).lower()
+                if "read-only" in msg or "readonly" in msg or "permission" in msg:
+                    logger.error(
+                        "Primary DB path unavailable (%s): %s. Falling back to temp SQLite.",
+                        db_path,
+                        exc,
+                    )
+                    return build_fallback_engine()
+                raise
             normalized_url = f"sqlite:///{db_path.as_posix()}"
 
     engine = create_engine(normalized_url, echo=settings.echo_sql, connect_args=connect_args)
