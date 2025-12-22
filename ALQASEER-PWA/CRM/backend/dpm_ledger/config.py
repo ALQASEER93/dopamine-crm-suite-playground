@@ -8,7 +8,34 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
 DEFAULT_ACTIVE_YEAR = os.environ.get("DPM_LEDGER_ACTIVE_YEAR", "2024")
-DEFAULT_DB_DIR = Path(os.environ.get("DPM_LEDGER_DB_DIR", "D:/CRM ALQASEER/AlJazeera/ledger_sqlite"))
+
+
+def _normalize_db_dir(value: str) -> Path:
+    candidate = Path(value).expanduser()
+    if not candidate.is_absolute():
+        candidate = (Path.cwd() / candidate).resolve()
+    else:
+        candidate = candidate.resolve()
+    return candidate
+
+
+DEFAULT_DB_DIR = _normalize_db_dir(
+    os.environ.get("DPM_LEDGER_DB_DIR", "D:/CRM ALQASEER/AlJazeera/ledger_sqlite")
+)
+
+
+def _sanitize_year(value: str | None) -> str:
+    target = value or DEFAULT_ACTIVE_YEAR
+    if not target.isdigit() or len(target) != 4:
+        raise ValueError("Invalid ledger year.")
+    return target
+
+
+def _safe_join(base_dir: Path, filename: str) -> Path:
+    candidate = (base_dir / filename).resolve()
+    if base_dir not in candidate.parents and candidate != base_dir:
+        raise ValueError("Invalid ledger path.")
+    return candidate
 
 
 def get_db_dir() -> Path:
@@ -16,11 +43,11 @@ def get_db_dir() -> Path:
 
 
 def resolve_db_path(year: str | None, kind: Literal["acc", "other", "stc"]) -> Path:
-    target_year = year or DEFAULT_ACTIVE_YEAR
+    target_year = _sanitize_year(year)
     filename = f"ledger_{target_year}_{kind}.sqlite"
     db_dir = get_db_dir()
     db_dir.mkdir(parents=True, exist_ok=True)
-    return db_dir / filename
+    return _safe_join(db_dir, filename)
 
 
 def get_ledger_engine(year: str | None, kind: Literal["acc", "other", "stc"]) -> Engine:
