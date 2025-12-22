@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,17 @@ class Settings(BaseSettings):
     bootstrap_code: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("seed_default_users", mode="before")
+    @classmethod
+    def normalize_seed_flag(cls, value):  # noqa: ANN001
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"true", "1", "yes", "y"}:
+                return True
+            if normalized in {"false", "0", "no", "n"}:
+                return False
+        return value
 
     def model_post_init(self, __context: dict[str, object] | None = None) -> None:
         """Apply environment-specific overrides after loading settings."""
