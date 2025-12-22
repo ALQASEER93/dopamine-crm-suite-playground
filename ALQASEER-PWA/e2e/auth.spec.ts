@@ -15,11 +15,12 @@ test("PWA login persists after refresh", async ({ page }) => {
     requestFailures.push(`${req.method()} ${req.url()} -> ${req.failure()?.errorText}`);
   });
 
-  await page.addInitScript(() => {
+  await page.goto("/login", { waitUntil: "networkidle" });
+  await page.evaluate(() => {
     localStorage.clear();
     sessionStorage.clear();
   });
-  await page.goto("/login", { waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "networkidle" });
   await page.getByLabel("login-page").waitFor({ state: "visible" });
 
   await page.locator("input#email").fill("admin@example.com");
