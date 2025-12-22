@@ -19,7 +19,11 @@ const defaultCenter = { lat: 31.9539, lng: 35.9106 }; // Amman
 const MAP_LIBRARIES = ["places"] as const;
 
 export function GoogleMapWidget({ center, markers = [], currentLocation, onMapClick }: Props) {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const apiKey = (
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+    import.meta.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+    ""
+  ).trim();
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: apiKey as string,
     libraries: MAP_LIBRARIES,
