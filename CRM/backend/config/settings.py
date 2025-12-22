@@ -32,6 +32,13 @@ class Settings(BaseSettings):
                 return False
         return value
 
+    @field_validator("bootstrap_code", mode="before")
+    @classmethod
+    def normalize_bootstrap_code(cls, value):  # noqa: ANN001
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
     def model_post_init(self, __context: dict[str, object] | None = None) -> None:
         """Apply environment-specific overrides after loading settings."""
         env = (self.app_env or "").lower()
