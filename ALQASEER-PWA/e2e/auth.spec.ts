@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 test("PWA login persists after refresh", async ({ page }) => {
+  const baseURL = test.info().project.use.baseURL || "";
+  const isProduction = baseURL.includes("dopamine-crm-suite-playground.vercel.app");
+  const allowProd = process.env.E2E_ALLOW_PROD === "true";
+  if (isProduction && !allowProd) {
+    test.skip(true, "Production e2e disabled without E2E_ALLOW_PROD=true.");
+  }
+
   const consoleMessages: string[] = [];
   const pageErrors: string[] = [];
   const requestFailures: string[] = [];
@@ -23,8 +30,31 @@ test("PWA login persists after refresh", async ({ page }) => {
   await page.reload({ waitUntil: "networkidle" });
   await page.getByLabel("login-page").waitFor({ state: "visible" });
 
-  await page.locator("input#email").fill("admin@example.com");
-  await page.locator("input#password").fill("Admin12345!");
+  const bootstrapCode = process.env.E2E_BOOTSTRAP_CODE;
+  const adminEmail = process.env.E2E_ADMIN_EMAIL || "admin@example.com";
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD || "Admin12345!";
+  const adminName = process.env.E2E_ADMIN_NAME || "Admin User";
+
+  if (bootstrapCode) {
+    await page.evaluate(
+      async ({ code, email, password, name }) => {
+        await fetch("/api/v1/auth/bootstrap", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, email, password, name }),
+        });
+      },
+      {
+        code: bootstrapCode,
+        email: adminEmail,
+        password: adminPassword,
+        name: adminName,
+      },
+    );
+  }
+
+  await page.locator("input#email").fill(adminEmail);
+  await page.locator("input#password").fill(adminPassword);
   await page.locator("button[type=\"submit\"]").click();
 
   await expect(page).toHaveURL(/\/today-route$/);

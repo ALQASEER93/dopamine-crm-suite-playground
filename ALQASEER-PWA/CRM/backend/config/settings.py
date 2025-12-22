@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_env: str = "development"
+    app_env: str = Field("development", validation_alias="DPM_ENV")
     app_name: str = "ALQASEER CRM API"
     database_url: str = "sqlite:///./data/fastapi.db"
     prod_database_url: str | None = None
@@ -15,6 +16,8 @@ class Settings(BaseSettings):
     jwt_expires_minutes: int = 60
     debug: bool = False
     app_version: str = "1.0.0"
+    seed_default_users: bool | None = None
+    bootstrap_code: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -26,6 +29,10 @@ class Settings(BaseSettings):
                 object.__setattr__(self, "database_url", self.prod_database_url)
             if self.prod_echo_sql is not None:
                 object.__setattr__(self, "echo_sql", self.prod_echo_sql)
+            if self.seed_default_users is None:
+                object.__setattr__(self, "seed_default_users", False)
+        elif self.seed_default_users is None:
+            object.__setattr__(self, "seed_default_users", True)
 
 
 settings = Settings()
