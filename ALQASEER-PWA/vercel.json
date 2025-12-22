@@ -5,24 +5,7 @@
   ],
   "functions": {
     "api/index.py": {
-      "excludeFiles": [
-        "CRM/backend/tests/**",
-        "CRM/backend/__tests__/**",
-        "CRM/backend/**/__pycache__/**",
-        "CRM/backend/**/.pytest_cache/**",
-        "CRM/backend/**/.venv/**",
-        "CRM/backend/**/docs/**",
-        "CRM/backend/**/data/**",
-        "CRM/backend/**/node_modules/**",
-        "CRM/backend/**/scripts/**",
-        "CRM/backend/**/alembic/**",
-        "CRM/backend/**/*.pyc",
-        "CRM/backend/**/*.pyo",
-        "CRM/backend/**/*.db",
-        "CRM/backend/**/*.sqlite",
-        "CRM/backend/**/*.sqlite3",
-        "CRM/backend/**/*.tmp"
-      ]
+      "excludeFiles": "CRM/backend/{tests/**,__tests__/**,**/__pycache__/**,**/.pytest_cache/**,**/.venv/**,**/docs/**,**/data/**,**/node_modules/**,**/scripts/**,**/alembic/**,**/*.pyc,**/*.pyo,**/*.db,**/*.sqlite,**/*.sqlite3,**/*.tmp}"
     }
   }
 }
