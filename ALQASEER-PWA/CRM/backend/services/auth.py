@@ -75,36 +75,37 @@ def seed_default_roles(db: Session) -> dict[str, Role]:
     return slug_to_role
 
 
+DEFAULT_USERS = [
+    (
+        "admin@example.com",
+        "Admin User",
+        "admin",
+        "Admin12345!",
+        ["admin@dopaminepharma.com", "admin@dpm.test"],
+    ),
+    (
+        "manager@example.com",
+        "Sales Manager",
+        "sales_manager",
+        "password",
+        ["manager@dopaminepharma.com"],
+    ),
+    (
+        "rep@example.com",
+        "Medical Rep",
+        "medical_rep",
+        "Rep12345!",
+        ["rep@dopaminepharma.com", "rep@dpm.test"],
+    ),
+]
+
+
 def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
     legacy_sales_reps = db.query(User).join(Role).filter(Role.slug == "sales_rep").all()
     for rep in legacy_sales_reps:
         rep.role_id = roles["medical_rep"].id
 
-    default_users = [
-        (
-            "admin@example.com",
-            "Admin User",
-            "admin",
-            "Admin12345!",
-            ["admin@dopaminepharma.com", "admin@dpm.test"],
-        ),
-        (
-            "manager@example.com",
-            "Sales Manager",
-            "sales_manager",
-            "password",
-            ["manager@dopaminepharma.com"],
-        ),
-        (
-            "rep@example.com",
-            "Medical Rep",
-            "medical_rep",
-            "Rep12345!",
-            ["rep@dopaminepharma.com", "rep@dpm.test"],
-        ),
-    ]
-
-    for email, name, role_slug, password, aliases in default_users:
+    for email, name, role_slug, password, aliases in DEFAULT_USERS:
         role_id = roles[role_slug].id
         candidates = [email, *aliases]
 
@@ -126,4 +127,57 @@ def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
 
 def seed_admin_and_rep(db: Session) -> None:
     roles = seed_default_roles(db)
+    if not settings.seed_default_users:
+        logger.info("Default user seeding disabled.")
+        if settings.app_env.lower() == "production":
+            deactivate_default_users_if_insecure(db)
+        return
     seed_default_users(db, roles)
+
+
+def deactivate_default_users_if_insecure(db: Session) -> None:
+    for email, _name, _role_slug, password, aliases in DEFAULT_USERS:
+        candidates = [email, *aliases]
+        users = db.query(User).filter(User.email.in_(candidates)).all()
+        for user in users:
+            if not user.is_active:
+                continue
+            if verify_password(password, user.password_hash):
+                user.is_active = False
+                logger.warning("Disabled default user %s with unchanged password.", user.email)
+    db.commit()
+
+
+def has_admin_user(db: Session) -> bool:
+    return (
+        db.query(User)
+        .join(Role, User.role_id == Role.id)
+        .filter(Role.slug == "admin", User.is_active.is_(True))
+        .first()
+        is not None
+    )
+
+
+def bootstrap_admin(
+    db: Session,
+    *,
+    email: str,
+    name: str,
+    password: str,
+) -> User:
+    roles = seed_default_roles(db)
+    admin_role = roles["admin"]
+    user = db.query(User).filter(User.email == email.lower()).first()
+    if user:
+        raise ValueError("User already exists.")
+    user = User(
+        email=email.lower(),
+        name=name,
+        role_id=admin_role.id,
+        is_active=True,
+        password_hash=hash_password(password),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
