@@ -30,10 +30,11 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def is_admin_reset_enabled() -> bool:
     reset_flag = settings.default_admin_reset
-    if reset_flag is None:
-        env_reset = os.getenv("DEFAULT_ADMIN_RESET")
-        if env_reset is not None:
-            reset_flag = env_reset.strip().lower() in {"true", "1", "yes", "y"}
+    env_reset = os.getenv("DEFAULT_ADMIN_RESET")
+    if env_reset is not None:
+        env_value = env_reset.strip().lower() in {"true", "1", "yes", "y"}
+        if reset_flag is None or env_value != reset_flag:
+            reset_flag = env_value
     return bool(reset_flag)
 
 
