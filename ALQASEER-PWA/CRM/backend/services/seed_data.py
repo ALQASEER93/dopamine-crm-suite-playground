@@ -20,11 +20,12 @@ from models.crm import (
     User,
     Visit,
 )
-from services.auth import seed_admin_and_rep
+from services.auth import ensure_admin_from_env, seed_admin_and_rep
 
 
 def seed_reference_data(db: Session) -> None:
     seed_admin_and_rep(db)
+    ensure_admin_from_env(db)
 
     doctor = db.query(Doctor).filter(Doctor.name == "Dr. Lina Haddad").first()
     if not doctor:
