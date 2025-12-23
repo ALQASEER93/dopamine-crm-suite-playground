@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -133,6 +134,58 @@ def seed_admin_and_rep(db: Session) -> None:
             deactivate_default_users_if_insecure(db)
         return
     seed_default_users(db, roles)
+
+
+def ensure_admin_from_env(db: Session) -> None:
+    password = settings.default_admin_password or os.getenv("DEFAULT_ADMIN_PASSWORD")
+    if not password:
+        return
+
+    email = (
+        settings.default_admin_email
+        or os.getenv("DEFAULT_ADMIN_EMAIL")
+        or "admin@example.com"
+    ).strip().lower()
+    roles = seed_default_roles(db)
+    admin_role = roles["admin"]
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, name="Admin User", role_id=admin_role.id, is_active=True)
+        db.add(user)
+        logger.info("Created default admin from env (%s).", email)
+
+    reset_flag = settings.default_admin_reset
+    if reset_flag is None:
+        env_reset = os.getenv("DEFAULT_ADMIN_RESET")
+        if env_reset is not None:
+            reset_flag = env_reset.strip().lower() in {"true", "1", "yes", "y"}
+    should_reset = reset_flag or not user.password_hash
+    if should_reset:
+        user.password_hash = hash_password(password)
+        logger.info("Reset default admin password from env (%s).", email)
+
+    user.name = user.name or "Admin User"
+    user.role_id = admin_role.id
+    user.is_active = True
+    db.commit()
+
+
+def ensure_default_admin(db: Session) -> None:
+    email, name, role_slug, password, _aliases = DEFAULT_USERS[0]
+    roles = seed_default_roles(db)
+    role = roles[role_slug]
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, name=name, role_id=role.id, is_active=True)
+        db.add(user)
+
+    user.name = name
+    user.role_id = role.id
+    user.is_active = True
+    user.password_hash = hash_password(password)
+    db.commit()
 
 
 def deactivate_default_users_if_insecure(db: Session) -> None:

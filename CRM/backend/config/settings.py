@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     seed_default_users: bool | None = None
     bootstrap_code: str | None = None
+    default_admin_email: str = Field("admin@example.com", validation_alias="DEFAULT_ADMIN_EMAIL")
+    default_admin_password: str | None = Field(default=None, validation_alias="DEFAULT_ADMIN_PASSWORD")
+    default_admin_reset: bool | None = Field(default=None, validation_alias="DEFAULT_ADMIN_RESET")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -37,6 +40,17 @@ class Settings(BaseSettings):
     def normalize_bootstrap_code(cls, value):  # noqa: ANN001
         if isinstance(value, str):
             return value.strip()
+        return value
+
+    @field_validator("default_admin_reset", mode="before")
+    @classmethod
+    def normalize_admin_reset(cls, value):  # noqa: ANN001
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"true", "1", "yes", "y"}:
+                return True
+            if normalized in {"false", "0", "no", "n"}:
+                return False
         return value
 
     def model_post_init(self, __context: dict[str, object] | None = None) -> None:
