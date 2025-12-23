@@ -28,6 +28,15 @@ def verify_password(password: str, password_hash: str) -> bool:
     return password_context.verify(password, password_hash)
 
 
+def is_admin_reset_enabled() -> bool:
+    reset_flag = settings.default_admin_reset
+    if reset_flag is None:
+        env_reset = os.getenv("DEFAULT_ADMIN_RESET")
+        if env_reset is not None:
+            reset_flag = env_reset.strip().lower() in {"true", "1", "yes", "y"}
+    return bool(reset_flag)
+
+
 def issue_token(user: User, expires_in_minutes: int = 60) -> str:
     payload = {
         "sub": str(user.id),
@@ -137,6 +146,8 @@ def seed_admin_and_rep(db: Session) -> None:
 
 
 def ensure_admin_from_env(db: Session) -> None:
+    if not is_admin_reset_enabled():
+        return
     password = settings.default_admin_password or os.getenv("DEFAULT_ADMIN_PASSWORD")
     if not password:
         return
@@ -155,12 +166,7 @@ def ensure_admin_from_env(db: Session) -> None:
         db.add(user)
         logger.info("Created default admin from env (%s).", email)
 
-    reset_flag = settings.default_admin_reset
-    if reset_flag is None:
-        env_reset = os.getenv("DEFAULT_ADMIN_RESET")
-        if env_reset is not None:
-            reset_flag = env_reset.strip().lower() in {"true", "1", "yes", "y"}
-    should_reset = reset_flag or not user.password_hash
+    should_reset = True
     if should_reset:
         user.password_hash = hash_password(password)
         logger.info("Reset default admin password from env (%s).", email)

@@ -19,6 +19,7 @@ const defaultCenter = { lat: 31.9539, lng: 35.9106 }; // Amman
 const MAP_LIBRARIES = ["places"] as const;
 
 export function GoogleMapWidget({ center, markers = [], currentLocation, onMapClick }: Props) {
+  const [billingError, setBillingError] = React.useState(false);
   const apiKey = (
     import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
     import.meta.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
@@ -29,10 +30,32 @@ export function GoogleMapWidget({ center, markers = [], currentLocation, onMapCl
     libraries: MAP_LIBRARIES,
   });
 
+  React.useEffect(() => {
+    const original = console.error;
+    console.error = (...args: unknown[]) => {
+      const message = args.map(String).join(" ");
+      if (message.includes("BillingNotEnabledMapError")) {
+        setBillingError(true);
+      }
+      original(...args);
+    };
+    return () => {
+      console.error = original;
+    };
+  }, []);
+
   if (!apiKey) {
     return (
       <div className="card" style={{ background: "#1f2937", color: "#f87171" }}>
         يرجى إضافة مفتاح Google Maps في المتغير <code>VITE_GOOGLE_MAPS_API_KEY</code>.
+      </div>
+    );
+  }
+
+  if (billingError) {
+    return (
+      <div className="card" style={{ background: "#1f2937", color: "#fbbf24" }}>
+        Billing ??? ???? ??? Google Cloud ?????? ???????. ??? Billing ??? ??? Project.
       </div>
     );
   }
