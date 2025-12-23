@@ -55,7 +55,7 @@ export function GoogleMapWidget({ center, markers = [], currentLocation, onMapCl
   if (billingError) {
     return (
       <div className="card" style={{ background: "#1f2937", color: "#fbbf24" }}>
-        Billing ??? ???? ??? Google Cloud ?????? ???????. ??? Billing ??? ??? Project.
+        Billing غير مفعل على Google Cloud لمفتاح الخرائط. فعل Billing على نفس Project.
       </div>
     );
   }
