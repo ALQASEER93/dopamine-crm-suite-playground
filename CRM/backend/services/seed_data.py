@@ -15,8 +15,10 @@ from models.crm import (
     Role,
     Route,
     RouteAccount,
+    SalesRep,
     StockLocation,
     Target,
+    Territory,
     User,
     Visit,
 )
@@ -66,6 +68,13 @@ def seed_reference_data(db: Session) -> None:
 
     db.commit()
 
+    territory = db.query(Territory).filter(Territory.code == "AMM-N").first()
+    if not territory:
+        territory = Territory(name="Amman North", code="AMM-N")
+        db.add(territory)
+        db.commit()
+        db.refresh(territory)
+
     rep = (
         db.query(User)
         .filter(User.email.in_(["rep@example.com", "rep@dopaminepharma.com", "rep@dpm.test"]))
@@ -75,6 +84,16 @@ def seed_reference_data(db: Session) -> None:
         rep = db.query(User).join(Role).filter(Role.slug == "medical_rep").first()
 
     if rep:
+        sales_rep_profile = db.query(SalesRep).filter(SalesRep.user_id == rep.id).first()
+        if not sales_rep_profile:
+            db.add(
+                SalesRep(
+                    user_id=rep.id,
+                    rep_type="medical_rep",
+                    territory_id=territory.id if territory else None,
+                )
+            )
+
         route = db.query(Route).filter(Route.name == "Amman North").first()
         if not route:
             route = Route(name="Amman North", rep_id=rep.id, frequency="weekly")

@@ -50,6 +50,37 @@ class User(Base):
     )
 
     role = relationship(Role, back_populates="users")
+    sales_rep_profile = relationship("SalesRep", back_populates="user", uselist=False)
+
+
+class Territory(Base):
+    __tablename__ = "territories"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(150), nullable=False)
+    code = Column(String(50), nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    sales_reps = relationship("SalesRep", back_populates="territory")
+
+
+class SalesRep(Base):
+    __tablename__ = "sales_reps"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    rep_type = Column(String(50), nullable=False, default="sales_rep")
+    territory_id = Column(Integer, ForeignKey("territories.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    user = relationship(User, back_populates="sales_rep_profile")
+    territory = relationship(Territory, back_populates="sales_reps")
 
 
 class Doctor(Base):

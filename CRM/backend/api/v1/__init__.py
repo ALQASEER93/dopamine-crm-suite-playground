@@ -5,6 +5,9 @@ from api.v1 import (
     collections,
     doctors,
     health,
+    reports,
+    territories,
+    admin_users,
     orders,
     pharmacies,
     products,
@@ -27,3 +30,6 @@ router.include_router(stock.router)
 router.include_router(targets.router)
 router.include_router(collections.router)
 router.include_router(health.router)
+router.include_router(territories.router)
+router.include_router(admin_users.router)
+router.include_router(reports.router)
