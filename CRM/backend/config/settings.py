@@ -11,7 +11,11 @@ class Settings(BaseSettings):
     prod_database_url: str | None = None
     echo_sql: bool = False
     prod_echo_sql: bool | None = None
-    jwt_secret: str = "development-secret"
+    jwt_secret: str = Field(
+        default="development-secret",
+        validation_alias="JWT_SECRET",
+        description="JWT secret key for token signing. Must be set in production.",
+    )
     jwt_algorithm: str = "HS256"
     jwt_expires_minutes: int = 60
     debug: bool = False
@@ -57,6 +61,15 @@ class Settings(BaseSettings):
         """Apply environment-specific overrides after loading settings."""
         env = (self.app_env or "").lower()
         if env == "production":
+            # Require JWT_SECRET in production
+            if self.jwt_secret == "development-secret":
+                import os
+                if not os.getenv("JWT_SECRET"):
+                    raise ValueError(
+                        "JWT_SECRET must be set in production. "
+                        "Set JWT_SECRET environment variable with a strong random secret."
+                    )
+            
             if self.prod_database_url:
                 object.__setattr__(self, "database_url", self.prod_database_url)
             if self.prod_echo_sql is not None:

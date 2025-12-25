@@ -56,9 +56,18 @@ cd CRM\backend
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 
+# (Optional) Create .env file from .env.example
+# Copy .env.example to .env and update JWT_SECRET if needed
+# In development, defaults are fine. In production, set JWT_SECRET to a strong random value.
+
 # Initialize database and seed demo users
 python -m main init-db
 ```
+
+**Note on JWT_SECRET**: 
+- In development: Default value is used automatically
+- In production: **Must set JWT_SECRET environment variable** with a strong random secret
+- Generate a secure secret: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
 
 This creates `CRM\backend\data\fastapi.db` and seeds:
 - **Admin**: `admin@example.com` / `password`
