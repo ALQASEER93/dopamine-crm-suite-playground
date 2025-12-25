@@ -416,6 +416,19 @@ def start_visit(
     if visit.started_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already started.")
 
+    # GPS is required for field visits (when rep is medical_rep)
+    if has_any_role(current_user, ["medical_rep"]):
+        if payload.lat is None or payload.lng is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GPS coordinates (lat, lng) are required for field visits.",
+            )
+        if payload.accuracy is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GPS accuracy is required for field visits.",
+            )
+    
     started_at = payload.started_at or datetime.now(timezone.utc)
     visit.started_at = started_at
     visit.start_lat = payload.lat
@@ -448,6 +461,19 @@ def end_visit(
     if visit.ended_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already ended.")
 
+    # GPS is required for field visits (when rep is medical_rep)
+    if has_any_role(current_user, ["medical_rep"]):
+        if payload.lat is None or payload.lng is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GPS coordinates (lat, lng) are required for field visits.",
+            )
+        if payload.accuracy is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GPS accuracy is required for field visits.",
+            )
+    
     ended_at = payload.ended_at or datetime.now(timezone.utc)
     if not visit.started_at:
         visit.started_at = ended_at

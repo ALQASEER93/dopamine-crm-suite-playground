@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from schemas.user import RoleOut, UserOut
 
@@ -217,6 +217,53 @@ class VisitStart(BaseModel):
     accuracy: Optional[float] = None
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    @field_validator("lat", "lng")
+    @classmethod
+    def validate_coordinates(cls, v, info):  # noqa: ANN001
+        """Validate GPS coordinates ranges."""
+        from api.v1.utils_gps import validate_latitude, validate_longitude
+        
+        field_name = info.field_name
+        if v is None:
+            return v
+        
+        if field_name == "lat":
+            validate_latitude(v, "latitude")
+        elif field_name == "lng":
+            validate_longitude(v, "longitude")
+        
+        return v
+    
+    @field_validator("accuracy")
+    @classmethod
+    def validate_accuracy_threshold(cls, v, info):  # noqa: ANN001
+        """Validate GPS accuracy threshold."""
+        from api.v1.utils_gps import validate_accuracy
+        
+        if v is None:
+            return v
+        
+        validate_accuracy(v, "accuracy", require_accurate=True)
+        return v
+    
+    @model_validator(mode="after")
+    def validate_gps_complete(self) -> "VisitStart":
+        """Validate that GPS coordinates are complete when provided."""
+        from api.v1.utils_gps import validate_gps_coordinates
+        
+        # GPS is required if lat/lng are provided (field visits)
+        if self.lat is not None or self.lng is not None:
+            validate_gps_coordinates(
+                self.lat,
+                self.lng,
+                self.accuracy,
+                require_gps=True,
+                require_accurate=True,
+                field_prefix="GPS",
+            )
+        
+        return self
 
 
 class VisitEnd(BaseModel):
@@ -226,6 +273,53 @@ class VisitEnd(BaseModel):
     accuracy: Optional[float] = None
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    @field_validator("lat", "lng")
+    @classmethod
+    def validate_coordinates(cls, v, info):  # noqa: ANN001
+        """Validate GPS coordinates ranges."""
+        from api.v1.utils_gps import validate_latitude, validate_longitude
+        
+        field_name = info.field_name
+        if v is None:
+            return v
+        
+        if field_name == "lat":
+            validate_latitude(v, "latitude")
+        elif field_name == "lng":
+            validate_longitude(v, "longitude")
+        
+        return v
+    
+    @field_validator("accuracy")
+    @classmethod
+    def validate_accuracy_threshold(cls, v, info):  # noqa: ANN001
+        """Validate GPS accuracy threshold."""
+        from api.v1.utils_gps import validate_accuracy
+        
+        if v is None:
+            return v
+        
+        validate_accuracy(v, "accuracy", require_accurate=True)
+        return v
+    
+    @model_validator(mode="after")
+    def validate_gps_complete(self) -> "VisitEnd":
+        """Validate that GPS coordinates are complete when provided."""
+        from api.v1.utils_gps import validate_gps_coordinates
+        
+        # GPS is required if lat/lng are provided (field visits)
+        if self.lat is not None or self.lng is not None:
+            validate_gps_coordinates(
+                self.lat,
+                self.lng,
+                self.accuracy,
+                require_gps=True,
+                require_accurate=True,
+                field_prefix="GPS",
+            )
+        
+        return self
 
 
 class RouteAccountBase(BaseModel):
