@@ -22,3 +22,8 @@ def test_api_v1_health(client):
     assert data.get("status") == "ok"
     assert "db" in data
     assert "version" in data
+    assert "vercel_env" in data
+    assert "default_admin_reset_raw" in data
+    assert "default_admin_reset_bool" in data
+    assert "default_admin_email_set" in data
+    assert "default_admin_password_set" in data

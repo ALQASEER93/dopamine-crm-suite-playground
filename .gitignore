@@ -42,3 +42,5 @@ AI-Orchestrator/set-ai-env.ps1
 
 CRM/package-lock.ROOT_UNUSED.json
 
+.vercel
+.env*.local

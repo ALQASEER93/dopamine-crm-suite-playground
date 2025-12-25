@@ -23,10 +23,16 @@ def list_targets(
     page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500),
     rep_id: int | None = None,
     period: str | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[TargetOut]:
+    from core.security import has_any_role
+    
     query = db.query(Target)
-    if rep_id:
+    # Rep-scoped filtering: medical_rep can only see their own targets
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(Target.rep_id == current_user.id)
+    elif rep_id:
         query = query.filter(Target.rep_id == rep_id)
     if period:
         query = query.filter(Target.period == period)

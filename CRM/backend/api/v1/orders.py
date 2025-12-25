@@ -39,9 +39,32 @@ def list_orders(
     payment_status: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[OrderOut]:
+    from core.security import has_any_role
+    from models.crm import Visit
+    
     query = db.query(Order)
+    # Rep-scoped filtering: medical_rep can only see orders linked to their visits
+    # Note: This is a simplified approach - in a real scenario, orders might have direct rep_id
+    if has_any_role(current_user, ["medical_rep"]):
+        # Get rep's visits and filter orders by associated doctors/pharmacies
+        rep_visits = db.query(Visit).filter(Visit.rep_id == current_user.id).all()
+        rep_doctor_ids = {v.doctor_id for v in rep_visits if v.doctor_id}
+        rep_pharmacy_ids = {v.pharmacy_id for v in rep_visits if v.pharmacy_id}
+        if rep_doctor_ids or rep_pharmacy_ids:
+            from sqlalchemy import or_
+            conditions = []
+            if rep_doctor_ids:
+                conditions.append(Order.doctor_id.in_(list(rep_doctor_ids)))
+            if rep_pharmacy_ids:
+                conditions.append(Order.pharmacy_id.in_(list(rep_pharmacy_ids)))
+            if conditions:
+                query = query.filter(or_(*conditions))
+        else:
+            # No visits = no orders to show
+            query = query.filter(Order.id == -1)  # Empty result set
     if status_filter:
         query = query.filter(Order.status == status_filter)
     if payment_status:
@@ -110,10 +133,31 @@ def create_order(payload: OrderCreate, db: Session = Depends(get_db)) -> Order:
 
 
 @router.get("/{order_id}", response_model=OrderOut)
-def get_order(order_id: int, db: Session = Depends(get_db)) -> Order:
+def get_order(
+    order_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Order:
+    from core.security import has_any_role
+    from models.crm import Visit
+    
     order = db.get(Order, order_id)
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
+    
+    # Rep-scoped access: medical_rep can only access orders linked to their visits
+    if has_any_role(current_user, ["medical_rep"]):
+        rep_visit = (
+            db.query(Visit)
+            .filter(
+                Visit.rep_id == current_user.id,
+                (Visit.doctor_id == order.doctor_id) | (Visit.pharmacy_id == order.pharmacy_id),
+            )
+            .first()
+        )
+        if not rep_visit:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
+    
     return order
 
 
