@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     seed_default_users: bool | None = None
     bootstrap_code: str | None = None
+    gps_max_distance_m: float = Field(default=100.0, validation_alias="GPS_MAX_DISTANCE_M")
+    gps_min_accuracy_m: float = Field(default=80.0, validation_alias="GPS_MIN_ACCURACY_M")
+    geofence_radius_m: float = Field(default=120.0, validation_alias="GEOFENCE_RADIUS_M")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -16,6 +16,14 @@ npm install
 
 This installs React, the Vite build tooling, ESLint/Prettier, and testing utilities.
 
+## Environment
+
+Create a `.env` (or copy `.env.example`) and set the API base URL:
+
+```
+VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
+```
+
 ## Available Scripts
 
 Run these commands from the `frontend/` directory:

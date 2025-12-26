@@ -12,11 +12,13 @@ from models.crm import (
     OrderLine,
     Pharmacy,
     Product,
+    RepProfile,
     Role,
     Route,
     RouteAccount,
     StockLocation,
     Target,
+    Territory,
     User,
     Visit,
 )
@@ -75,6 +77,17 @@ def seed_reference_data(db: Session) -> None:
         rep = db.query(User).join(Role).filter(Role.slug == "medical_rep").first()
 
     if rep:
+        territory = db.query(Territory).filter(Territory.code == "AMM-N").first()
+        if not territory:
+            territory = Territory(name="Amman North", code="AMM-N")
+            db.add(territory)
+            db.flush()
+
+        rep_profile = db.query(RepProfile).filter(RepProfile.user_id == rep.id).first()
+        if not rep_profile:
+            rep_profile = RepProfile(user_id=rep.id, rep_type="medical_rep", territory_id=territory.id)
+            db.add(rep_profile)
+
         route = db.query(Route).filter(Route.name == "Amman North").first()
         if not route:
             route = Route(name="Amman North", rep_id=rep.id, frequency="weekly")
