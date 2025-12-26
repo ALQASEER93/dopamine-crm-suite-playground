@@ -28,6 +28,7 @@ __pycache__/
 *.bak_before_path_fix
 FINAL_STATUS.md
 PR_BLOCKER_ANALYSIS.md
+_runs/
 
 # Local archives
 ARCHIVE/

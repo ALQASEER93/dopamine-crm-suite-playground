@@ -1,5 +1,21 @@
 
 # Dopamine Pharma – Field Force PWA (Skeleton)
+## API Base (FastAPI)
+
+- Base URL: `http://127.0.0.1:8000/api/v1`
+- PWA endpoints:
+  - `/api/v1/pwa/customers`
+  - `/api/v1/pwa/visits`
+  - `/api/v1/pwa/tracking/pings`
+
+### Required env vars
+
+```
+VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
+VITE_GOOGLE_MAPS_API_KEY=
+```
+
+
 
 Environment (Vite):
 
