@@ -1,19 +1,20 @@
 ﻿# Backend
 
-This directory contains a Node.js/Express API backed by SQLite and Sequelize.
+FastAPI is the primary backend. The former Express/Sequelize API has been moved under
+`legacy-express/` for reference only.
 
-## Setup
+## Setup (FastAPI)
 
 Install dependencies and run the automated tests:
 
 ```
-npm install
-npm test
+python -m pip install -r requirements.txt
+python -m pytest -q
 ```
 
 ### Database seeding
 
-Seed scripts live under `backend/scripts/` and can target any SQLite database by
+Legacy seed scripts live under `legacy-express/scripts/` and can target any SQLite database by
 setting the `SQLITE_STORAGE` environment variable (defaults to
 `../data/database.sqlite`). Run them in the following order when preparing a new
 environment:
@@ -28,13 +29,9 @@ For convenience, `npm run seed:all` executes the full sequence, and the legacy
 `npm run seed` alias still populates the visit data only. Each script is
 idempotent and can be re-run safely (useful for CI or resetting a dev database).
 
-Start the development server on port `5000` (override via `PORT`):
+The legacy Express server (deprecated) lives at `legacy-express/index.js`.
 
-```
-node index.js
-```
-
-## Key Endpoints
+## Legacy Express Endpoints (deprecated)
 
 - `POST /api/auth/login` â€“ Validates credentials against the persisted `users`
   table seeded via the scripts above and returns the associated role.
@@ -71,20 +68,23 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
 
 ## API Overview
 
-- Base URL (dev): `http://127.0.0.1:8000`
+- Base URL (dev): `http://127.0.0.1:8000/api/v1`
 - Key endpoints:
-  - `/` â†’ Welcome message
-  - `/status` â†’ Health check
-  - `/api/hcps` â†’ CRUD for HCPs
-  - `/api/admin/dpm-ledger/...` â†’ Pharmacy/area ledger summaries & statements
-  - `/api/admin/ai/...` â†’ AI insights, tasks, drafts, collection plans
-  - `/api/dev/token` â†’ Dev-only JWT for local testing (not for production)
+  - `/` ?+' Welcome message
+  - `/status` ?+' Health check
+  - `/api/v1/hcps` ?+' CRUD for HCPs (FastAPI-compatible shape)
+  - `/api/v1/reports/...` ?+' Reporting endpoints for CRM dashboards
+  - `/api/v1/territories` ?+' Territory listing for admin and filters
+  - `/api/v1/admin/users` ?+' Admin user management
+  - `/api/admin/dpm-ledger/...` ?+' Pharmacy/area ledger summaries & statements
+  - `/api/admin/ai/...` ?+' AI insights, tasks, drafts, collection plans
+  - `/api/dev/token` ?+' Dev-only JWT for local testing (not for production)
 - Docs: `/docs` (Swagger) and `/redoc`
 
 ## Frontend / PWA Integration
 
-- Set `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000` in the frontend.
-- All REST calls should use `{NEXT_PUBLIC_API_BASE_URL}/api/...`.
+- Set `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1` in the frontend/PWA env.
+- All REST calls should use `{VITE_API_BASE_URL}/...`.
 - Endpoint mapping reference: `backend/docs/frontend_api_mapping.md`.
 
 ## Tests
@@ -108,4 +108,3 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
 - Agent runner: `python -m ai_agents.scheduler` (honors `AI_SCHEDULER_ENABLED=1`).
 - Admin AI API: `/api/admin/ai/insights`, `/tasks`, `/tasks/{id}` (PATCH), `/drafts`, `/collection-plan`.
 - Agent descriptions: see `backend/ai_agents_overview.md`.
-

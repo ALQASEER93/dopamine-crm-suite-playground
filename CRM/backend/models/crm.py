@@ -50,6 +50,29 @@ class User(Base):
     )
 
     role = relationship(Role, back_populates="users")
+    rep_profile = relationship("RepProfile", back_populates="user", uselist=False)
+
+
+class Territory(Base):
+    __tablename__ = "territories"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(150), nullable=False)
+    code = Column(String(50), nullable=False, unique=True)
+
+    rep_profiles = relationship("RepProfile", back_populates="territory")
+
+
+class RepProfile(Base):
+    __tablename__ = "rep_profiles"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    rep_type = Column(String(50), nullable=False, default="medical_rep", server_default="medical_rep")
+    territory_id = Column(Integer, ForeignKey("territories.id"), nullable=True)
+
+    user = relationship(User, back_populates="rep_profile")
+    territory = relationship(Territory, back_populates="rep_profiles")
 
 
 class Doctor(Base):

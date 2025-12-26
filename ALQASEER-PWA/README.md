@@ -1,6 +1,13 @@
 
 # Dopamine Pharma – Field Force PWA (Skeleton)
 
+Environment (Vite):
+
+```
+VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
+```
+
+
 هذا المشروع هو نسخة **PWA تجريبية أساسية** لمشروعك الكبير:
 تتبع المندوبين، تسجيل الزيارات مع GPS، ولوحة تحكم حديثة تعمل كتطبيق يمكن تثبيته على الموبايل (Android / iOS via browser).
 

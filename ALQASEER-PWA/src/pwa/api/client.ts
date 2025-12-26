@@ -103,7 +103,7 @@ export async function getCustomers(query?: {
   if (query?.type) params.set("type", query.type);
   if (query?.area) params.set("area", query.area);
   if (query?.specialty) params.set("specialty", query.specialty);
-  const path = params.toString() ? `customers?${params.toString()}` : "customers";
+  const path = params.toString() ? `pwa/customers?${params.toString()}` : "pwa/customers";
 
   try {
     const data = await apiFetch<Customer[]>(path);
@@ -121,7 +121,7 @@ export async function getVisits(filters?: { date?: string; status?: string; cust
   if (filters?.date) params.set("date", filters.date);
   if (filters?.status) params.set("status", filters.status);
   if (filters?.customerId) params.set("customerId", filters.customerId);
-  const path = params.toString() ? `visits?${params.toString()}` : "visits";
+  const path = params.toString() ? `pwa/visits?${params.toString()}` : "pwa/visits";
 
   try {
     const data = await apiFetch<Visit[]>(path);
@@ -135,7 +135,7 @@ export async function getVisits(filters?: { date?: string; status?: string; cust
 }
 
 export async function createVisit(payload: VisitPayload) {
-  return apiFetch<Visit>("visits", {
+  return apiFetch<Visit>("pwa/visits", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -158,7 +158,7 @@ export async function sendLocationPing(payload: {
   accuracy?: number | null;
 }) {
   try {
-    return await apiFetch<{ success: boolean }>("tracking/pings", {
+    return await apiFetch<{ success: boolean }>("pwa/tracking/pings", {
       method: "POST",
       body: JSON.stringify(payload),
     });

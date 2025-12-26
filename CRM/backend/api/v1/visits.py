@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+import csv
+import io
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import case, func
@@ -105,6 +107,98 @@ def list_visits(
         data=visits,
         pagination={"page": page, "page_size": page_size, "total": total, "total_pages": total_pages},
     )
+
+
+@router.get("/export", dependencies=[Depends(require_roles("sales_manager", "admin"))])
+def export_visits(
+    rep_ids: list[int] | None = Query(default=None, alias="rep_id"),
+    doctor_id: int | None = None,
+    pharmacy_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    status_filter: list[str] | None = Query(default=None, alias="status"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    query = (
+        db.query(Visit)
+        .options(joinedload(Visit.doctor), joinedload(Visit.pharmacy), joinedload(Visit.rep))
+        .filter(Visit.is_deleted.is_(False))
+    )
+
+    effective_rep_ids = rep_ids or []
+    if has_any_role(current_user, ["medical_rep"]):
+        effective_rep_ids = [current_user.id]
+
+    if effective_rep_ids:
+        query = query.filter(Visit.rep_id.in_(effective_rep_ids))
+    if doctor_id:
+        query = query.filter(Visit.doctor_id == doctor_id)
+    if pharmacy_id:
+        query = query.filter(Visit.pharmacy_id == pharmacy_id)
+    if date_from:
+        query = query.filter(Visit.visit_date >= date_from)
+    if date_to:
+        query = query.filter(Visit.visit_date <= date_to)
+    allowed_statuses = _normalize_status_filters(status_filter)
+    if allowed_statuses:
+        query = query.filter(Visit.status.in_(allowed_statuses))
+
+    visits = query.order_by(
+        Visit.started_at.desc().nullslast(),
+        Visit.visit_date.desc(),
+        Visit.id.desc(),
+    ).all()
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=[
+            "id",
+            "visitDate",
+            "status",
+            "durationMinutes",
+            "repName",
+            "repEmail",
+            "accountName",
+            "accountType",
+            "notes",
+        ],
+    )
+    writer.writeheader()
+
+    for visit in visits:
+        duration_minutes = None
+        if visit.duration_seconds is not None:
+            duration_minutes = round(visit.duration_seconds / 60, 2)
+        elif visit.started_at and visit.ended_at:
+            duration_minutes = round((visit.ended_at - visit.started_at).total_seconds() / 60, 2)
+
+        account_name = None
+        account_type = None
+        if visit.doctor:
+            account_name = visit.doctor.name
+            account_type = "doctor"
+        elif visit.pharmacy:
+            account_name = visit.pharmacy.name
+            account_type = "pharmacy"
+
+        writer.writerow(
+            {
+                "id": visit.id,
+                "visitDate": visit.visit_date.isoformat() if visit.visit_date else "",
+                "status": visit.status,
+                "durationMinutes": duration_minutes if duration_minutes is not None else "",
+                "repName": visit.rep.name if visit.rep else "",
+                "repEmail": visit.rep.email if visit.rep else "",
+                "accountName": account_name or "",
+                "accountType": account_type or "",
+                "notes": visit.notes or "",
+            }
+        )
+
+    headers = {"Content-Disposition": 'attachment; filename="visits.csv"'}
+    return Response(content=buffer.getvalue(), media_type="text/csv", headers=headers)
 
 
 @router.post(
