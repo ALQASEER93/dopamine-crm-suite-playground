@@ -27,7 +27,7 @@ Env: set `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
 ```
 cd ALQASEER-PWA
 npm install
-npm run dev
+npm run dev -- --port 5174
 ```
 
 Env: set `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
@@ -36,7 +36,7 @@ Env: set `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
 
 - FastAPI: `http://127.0.0.1:8000`
 - CRM frontend: `http://127.0.0.1:5173`
-- PWA: `http://127.0.0.1:5173` (Vite default; change if needed)
+- PWA: `http://127.0.0.1:5174` (use `npm run dev -- --port 5174`)
 
 ## Notes
 
