@@ -155,18 +155,21 @@ def update_admin_user(
     if "isActive" in updates and updates["isActive"] is not None:
         user.is_active = updates["isActive"]
 
+    effective_role_slug = user.role.slug if user.role else None
     if "userType" in updates and updates["userType"]:
-        role_slug = _resolve_role_slug(updates["userType"])
-        role = _get_role(db, role_slug)
+        effective_role_slug = _resolve_role_slug(updates["userType"])
+        role = _get_role(db, effective_role_slug)
         user.role_id = role.id
+        user.role = role
 
     territory_id = (
         updates["territoryId"]
         if "territoryId" in updates
         else (user.rep_profile.territory_id if user.rep_profile else None)
     )
-    if user.role and user.role.slug == "medical_rep":
-        rep_type = updates.get("userType") or (user.rep_profile.rep_type if user.rep_profile else "medical_rep")
+    if effective_role_slug == "medical_rep":
+        rep_type = updates.get("userType") if updates.get("userType") in {"medical_rep", "sales_rep"} else None
+        rep_type = rep_type or (user.rep_profile.rep_type if user.rep_profile else "medical_rep")
         _ensure_rep_profile(db, user, rep_type=rep_type, territory_id=territory_id)
     else:
         if user.rep_profile:
