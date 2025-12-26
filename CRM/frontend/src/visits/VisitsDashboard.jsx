@@ -371,7 +371,7 @@ const VisitsDashboard = () => {
   ]);
   const summaryError = formatQueryError(summaryQuery.error);
 
-  const canCreateVisit = ['sales_rep', 'medical-sales-rep', 'salesman'].includes(userRole);
+  const canCreateVisit = ['medical_rep', 'sales_rep', 'medical-sales-rep', 'salesman'].includes(userRole);
 
   const visitsErrorMessage = formatQueryError(visitsQuery.error);
   const visitsLoading = visitsQuery.isLoading || visitsQuery.isFetching;

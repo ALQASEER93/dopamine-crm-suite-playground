@@ -73,6 +73,17 @@ def list_reps(
     return query.order_by(User.name.asc()).all()
 
 
+@router.get("/sales-reps", response_model=list[UserOut])
+def list_sales_reps(
+    include_inactive: bool = False,
+    db: Session = Depends(get_db),
+) -> list[User]:
+    query = _rep_query(db)
+    if not include_inactive:
+        query = query.filter(User.is_active.is_(True))
+    return query.order_by(User.name.asc()).all()
+
+
 @router.get("/reps/{rep_id}", response_model=UserOut)
 def get_rep(rep_id: int, db: Session = Depends(get_db)) -> User:
     return _get_rep_or_404(db, rep_id)
