@@ -75,10 +75,10 @@ def test_start_and_end_visit(client, auth_headers):
     end_resp = client.post(
         f"/api/v1/visits/{visit_id}/end",
         headers=auth_headers,
-        json={"lat": 31.96, "lng": 35.94, "accuracy": 12.3},
+        json={"lat": 31.9504, "lng": 35.9104, "accuracy": 12.3},
     )
     assert end_resp.status_code == 200, end_resp.text
     ended = end_resp.json()
     assert ended["status"] == "completed"
-    assert ended["end_lat"] == 31.96
+    assert ended["end_lat"] == 31.9504
     assert ended["duration_seconds"] is not None and ended["duration_seconds"] >= 0

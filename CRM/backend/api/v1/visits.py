@@ -9,6 +9,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
+from api.v1.utils_gps import GPSValidationError, validate_accuracy, validate_max_distance
 from core.db import get_db
 from core.security import get_current_user, has_any_role, require_roles
 from models.crm import Doctor, Pharmacy, User, Visit
@@ -510,6 +511,11 @@ def start_visit(
     if visit.started_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already started.")
 
+    try:
+        validate_accuracy(payload.accuracy)
+    except GPSValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
     started_at = payload.started_at or datetime.now(timezone.utc)
     visit.started_at = started_at
     visit.start_lat = payload.lat
@@ -541,6 +547,17 @@ def end_visit(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cancelled visits cannot be completed.")
     if visit.ended_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already ended.")
+
+    try:
+        validate_accuracy(payload.accuracy)
+        validate_max_distance(
+            visit.start_lat,
+            visit.start_lng,
+            payload.lat,
+            payload.lng,
+        )
+    except GPSValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     ended_at = payload.ended_at or datetime.now(timezone.utc)
     if not visit.started_at:

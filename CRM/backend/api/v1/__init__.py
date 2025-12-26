@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from api.v1 import (
     auth,
     collections,
+    gps_policy,
     hcps,
     doctors,
     health,
@@ -22,6 +23,7 @@ from api.v1 import (
 router = APIRouter(prefix="/v1")
 
 router.include_router(auth.router)
+router.include_router(gps_policy.router)
 router.include_router(hcps.router)
 router.include_router(doctors.router)
 router.include_router(pharmacies.router)
