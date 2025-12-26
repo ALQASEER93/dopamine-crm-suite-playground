@@ -54,3 +54,20 @@ def auth_headers(client: TestClient) -> dict[str, str]:
     assert resp.status_code == 200, resp.text
     token = resp.json()["token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+def _login_headers(client: TestClient, *, email: str, password: str) -> dict[str, str]:
+    resp = client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    assert resp.status_code == 200, resp.text
+    token = resp.json()["token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def manager_headers(client: TestClient) -> dict[str, str]:
+    return _login_headers(client, email="manager@example.com", password="password")
+
+
+@pytest.fixture
+def rep_headers(client: TestClient) -> dict[str, str]:
+    return _login_headers(client, email="rep@example.com", password="Rep12345!")

@@ -16,7 +16,7 @@ from models.crm import Order, OrderLine, Product, RepProfile, Territory, User, V
 router = APIRouter(
     prefix="/reports",
     tags=["reports"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(get_current_user), Depends(require_roles("sales_manager", "admin"))],
 )
 
 
