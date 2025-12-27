@@ -46,7 +46,14 @@ const AppRoutes = () => {
         <Route path="/stock" element={<StockPage />} />
         <Route path="/targets" element={<TargetsPage />} />
         <Route path="/collections" element={<CollectionsPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
+        <Route
+          path="/reports"
+          element={
+            <RequireRole roles={['admin', 'sales_manager']}>
+              <ReportsPage />
+            </RequireRole>
+          }
+        />
         <Route path="/settings" element={<SettingsPage />} />
         <Route
           path="/settings/users"

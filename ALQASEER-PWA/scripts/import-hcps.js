@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 const xlsx = require("xlsx");
 
 async function getClientPromise() {
   // نحاول أولاً require، ولو فشل بسبب ESM نستخدم dynamic import
   try {
-    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
+    // eslint-disable-next-line global-require
     const mod = require("../lib/mongodb");
     return mod.default || mod;
   } catch (err) {

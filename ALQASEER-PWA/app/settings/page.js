@@ -1,13 +1,16 @@
 const ENV_KEYS = [
-  { key: "MONGODB_URI", label: "رابط قاعدة بيانات MongoDB" },
-  { key: "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", label: "مفتاح Google Maps (فرونت إند)" },
-  { key: "FIREBASE_API_KEY", label: "مفتاح Firebase API" },
-  { key: "FIREBASE_PROJECT_ID", label: "معرّف مشروع Firebase" },
-  { key: "FIREBASE_MESSAGING_SENDER_ID", label: "Firebase Messaging Sender ID" },
-  { key: "FIREBASE_APP_ID", label: "Firebase App ID" },
+  { key: "VITE_API_BASE_URL", label: "رابط قاعدة بيانات MongoDB" },
+  { key: "VITE_GOOGLE_MAPS_API_KEY", label: "مفتاح Google Maps (فرونت إند)" },
+  { key: "VITE_FIREBASE_API_KEY", label: "مفتاح Firebase API" },
+  { key: "VITE_FIREBASE_AUTH_DOMAIN", label: "Firebase Auth Domain" },
+  { key: "VITE_FIREBASE_PROJECT_ID", label: "معرّف مشروع Firebase" },
+  { key: "VITE_FIREBASE_MESSAGING_SENDER_ID", label: "Firebase Messaging Sender ID" },
+  { key: "VITE_FIREBASE_APP_ID", label: "Firebase App ID" },
 ];
 
 export default function SettingsPage() {
+  const env = import.meta.env || {};
+
   return (
     <>
       <header className="page-header">
@@ -33,7 +36,7 @@ export default function SettingsPage() {
 
           <div className="mt-4 space-y-2 text-sm">
             {ENV_KEYS.map(({ key, label }) => {
-              const value = process.env[key];
+              const value = env[key];
               const isPresent = !!value;
 
               return (
@@ -67,4 +70,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
 

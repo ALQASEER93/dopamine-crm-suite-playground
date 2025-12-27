@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { label: 'Stock', path: '/stock' },
   { label: 'Targets', path: '/targets' },
   { label: 'Collections', path: '/collections' },
-  { label: 'Reports', path: '/reports' },
+  { label: 'Reports', path: '/reports', roles: ['admin', 'sales_manager'] },
   { label: 'Settings', path: '/settings' },
   { label: 'Admin', path: '/settings/users', roles: ['admin', 'sales_manager'] },
 ];

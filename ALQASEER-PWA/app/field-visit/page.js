@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { addOfflineVisit, getOfflineVisits } from "../../lib/offline-queue";
 
-const API_URL = "/api/visits";
-
 export default function FieldVisitPage() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
