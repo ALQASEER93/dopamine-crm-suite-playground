@@ -39,6 +39,7 @@ npm install
 npm run dev
 ```
 Env: set `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
+Map mode: set `VITE_MAP_MODE=links` (default, no API key) or `VITE_MAP_MODE=google` with `VITE_GOOGLE_MAPS_API_KEY`.
 
 ## Run ALQASEER PWA
 ```
@@ -47,6 +48,7 @@ npm install
 npm run dev -- --port 5174
 ```
 Env: set `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
+Map mode: set `VITE_MAP_MODE=links` (default, no API key) or `VITE_MAP_MODE=google` with `VITE_GOOGLE_MAPS_API_KEY`.
 
 ## Credentials (from code + seeds)
 Default users are seeded by `CRM/backend/services/auth.py` when `SEED_DEFAULT_USERS=true`

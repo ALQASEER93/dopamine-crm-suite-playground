@@ -12,15 +12,19 @@
 
 ```
 VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
+VITE_MAP_MODE=links
 VITE_GOOGLE_MAPS_API_KEY=
 ```
 
-
+Notes:
+- Default map mode is `links` (no API key required).
+- Set `VITE_MAP_MODE=google` only if you want embedded Google Maps.
 
 Environment (Vite):
 
 ```
 VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
+VITE_MAP_MODE=links
 ```
 
 
@@ -33,7 +37,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
 - PWA جاهز (manifest + service worker عبر `next-pwa`) – يمكن تثبيته كـ App.
 - تصميم Dashboard داكن ومناسب للهوية الحديثة لـ Dopamine Pharma.
 - صفحة خريطة المندوبين `/reps-map` مهيأة لـ Google Maps:
-  - تستخدم `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
+  - تستخدم `VITE_GOOGLE_MAPS_API_KEY`.
   - حالياً تعرض بيانات تجريبية (mock) ويمكن ربطها بـ MongoDB لاحقاً.
 - إعداد Firebase جاهز (ملف `src/lib/firebase.ts`) لاستخدام:
   - Firebase Cloud Messaging (Notifications) لاحقاً.
@@ -73,7 +77,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
 
    - `MONGODB_URI` → رابط قاعدة بياناتك (مثلاً Atlas).
    - مفاتيح Firebase من مشروعك `medicrm-3yee6`.
-   - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` → مفتاح الخرائط.
+   - `VITE_GOOGLE_MAPS_API_KEY` → مفتاح الخرائط.
 
 5. ثم ثبّت الحزم:
 
@@ -108,4 +112,5 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
   - صفحات داخل `/reports/...` مع جداول وتحليلات وتصدير Excel/PDF.
 
 هذا المشروع هو الأساس، جاهز للبناء عليه مباشرة.
+
 
