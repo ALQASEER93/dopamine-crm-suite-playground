@@ -14,6 +14,9 @@ const LoginScreen = () => {
 
   const handleChange = event => {
     const { name, value } = event.target;
+    if (error) {
+      setError(null);
+    }
     setFormState(prev => ({ ...prev, [name]: value }));
   };
 
