@@ -56,9 +56,11 @@ export default function RepsMapPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
   // تحميل سكربت خرائط جوجل
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    googleMapsApiKey: mapsApiKey,
   });
 
   useEffect(() => {
@@ -304,6 +306,10 @@ export default function RepsMapPage() {
           <p className="text-red-400">
             حدث خطأ في تحميل خرائط جوجل، تأكد من NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.
           </p>
+        )}
+
+        {fetchError && (
+          <p className="text-red-400">{fetchError}</p>
         )}
 
         {!isLoaded && !loadError && (

@@ -1,5 +1,5 @@
-import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import NotAuthorized from '../pages/NotAuthorized.jsx';
 
 const normalizeRole = roleValue => {
   if (!roleValue) {
@@ -19,8 +19,6 @@ const normalizeRole = roleValue => {
 
 const RequireRole = ({ roles = [], children }) => {
   const { user } = useAuth();
-  const location = useLocation();
-
   if (!roles || roles.length === 0) {
     return children;
   }
@@ -29,7 +27,7 @@ const RequireRole = ({ roles = [], children }) => {
   const allowed = roles.some(role => normalizeRole(role) === activeRole);
 
   if (!allowed) {
-    return <Navigate to="/dashboard" state={{ from: location }} replace />;
+    return <NotAuthorized />;
   }
 
   return children;
