@@ -5,6 +5,7 @@ import { listReps, repKeys } from '../api/reps';
 import { doctorKeys, listDoctors } from '../api/endpoints/doctors';
 import { createVisit, deleteVisit, endVisit, listVisits, startVisit, updateVisit, visitKeys } from '../api/visits';
 import DetailDrawer from '../components/DetailDrawer';
+import { buildGoogleMapsUrl, buildOpenStreetMapUrl, formatCoords } from '../utils/mapLinks';
 import './EntityListPage.css';
 
 const PAGE_SIZE_OPTIONS = [25, 50];
@@ -318,9 +319,28 @@ const VisitsPage = () => {
     if (!location || location.lat == null || location.lng == null) return 'Not captured';
     const accuracyText =
       location.accuracy != null && Number.isFinite(Number(location.accuracy))
-        ? ` (±${Number(location.accuracy).toFixed(1)}m)`
+        ? ` (+/-${Number(location.accuracy).toFixed(1)}m)`
         : '';
-    return `${Number(location.lat).toFixed(5)}, ${Number(location.lng).toFixed(5)}${accuracyText}`;
+    return `${formatCoords(location.lat, location.lng)}${accuracyText}`;
+  };
+
+  const renderGpsLinks = location => {
+    if (!location || location.lat == null || location.lng == null) return null;
+    const lat = Number(location.lat);
+    const lng = Number(location.lng);
+    return (
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+        <a className="btn btn-secondary" href={buildOpenStreetMapUrl(lat, lng)} target="_blank" rel="noreferrer">
+          Open in OpenStreetMap
+        </a>
+        <a className="btn btn-secondary" href={buildGoogleMapsUrl(lat, lng)} target="_blank" rel="noreferrer">
+          Open in Google Maps
+        </a>
+        <span style={{ fontSize: '11px', color: '#6b7280', alignSelf: 'center' }}>
+          (c) OpenStreetMap contributors
+        </span>
+      </div>
+    );
   };
 
   const resetFilters = () => {
@@ -506,15 +526,23 @@ const VisitsPage = () => {
             <p>
               <strong>Started:</strong> {formatTimestamp(selected.startedAt || selected.started_at)}
             </p>
-            <p>
+            <div>
               <strong>Start GPS:</strong> {formatLocation(selected.startLocation)}
-            </p>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                Timestamp: {formatTimestamp(selected.startedAt || selected.started_at)}
+              </div>
+              {renderGpsLinks(selected.startLocation)}
+            </div>
             <p>
               <strong>Ended:</strong> {formatTimestamp(selected.endedAt || selected.ended_at)}
             </p>
-            <p>
+            <div>
               <strong>End GPS:</strong> {formatLocation(selected.endLocation)}
-            </p>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                Timestamp: {formatTimestamp(selected.endedAt || selected.ended_at)}
+              </div>
+              {renderGpsLinks(selected.endLocation)}
+            </div>
             <p>
               <strong>Notes:</strong> {selected.notes || '-'}
             </p>
@@ -585,3 +613,5 @@ const VisitsPage = () => {
 };
 
 export default VisitsPage;
+
+

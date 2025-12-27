@@ -6,6 +6,8 @@ import { enqueueMutation } from "../../offline/queue";
 
 export default function LiveMapPage() {
   const [position, setPosition] = useState<google.maps.LatLngLiteral | null>(null);
+  const [positionAccuracy, setPositionAccuracy] = useState<number | null>(null);
+  const [positionTimestamp, setPositionTimestamp] = useState<string | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -16,6 +18,8 @@ export default function LiveMapPage() {
         (pos) => {
           const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setPosition(coords);
+          setPositionAccuracy(pos.coords.accuracy ?? null);
+          setPositionTimestamp(new Date().toISOString());
           sendLocation(coords, pos.coords.accuracy);
         },
         (err) => {
@@ -80,6 +84,8 @@ export default function LiveMapPage() {
 
       <GoogleMapWidget
         currentLocation={position}
+        currentAccuracy={positionAccuracy}
+        currentTimestamp={positionTimestamp}
         markers={customers
           .filter((c) => c.location)
           .map((c) => ({

@@ -55,6 +55,7 @@ export default function TodayRoutePage() {
             position: stop.location!,
             label: stop.customerName,
             color: statusCopy[stop.status]?.color,
+            timestamp: stop.scheduledFor || null,
           }))}
       />
 

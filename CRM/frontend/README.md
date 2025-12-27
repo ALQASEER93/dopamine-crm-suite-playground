@@ -22,6 +22,12 @@ Create a `.env` (or copy `.env.example`) and set the API base URL:
 
 ```
 VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
+VITE_MAP_MODE=links
+```
+
+Optional (only when `VITE_MAP_MODE=google`):
+```
+VITE_GOOGLE_MAPS_API_KEY=
 ```
 
 ## Available Scripts
