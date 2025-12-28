@@ -1,4 +1,4 @@
-const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1') as string;
+const rawBaseUrl = 'https://dopamine-crm-suite-playground.onrender.com/api/v1' as string;
 export const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

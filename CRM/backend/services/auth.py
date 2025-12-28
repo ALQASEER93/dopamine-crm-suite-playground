@@ -18,14 +18,11 @@ password_context = CryptContext(
     deprecated="auto",
 )
 
-
 def hash_password(password: str) -> str:
     return password_context.hash(password)
 
-
 def verify_password(password: str, password_hash: str) -> bool:
     return password_context.verify(password, password_hash)
-
 
 def issue_token(user: User, expires_in_minutes: int = 60) -> str:
     payload = {
@@ -37,10 +34,8 @@ def issue_token(user: User, expires_in_minutes: int = 60) -> str:
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
-
 def find_user_by_email(db: Session, email: str) -> Optional[User]:
     return db.query(User).filter(User.email == email.lower()).first()
-
 
 def authenticate(db: Session, email: str, password: str) -> Optional[User]:
     user = find_user_by_email(db, email)
@@ -51,7 +46,6 @@ def authenticate(db: Session, email: str, password: str) -> Optional[User]:
         return None
 
     return user
-
 
 def seed_default_roles(db: Session) -> dict[str, Role]:
     defaults = [
@@ -77,42 +71,27 @@ def seed_default_roles(db: Session) -> dict[str, Role]:
 
 DEFAULT_USERS = [
     (
-        "admin@example.com",
+        "admin@dopaminepharma.com",
         "Admin User",
         "admin",
-        "Admin12345!",
-        ["admin@dopaminepharma.com", "admin@dpm.test"],
+        "FutureDPM_Admin@2025!",
+        ["admin@example.com", "admin@dpm.test"],
     ),
     (
-        "sales_manager@example.com",
+        "manager@dopaminepharma.com",
         "Sales Manager",
         "sales_manager",
-        "Sales12345!",
-        ["manager@example.com", "manager@dopaminepharma.com"],
+        "FutureDPM_Manager@2025!",
+        ["manager@example.com"],
     ),
     (
-        "rep1@example.com",
-        "Medical Rep 1",
+        "future.rep@dopaminepharma.com",
+        "Medical Rep",
         "medical_rep",
-        "Rep12345!",
+        "FutureDPM@2025!",
         ["rep@example.com", "rep@dopaminepharma.com", "rep@dpm.test"],
     ),
-    (
-        "rep2@example.com",
-        "Medical Rep 2",
-        "medical_rep",
-        "Rep12345!",
-        [],
-    ),
-    (
-        "rep3@example.com",
-        "Medical Rep 3",
-        "medical_rep",
-        "Rep12345!",
-        [],
-    ),
 ]
-
 
 def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
     legacy_sales_reps = db.query(User).join(Role).filter(Role.slug == "sales_rep").all()
@@ -138,7 +117,6 @@ def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
         user.password_hash = hash_password(password)
     db.commit()
 
-
 def seed_admin_and_rep(db: Session) -> None:
     roles = seed_default_roles(db)
     if not settings.seed_default_users:
@@ -147,7 +125,6 @@ def seed_admin_and_rep(db: Session) -> None:
             deactivate_default_users_if_insecure(db)
         return
     seed_default_users(db, roles)
-
 
 def deactivate_default_users_if_insecure(db: Session) -> None:
     for email, _name, _role_slug, password, aliases in DEFAULT_USERS:
@@ -161,7 +138,6 @@ def deactivate_default_users_if_insecure(db: Session) -> None:
                 logger.warning("Disabled default user %s with unchanged password.", user.email)
     db.commit()
 
-
 def has_admin_user(db: Session) -> bool:
     return (
         db.query(User)
@@ -170,7 +146,6 @@ def has_admin_user(db: Session) -> bool:
         .first()
         is not None
     )
-
 
 def bootstrap_admin(
     db: Session,
