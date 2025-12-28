@@ -24,7 +24,7 @@ const parseAuthResponse = (payload, response) => {
 };
 
 describeSmoke('Dashboard smoke (requires running backend and frontend)', () => {
-  const email = process.env.CRM_SMOKE_EMAIL || 'rep@example.com';
+  const email = process.env.CRM_SMOKE_EMAIL || 'rep1@example.com';
   const password = process.env.CRM_SMOKE_PASSWORD || 'password';
   let token = null;
   let user = null;

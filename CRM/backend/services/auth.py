@@ -84,18 +84,32 @@ DEFAULT_USERS = [
         ["admin@dopaminepharma.com", "admin@dpm.test"],
     ),
     (
-        "manager@example.com",
+        "sales_manager@example.com",
         "Sales Manager",
         "sales_manager",
-        "password",
-        ["manager@dopaminepharma.com"],
+        "Sales12345!",
+        ["manager@example.com", "manager@dopaminepharma.com"],
     ),
     (
-        "rep@example.com",
-        "Medical Rep",
+        "rep1@example.com",
+        "Medical Rep 1",
         "medical_rep",
         "Rep12345!",
-        ["rep@dopaminepharma.com", "rep@dpm.test"],
+        ["rep@example.com", "rep@dopaminepharma.com", "rep@dpm.test"],
+    ),
+    (
+        "rep2@example.com",
+        "Medical Rep 2",
+        "medical_rep",
+        "Rep12345!",
+        [],
+    ),
+    (
+        "rep3@example.com",
+        "Medical Rep 3",
+        "medical_rep",
+        "Rep12345!",
+        [],
     ),
 ]
 
