@@ -75,6 +75,10 @@ app = FastAPI(title=settings.app_name, openapi_tags=tags_metadata, lifespan=life
 allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:4174",
+    "http://127.0.0.1:4174",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
     "https://crm-dopamine.web.app",
     "https://dopamine-crm-suite-playground.onrender.com",
 ]
