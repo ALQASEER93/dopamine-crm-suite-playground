@@ -54,8 +54,10 @@ Map mode: set `VITE_MAP_MODE=links` (default, no API key) or `VITE_MAP_MODE=goog
 Default users are seeded by `CRM/backend/services/auth.py` when `SEED_DEFAULT_USERS=true`
 (default in development). These are real credentials in code:
 - Admin: `admin@example.com` / `Admin12345!`
-- Sales manager: `manager@example.com` / `password`
-- Medical rep: `rep@example.com` / `Rep12345!`
+- Sales manager: `sales_manager@example.com` / `Sales12345!`
+- Medical rep: `rep1@example.com` / `Rep12345!`
+- Medical rep: `rep2@example.com` / `Rep12345!`
+- Medical rep: `rep3@example.com` / `Rep12345!`
 
 Bootstrap admin (when seed users are disabled):
 - Set `BOOTSTRAP_CODE` in `CRM/backend/.env`.
