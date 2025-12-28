@@ -75,6 +75,8 @@ app = FastAPI(title=settings.app_name, openapi_tags=tags_metadata, lifespan=life
 allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://crm-dopamine.web.app",
+    "https://dopamine-crm-suite-playground.onrender.com",
 ]
 
 # Single CORS middleware to allow the SPA to call all API routes, including preflight.

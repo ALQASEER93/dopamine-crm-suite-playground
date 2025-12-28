@@ -65,9 +65,9 @@ def _login_headers(client: TestClient, *, email: str, password: str) -> dict[str
 
 @pytest.fixture
 def manager_headers(client: TestClient) -> dict[str, str]:
-    return _login_headers(client, email="manager@example.com", password="password")
+    return _login_headers(client, email="sales_manager@example.com", password="Sales12345!")
 
 
 @pytest.fixture
 def rep_headers(client: TestClient) -> dict[str, str]:
-    return _login_headers(client, email="rep@example.com", password="Rep12345!")
+    return _login_headers(client, email="rep1@example.com", password="Rep12345!")
