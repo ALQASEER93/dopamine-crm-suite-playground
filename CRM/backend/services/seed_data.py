@@ -68,11 +68,15 @@ def seed_reference_data(db: Session) -> None:
 
     db.commit()
 
-    rep = (
-        db.query(User)
-        .filter(User.email.in_(["rep@example.com", "rep@dopaminepharma.com", "rep@dpm.test"]))
-        .first()
-    )
+    rep_emails = [
+        "rep1@example.com",
+        "rep2@example.com",
+        "rep3@example.com",
+        "rep@example.com",
+        "rep@dopaminepharma.com",
+        "rep@dpm.test",
+    ]
+    rep = db.query(User).filter(User.email.in_(rep_emails)).first()
     if not rep:
         rep = db.query(User).join(Role).filter(Role.slug == "medical_rep").first()
 
@@ -83,10 +87,19 @@ def seed_reference_data(db: Session) -> None:
             db.add(territory)
             db.flush()
 
-        rep_profile = db.query(RepProfile).filter(RepProfile.user_id == rep.id).first()
-        if not rep_profile:
-            rep_profile = RepProfile(user_id=rep.id, rep_type="medical_rep", territory_id=territory.id)
-            db.add(rep_profile)
+        rep_users = db.query(User).filter(User.email.in_(rep_emails)).all()
+        if not rep_users:
+            rep_users = [rep]
+
+        for rep_user in rep_users:
+            rep_profile = db.query(RepProfile).filter(RepProfile.user_id == rep_user.id).first()
+            if not rep_profile:
+                rep_profile = RepProfile(
+                    user_id=rep_user.id,
+                    rep_type="medical_rep",
+                    territory_id=territory.id,
+                )
+                db.add(rep_profile)
 
         route = db.query(Route).filter(Route.name == "Amman North").first()
         if not route:
