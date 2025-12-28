@@ -1,0 +1,20 @@
+FROM node:20-alpine AS crm-build
+WORKDIR /app
+COPY CRM/frontend/package*.json ./
+RUN npm ci
+COPY CRM/frontend .
+ENV VITE_API_BASE_URL=/api/v1
+RUN npm run build
+
+FROM node:20-alpine AS pwa-build
+WORKDIR /app
+COPY ALQASEER-PWA/package*.json ./
+RUN npm ci
+COPY ALQASEER-PWA .
+ENV VITE_API_BASE_URL=/api/v1
+RUN npm run build
+
+FROM caddy:2-alpine
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=crm-build /app/dist /srv/www/crm
+COPY --from=pwa-build /app/dist /srv/www/pwa
