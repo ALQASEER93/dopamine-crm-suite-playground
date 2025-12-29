@@ -36,31 +36,31 @@ export default function AccountPage() {
   return (
     <div className="page">
       <div className="card">
-        <div className="section-title">\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u0633\u0627\u0628</div>
+        <div className="section-title">{"\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u0633\u0627\u0628"}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div>\u0627\u0644\u0627\u0633\u0645: {user?.name || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u0628\u0631\u064a\u062f: {user?.email || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u062f\u0648\u0631: {user?.role || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u062e\u0627\u062f\u0645: {API_BASE_URL}</div>
+          <div>{`\u0627\u0644\u0627\u0633\u0645: ${user?.name || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}`}</div>
+          <div>{`\u0627\u0644\u0628\u0631\u064a\u062f: ${user?.email || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}`}</div>
+          <div>{`\u0627\u0644\u062f\u0648\u0631: ${user?.role || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}`}</div>
+          <div>{`\u0627\u0644\u062e\u0627\u062f\u0645: ${API_BASE_URL}`}</div>
         </div>
       </div>
 
       <div className="card">
-        <div className="section-title">\u0627\u0644\u0645\u0632\u0627\u0645\u0646\u0629 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644</div>
-        <div className="muted">\u0627\u0644\u0639\u0645\u0644\u064a\u0627\u062a \u0627\u0644\u0645\u0639\u0644\u0642\u0629: {queueCount}</div>
+        <div className="section-title">{"\u0627\u0644\u0645\u0632\u0627\u0645\u0646\u0629 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644"}</div>
+        <div className="muted">{`\u0627\u0644\u0639\u0645\u0644\u064a\u0627\u062a \u0627\u0644\u0645\u0639\u0644\u0642\u0629: ${queueCount}`}</div>
         <div className="muted">
-          \u0622\u062e\u0631 \u0645\u0632\u0627\u0645\u0646\u0629: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "\u0644\u0645 \u062a\u062a\u0645 \u0628\u0639\u062f"}
+          {`\u0622\u062e\u0631 \u0645\u0632\u0627\u0645\u0646\u0629: ${lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "\u0644\u0645 \u062a\u062a\u0645 \u0628\u0639\u062f"}`}
         </div>
         <button type="button" onClick={syncNow}>
-          \u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0622\u0646
+          {"\u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0622\u0646"}
         </button>
         {syncResult ? <div className="muted">{syncResult}</div> : null}
       </div>
 
       <div className="card">
-        <div className="section-title">\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c</div>
+        <div className="section-title">{"\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c"}</div>
         <button type="button" onClick={logout}>
-          \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c
+          {"\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c"}
         </button>
       </div>
     </div>

@@ -41,10 +41,10 @@ export default function TodayRoutePage() {
     <div className="page" aria-label="today-route-page">
       <div className="card-header" style={{ padding: "0 4px" }}>
         <div>
-          <div className="section-title">\u0645\u0633\u0627\u0631 \u0627\u0644\u064a\u0648\u0645</div>
-          <div className="muted">\u0627\u0633\u062a\u0639\u0631\u0636 \u0632\u064a\u0627\u0631\u0627\u062a \u0627\u0644\u064a\u0648\u0645 \u0648\u0627\u0636\u063a\u0637 \u0644\u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629.</div>
+          <div className="section-title">{"\u0645\u0633\u0627\u0631 \u0627\u0644\u064a\u0648\u0645"}</div>
+          <div className="muted">{"\u0627\u0633\u062a\u0639\u0631\u0636 \u0632\u064a\u0627\u0631\u0627\u062a \u0627\u0644\u064a\u0648\u0645 \u0648\u0627\u0636\u063a\u0637 \u0644\u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629."}</div>
         </div>
-        <span className="pill">\u0639\u062f\u062f \u0627\u0644\u0632\u064a\u0627\u0631\u0627\u062a: {stops.length}</span>
+        <span className="pill">{`\u0639\u062f\u062f \u0627\u0644\u0632\u064a\u0627\u0631\u0627\u062a: ${stops.length}`}</span>
       </div>
 
       <GoogleMapWidget
@@ -61,7 +61,7 @@ export default function TodayRoutePage() {
           }))}
       />
 
-      {loading ? <div className="card">\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644...</div> : null}
+      {loading ? <div className="card">{"\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644..."}</div> : null}
       {error ? <div className="card" style={{ color: "#f87171" }}>{error}</div> : null}
 
       {selectedStop ? (
@@ -78,7 +78,7 @@ export default function TodayRoutePage() {
               })
             }
           >
-            \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629
+            {"\u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629"}
           </button>
         </div>
       ) : null}
