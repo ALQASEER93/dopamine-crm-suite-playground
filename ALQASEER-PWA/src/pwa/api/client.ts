@@ -141,6 +141,30 @@ export async function createVisit(payload: VisitPayload) {
   });
 }
 
+export async function startVisit(visitId: string, payload: { lat: number; lng: number; accuracy?: number | null; startedAt?: string }) {
+  return apiFetch<Visit>(`visits/${visitId}/start`, {
+    method: "POST",
+    body: JSON.stringify({
+      lat: payload.lat,
+      lng: payload.lng,
+      accuracy: payload.accuracy ?? null,
+      started_at: payload.startedAt,
+    }),
+  });
+}
+
+export async function endVisit(visitId: string, payload: { lat: number; lng: number; accuracy?: number | null; endedAt?: string }) {
+  return apiFetch<Visit>(`visits/${visitId}/end`, {
+    method: "POST",
+    body: JSON.stringify({
+      lat: payload.lat,
+      lng: payload.lng,
+      accuracy: payload.accuracy ?? null,
+      ended_at: payload.endedAt,
+    }),
+  });
+}
+
 export async function getProducts() {
   return apiFetch<Product[]>("products");
 }

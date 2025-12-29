@@ -53,6 +53,9 @@ export type VisitPayload = {
 export type Visit = VisitPayload & {
   id: string;
   repId?: string;
+  startedAt?: string;
+  endedAt?: string;
+  serverStatus?: string;
 };
 
 export type Product = {
