@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+﻿import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { createVisit, endVisit, getCustomers, getVisits, startVisit } from "../../api/client";
 import { Customer, Visit } from "../../api/types";
@@ -106,7 +106,7 @@ export default function VisitsPage() {
   const validateAccuracy = (value: number | null) => {
     const prefs = readPreferences();
     if (value !== null && value > prefs.gpsAccuracyThreshold) {
-      setMessage(`??? GPS ??? ????? (${Math.round(value)}?). ????? ?? ?????? ?? ??? ????????.`);
+      setMessage(`دقة GPS غير كافية (${Math.round(value)}م). اقترب من الموقع ثم أعد المحاولة.`);
       return false;
     }
     return true;
@@ -116,7 +116,7 @@ export default function VisitsPage() {
     if (distance == null) return;
     const prefs = readPreferences();
     if (prefs.gpsAlerts && distance > prefs.geofenceRadius) {
-      setMessage(`????? ??????: ??? ???? ${formatDistance(distance)} ?? ???? ??????.`);
+      setMessage(`تنبيه جغرافي: أنت بعيد ${formatDistance(distance)} عن موقع العميل.`);
     }
   };
 
@@ -128,7 +128,7 @@ export default function VisitsPage() {
       setAccuracy(pos.coords.accuracy ?? null);
       return { coords: nextCoords, accuracy: pos.coords.accuracy ?? null };
     } catch (err) {
-      setMessage("???? ????? ???? GPS. ???? ????? ???????? ????????? ??? ????.");
+      setMessage("تعذر تحديد موقع GPS. يرجى تفعيل الأذونات والمحاولة مرة أخرى.");
       return null;
     }
   };
@@ -158,7 +158,7 @@ export default function VisitsPage() {
 
     const customer = getCustomer(newVisit.customerId);
     if (!customer) {
-      setMessage("???? ?????? ?????? ?????.");
+      setMessage("يرجى اختيار العميل أولًا.");
       setLoading(false);
       return;
     }
@@ -192,7 +192,7 @@ export default function VisitsPage() {
       if (online) {
         const created = await createVisit(payload);
         setVisits((prev) => [{ ...created, serverStatus: "scheduled", createdMeta: meta }, ...prev]);
-        setMessage("?? ????? ??????? ?????.");
+        setMessage("تم إنشاء الزيارة بنجاح.");
       } else {
         enqueueMutation({
           endpoint: "visits",
@@ -202,11 +202,11 @@ export default function VisitsPage() {
         });
         refreshQueue();
         setVisits((prev) => [{ ...payload, id: crypto.randomUUID(), serverStatus: "pending_create", createdMeta: meta } as VisitWithMeta, ...prev]);
-        setMessage("?? ??? ??????? ?????? ????? ???????? ??? ???? ???????.");
+        setMessage("تم حفظ الزيارة محليًا وستتم مزامنتها عند توفر الاتصال.");
       }
       setNewVisit({ customerId: "", visitType: "follow-up", status: "success", notes: "" });
     } catch (err) {
-      setMessage("???? ????? ???????. ???? ??? ????.");
+      setMessage("تعذر إنشاء الزيارة. حاول مرة أخرى.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -220,7 +220,7 @@ export default function VisitsPage() {
   const syncQueue = async () => {
     const res = await replayQueuedMutations();
     refreshQueue();
-    setMessage(`??? ?????? ?????? ${res.attempted} ??????? ??????? ${res.pending}.`);
+    setMessage(`تمت محاولة مزامنة ${res.attempted} عمليات، المتبقي ${res.pending}.`);
   };
 
   const handleStart = async (visit: VisitWithMeta) => {
@@ -257,16 +257,16 @@ export default function VisitsPage() {
       refreshQueue();
       updateVisit(visit.id, { serverStatus: "pending_start", startedAt: payload.startedAt, startMeta: meta });
       setLoading(false);
-      setMessage("?? ??? ??? ??????? ?????? ???????? ??????.");
+      setMessage("تم حفظ بدء الزيارة محليًا للمزامنة لاحقًا.");
       return;
     }
 
     try {
       await startVisit(visit.id, payload);
       updateVisit(visit.id, { serverStatus: "in_progress", startedAt: payload.startedAt, startMeta: meta });
-      setMessage("?? ??? ???????.");
+      setMessage("تم بدء الزيارة.");
     } catch (err) {
-      setMessage("???? ??? ???????. ???? ?? GPS ?? ??? ????????.");
+      setMessage("تعذر بدء الزيارة. تحقق من GPS ثم أعد المحاولة.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -307,16 +307,16 @@ export default function VisitsPage() {
       refreshQueue();
       updateVisit(visit.id, { serverStatus: "pending_end", endedAt: payload.endedAt, endMeta: meta });
       setLoading(false);
-      setMessage("?? ??? ????? ??????? ?????? ???????? ??????.");
+      setMessage("تم حفظ إنهاء الزيارة محليًا للمزامنة لاحقًا.");
       return;
     }
 
     try {
       await endVisit(visit.id, payload);
       updateVisit(visit.id, { serverStatus: "completed", endedAt: payload.endedAt, endMeta: meta });
-      setMessage("?? ????? ???????.");
+      setMessage("تم إنهاء الزيارة.");
     } catch (err) {
-      setMessage("???? ????? ???????. ???? ?? GPS ?? ??? ????????.");
+      setMessage("تعذر إنهاء الزيارة. تحقق من GPS ثم أعد المحاولة.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -326,7 +326,7 @@ export default function VisitsPage() {
   const handleAttach = async (visitId: string, file?: File | null) => {
     if (!file) return;
     if (file.size > 1024 * 1024) {
-      setMessage("????? ???? ????. ???? ?????? 1MB.");
+      setMessage("الملف كبير جدًا. الحد الأقصى 1MB.");
       return;
     }
 
@@ -350,7 +350,7 @@ export default function VisitsPage() {
     const updated = [next, ...attachments];
     setAttachmentsByVisit((prev) => ({ ...prev, [visitId]: updated }));
     writeAttachments(visitId, updated);
-    setMessage("??? ????? ??????.");
+    setMessage("تمت إضافة المرفق.");
   };
 
   const loadAttachmentsFor = (visitId: string) => {
@@ -371,74 +371,74 @@ export default function VisitsPage() {
   return (
     <div className="page">
       <div className="card">
-        <div className="section-title">????? ????????</div>
-        <div className="muted">??? GPS: {accuracy !== null ? `${Math.round(accuracy)}?` : "??? ????"}</div>
-        <div className="muted">?????? ????? ????????: {queueCount}</div>
-        <div className="muted">??? ??????: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "?? ??? ???"}</div>
+        <div className="section-title">إدارة الزيارات</div>
+        <div className="muted">دقة GPS: {accuracy !== null ? `${Math.round(accuracy)}م` : "غير متاح"}</div>
+        <div className="muted">عمليات معلقة للمزامنة: {queueCount}</div>
+        <div className="muted">آخر مزامنة: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "لم تتم بعد"}</div>
         <button type="button" onClick={syncQueue} disabled={!queueCount}>
-          ?????? ????
+          مزامنة الآن
         </button>
         <form onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="customer">??????</label>
+            <label htmlFor="customer">العميل</label>
             <select
               id="customer"
               value={newVisit.customerId}
               onChange={(e) => setNewVisit((s) => ({ ...s, customerId: e.target.value }))}
               required
             >
-              <option value="">????</option>
+              <option value="">اختر</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} - {c.type === "doctor" ? "????" : "??????"}
+                  {c.name} - {c.type === "doctor" ? "طبيب" : "صيدلية"}
                 </option>
               ))}
             </select>
           </div>
           <div className="grid">
             <div>
-              <label>??? ???????</label>
+              <label>نوع الزيارة</label>
               <select value={newVisit.visitType} onChange={(e) => setNewVisit((s) => ({ ...s, visitType: e.target.value }))}>
-                <option value="follow-up">??????</option>
-                <option value="new">????? ?????</option>
-                <option value="reminder">?????</option>
+                <option value="follow-up">متابعة</option>
+                <option value="new">زيارة جديدة</option>
+                <option value="reminder">تذكير</option>
               </select>
             </div>
             <div>
-              <label>??????</label>
+              <label>الحالة</label>
               <select value={newVisit.status} onChange={(e) => setNewVisit((s) => ({ ...s, status: e.target.value }))}>
-                <option value="success">?????</option>
-                <option value="refused">??????</option>
-                <option value="no-show">?? ??? ??????</option>
+                <option value="success">ناجحة</option>
+                <option value="refused">مرفوضة</option>
+                <option value="no-show">لم يتم الحضور</option>
               </select>
             </div>
           </div>
           <div>
-            <label>???????</label>
+            <label>ملاحظات</label>
             <textarea
               rows={3}
               value={newVisit.notes}
               onChange={(e) => setNewVisit((s) => ({ ...s, notes: e.target.value }))}
-              placeholder="???? ??????? ???????..."
+              placeholder="اكتب ملاحظات الزيارة..."
             />
           </div>
           {message ? <div className="muted">{message}</div> : null}
           <button type="submit" disabled={loading}>
-            {loading ? "???? ?????..." : "????? ?????"}
+            {loading ? "جارٍ الحفظ..." : "إضافة زيارة"}
           </button>
         </form>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <div className="section-title">??? ????????</div>
+          <div className="section-title">سجل الزيارات</div>
           <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <input type="date" value={filters.date} onChange={(e) => setFilters((s) => ({ ...s, date: e.target.value }))} />
             <select value={filters.status} onChange={(e) => setFilters((s) => ({ ...s, status: e.target.value }))}>
-              <option value="">????</option>
-              <option value="success">?????</option>
-              <option value="refused">??????</option>
-              <option value="no-show">?? ??? ??????</option>
+              <option value="">الكل</option>
+              <option value="success">ناجحة</option>
+              <option value="refused">مرفوضة</option>
+              <option value="no-show">لم يتم الحضور</option>
             </select>
           </div>
         </div>
@@ -458,14 +458,14 @@ export default function VisitsPage() {
                     <div className="muted">
                       {visit.visitType} - {visit.visitedAt ? new Date(visit.visitedAt).toLocaleString() : ""}
                     </div>
-                    {visit.startedAt ? <div className="muted">???: {new Date(visit.startedAt).toLocaleString()}</div> : null}
-                    {visit.endedAt ? <div className="muted">?????: {new Date(visit.endedAt).toLocaleString()}</div> : null}
+                    {visit.startedAt ? <div className="muted">بدء: {new Date(visit.startedAt).toLocaleString()}</div> : null}
+                    {visit.endedAt ? <div className="muted">إنهاء: {new Date(visit.endedAt).toLocaleString()}</div> : null}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
                     <span className="pill">{statusLabel}</span>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button type="button" onClick={() => handleStart(visit)} disabled={loading || !canStart}>???</button>
-                      <button type="button" onClick={() => handleEnd(visit)} disabled={loading || !canEnd}>?????</button>
+                      <button type="button" onClick={() => handleStart(visit)} disabled={loading || !canStart}>بدء</button>
+                      <button type="button" onClick={() => handleEnd(visit)} disabled={loading || !canEnd}>إنهاء</button>
                       <button
                         type="button"
                         className="btn-secondary"
@@ -476,7 +476,7 @@ export default function VisitsPage() {
                           }
                         }}
                       >
-                        {isExpanded ? "????? ????????" : "??? ????????"}
+                        {isExpanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
                       </button>
                     </div>
                   </div>
@@ -486,40 +486,40 @@ export default function VisitsPage() {
                   <div className="visit-details">
                     <div className="timeline">
                       <div className="timeline-item">
-                        <div className="timeline-title">?? ????? ???????</div>
+                        <div className="timeline-title">تم إنشاء الزيارة</div>
                         <div className="muted">{visit.visitedAt ? new Date(visit.visitedAt).toLocaleString() : "-"}</div>
                         {visit.createdMeta ? (
                           <div className="chip-row">
-                            <span className="chip">GPS {visit.createdMeta.accuracy != null ? `${Math.round(visit.createdMeta.accuracy)}?` : "-"}</span>
-                            <span className="chip">??? {formatDistance(visit.createdMeta.distanceMeters)}</span>
+                            <span className="chip">GPS {visit.createdMeta.accuracy != null ? `${Math.round(visit.createdMeta.accuracy)}م` : "-"}</span>
+                            <span className="chip">بعد {formatDistance(visit.createdMeta.distanceMeters)}</span>
                           </div>
                         ) : null}
                       </div>
                       <div className="timeline-item">
-                        <div className="timeline-title">??? ???????</div>
+                        <div className="timeline-title">بدء الزيارة</div>
                         <div className="muted">{visit.startedAt ? new Date(visit.startedAt).toLocaleString() : "-"}</div>
                         {visit.startMeta ? (
                           <div className="chip-row">
-                            <span className="chip">GPS {visit.startMeta.accuracy != null ? `${Math.round(visit.startMeta.accuracy)}?` : "-"}</span>
-                            <span className="chip">??? {formatDistance(visit.startMeta.distanceMeters)}</span>
+                            <span className="chip">GPS {visit.startMeta.accuracy != null ? `${Math.round(visit.startMeta.accuracy)}م` : "-"}</span>
+                            <span className="chip">بعد {formatDistance(visit.startMeta.distanceMeters)}</span>
                           </div>
                         ) : null}
                       </div>
                       <div className="timeline-item">
-                        <div className="timeline-title">????? ???????</div>
+                        <div className="timeline-title">إنهاء الزيارة</div>
                         <div className="muted">{visit.endedAt ? new Date(visit.endedAt).toLocaleString() : "-"}</div>
                         {visit.endMeta ? (
                           <div className="chip-row">
-                            <span className="chip">GPS {visit.endMeta.accuracy != null ? `${Math.round(visit.endMeta.accuracy)}?` : "-"}</span>
-                            <span className="chip">??? {formatDistance(visit.endMeta.distanceMeters)}</span>
+                            <span className="chip">GPS {visit.endMeta.accuracy != null ? `${Math.round(visit.endMeta.accuracy)}م` : "-"}</span>
+                            <span className="chip">بعد {formatDistance(visit.endMeta.distanceMeters)}</span>
                           </div>
                         ) : null}
                       </div>
                     </div>
 
                     <div className="attachments">
-                      <div className="section-title">?????? ???????</div>
-                      <div className="muted">???? ????? ???? ?? ????? ???? (??? 1MB).</div>
+                      <div className="section-title">مرفقات الزيارة</div>
+                      <div className="muted">يمكن إرفاق صورة أو مستند صغير (حتى 1MB).</div>
                       <input
                         type="file"
                         onChange={(e) => handleAttach(visit.id, e.target.files?.[0])}
@@ -534,11 +534,11 @@ export default function VisitsPage() {
                             )}
                             <div>
                               <div style={{ fontWeight: 700 }}>{att.name}</div>
-                              <div className="muted">{Math.round(att.size / 1024)}KB ? {new Date(att.createdAt).toLocaleString()}</div>
+                              <div className="muted">{Math.round(att.size / 1024)}KB · {new Date(att.createdAt).toLocaleString()}</div>
                             </div>
                           </div>
                         ))}
-                        {!attachments.length ? <div className="muted">?? ???? ?????? ???.</div> : null}
+                        {!attachments.length ? <div className="muted">لا توجد مرفقات بعد.</div> : null}
                       </div>
                     </div>
                   </div>
@@ -546,7 +546,7 @@ export default function VisitsPage() {
               </div>
             );
           })}
-          {!filteredVisits.length ? <div className="muted">?? ???? ?????? ???? ?????? ???????.</div> : null}
+          {!filteredVisits.length ? <div className="muted">لا توجد زيارات خلال الفترة المحددة.</div> : null}
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from "../../api/client";
 import { getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../offline/queue";
 import { useAuthStore } from "../../state/auth";
@@ -48,34 +48,34 @@ export default function AccountPage() {
   const syncNow = async () => {
     const res = await replayQueuedMutations();
     refreshQueue();
-    setSyncResult(`??? ?????? ?????? ${res.attempted} ??????? ??????? ${res.pending}.`);
+    setSyncResult(`تمت محاولة مزامنة ${res.attempted} عمليات، المتبقي ${res.pending}.`);
   };
 
   return (
     <div className="page">
       <div className="card">
-        <div className="section-title">????? ??????</div>
+        <div className="section-title">الملف الشخصي</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div>?????: {user?.name || "??? ?????"}</div>
-          <div>??????: {user?.email || "??? ?????"}</div>
-          <div>?????: {user?.role || "??? ?????"}</div>
-          <div>??????: {API_BASE_URL}</div>
+          <div>الاسم: {user?.name || "غير متوفر"}</div>
+          <div>البريد: {user?.email || "غير متوفر"}</div>
+          <div>الدور: {user?.role || "غير متوفر"}</div>
+          <div>الخادم: {API_BASE_URL}</div>
         </div>
       </div>
 
       <div className="card">
-        <div className="section-title">???? ????? ??? ?????</div>
-        <div className="muted">?????? ?????: {queueCount}</div>
-        <div className="muted">??? ?????? ??????: {lastAttemptAt ? new Date(lastAttemptAt).toLocaleString() : "?? ??? ???"}</div>
-        <div className="muted">??? ?????? ?????: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "?? ??? ???"}</div>
+        <div className="section-title">لوحة العمل دون اتصال</div>
+        <div className="muted">عمليات معلقة: {queueCount}</div>
+        <div className="muted">آخر محاولة مزامنة: {lastAttemptAt ? new Date(lastAttemptAt).toLocaleString() : "لم تتم بعد"}</div>
+        <div className="muted">آخر مزامنة ناجحة: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "لم تتم بعد"}</div>
         <div className="chip-row" style={{ marginTop: 8 }}>
           {Object.entries(queueBreakdown).map(([type, count]) => (
             <span className="chip" key={type}>{type}: {count}</span>
           ))}
-          {!Object.keys(queueBreakdown).length ? <span className="chip">?? ???? ?????? ?????</span> : null}
+          {!Object.keys(queueBreakdown).length ? <span className="chip">لا توجد عمليات معلقة</span> : null}
         </div>
         <button type="button" onClick={syncNow} disabled={!queueCount}>
-          ?????? ????
+          مزامنة الآن
         </button>
         {syncResult ? <div className="muted">{syncResult}</div> : null}
         <div className="list" style={{ marginTop: 12 }}>
@@ -88,19 +88,19 @@ export default function AccountPage() {
               <div className="muted">{new Date(item.createdAt).toLocaleString()}</div>
             </div>
           ))}
-          {!queueItems.length ? <div className="muted">????? ???????? ?????.</div> : null}
+          {!queueItems.length ? <div className="muted">قائمة الانتظار فارغة.</div> : null}
         </div>
       </div>
 
       <div className="card">
-        <div className="section-title">??????? GPS ?????? ??? ?????</div>
+        <div className="section-title">إعدادات GPS والعمل دون اتصال</div>
         <label className="settings-toggle">
           <input
             type="checkbox"
             checked={preferences.gpsAlerts}
             onChange={(e) => setPreferences((prev) => ({ ...prev, gpsAlerts: e.target.checked }))}
           />
-          ??????? GPS ??? ?????? ?? ???? ??????
+          تنبيهات GPS عند الخروج عن نطاق العميل
         </label>
         <label className="settings-toggle">
           <input
@@ -108,7 +108,7 @@ export default function AccountPage() {
             checked={preferences.offlineWarnings}
             onChange={(e) => setPreferences((prev) => ({ ...prev, offlineWarnings: e.target.checked }))}
           />
-          ??? ??????? ????? ??? ?????
+          عرض تحذيرات العمل دون اتصال
         </label>
         <label className="settings-toggle">
           <input
@@ -116,11 +116,11 @@ export default function AccountPage() {
             checked={preferences.dailyDigest}
             onChange={(e) => setPreferences((prev) => ({ ...prev, dailyDigest: e.target.checked }))}
           />
-          ???? ???? ??????
+          ملخص يومي للأداء
         </label>
         <div className="grid" style={{ marginTop: 12 }}>
           <div>
-            <label>?? ??? GPS (???)</label>
+            <label>حد دقة GPS (متر)</label>
             <input
               type="number"
               min={10}
@@ -130,7 +130,7 @@ export default function AccountPage() {
             />
           </div>
           <div>
-            <label>???? ??????? ???????? (???)</label>
+            <label>نطاق التنبيه الجغرافي (متر)</label>
             <input
               type="number"
               min={50}
@@ -140,24 +140,24 @@ export default function AccountPage() {
             />
           </div>
           <div>
-            <label>??????? ??? ?????</label>
+            <label>الواجهة حسب الدور</label>
             <select
               value={preferences.roleTheme}
               onChange={(e) => setPreferences((prev) => ({ ...prev, roleTheme: e.target.value as typeof prev.roleTheme }))}
             >
-              <option value="rep">?????</option>
-              <option value="sales">??????</option>
-              <option value="supervisor">????</option>
-              <option value="admin">?????</option>
+              <option value="rep">مندوب</option>
+              <option value="sales">مبيعات</option>
+              <option value="supervisor">مشرف</option>
+              <option value="admin">إدارة</option>
             </select>
           </div>
         </div>
       </div>
 
       <div className="card">
-        <div className="section-title">????? ??????</div>
+        <div className="section-title">تسجيل الخروج</div>
         <button type="button" onClick={logout}>
-          ????? ??????
+          تسجيل الخروج
         </button>
       </div>
     </div>

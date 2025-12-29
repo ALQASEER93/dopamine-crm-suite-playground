@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleMapWidget } from "../../components/map/GoogleMap";
 import { getTodayRoute } from "../../api/client";
@@ -14,17 +14,17 @@ type EnrichedStop = RouteStop & {
 };
 
 const statusCopy: Record<RouteStop["status"], { label: string; color: string }> = {
-  planned: { label: "?????", color: "#fbbf24" },
-  "in-progress": { label: "???? ???????", color: "#22d3ee" },
-  done: { label: "?????", color: "#34d399" },
-  skipped: { label: "??????", color: "#f87171" },
+  planned: { label: "مجدول", color: "#fbbf24" },
+  "in-progress": { label: "جارٍ التنفيذ", color: "#22d3ee" },
+  done: { label: "منتهٍ", color: "#34d399" },
+  skipped: { label: "متجاوز", color: "#f87171" },
 };
 
 const roleHints: Record<string, string> = {
-  admin: "???? ???? ???????? ?????? ????? ?? ????????.",
-  supervisor: "???? ???????? ?????? ??????? ?????? ????????.",
-  sales_manager: "???? ?????????? ????? ?????? ??????.",
-  rep: "???? ????? ???? ????? ?????? ?? ????? GPS.",
+  admin: "تابع جودة الزيارات وإدارة الفرق من التقارير.",
+  supervisor: "راقب الالتزام بالخطة اليومية وتوزيع المسارات.",
+  sales_manager: "تابع المستهدفات وأداء الفريق لحظيًا.",
+  rep: "ابدأ بأقرب عميل وأكمل المسار مع تسجيل GPS.",
 };
 
 const getClusterKey = (stop: RouteStop) => {
@@ -73,7 +73,7 @@ export default function TodayRoutePage() {
         setStops(data);
         setSelectedStop(data[0] || null);
       } catch (err) {
-        setError("???? ????? ???? ?????. ???? ?? ??????? ?? ???? ??? ????.");
+        setError("تعذر تحميل مسار اليوم. تأكد من الاتصال ثم حاول مرة أخرى.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -85,7 +85,7 @@ export default function TodayRoutePage() {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setLocationError("?????? ?? ???? ????? ??????.");
+      setLocationError("الجهاز لا يدعم تحديد الموقع.");
       return;
     }
 
@@ -94,7 +94,7 @@ export default function TodayRoutePage() {
         setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLocationAccuracy(pos.coords.accuracy ?? null);
       },
-      () => setLocationError("???? ????? ?????? ??????."),
+      () => setLocationError("تعذر قراءة الموقع الحالي."),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 },
     );
   }, []);
@@ -136,46 +136,46 @@ export default function TodayRoutePage() {
     <div className="page" aria-label="today-route-page">
       <div className="card-header" style={{ padding: "0 4px" }}>
         <div>
-          <div className="section-title">???? ?????</div>
-          <div className="muted">???? ??????? ?????? ???? ??????? ?? GPS.</div>
+          <div className="section-title">مسار اليوم</div>
+          <div className="muted">ابدأ بالمحطة الأقرب وسجل الزيارة مع GPS.</div>
         </div>
-        <span className="pill">??? ???????: {stops.length}</span>
+        <span className="pill">عدد المحطات: {stops.length}</span>
       </div>
 
       <div className="card">
         <div className="stat-grid">
           <div className="stat-card">
             <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">?????? ???????</div>
+            <div className="stat-label">إجمالي المحطات</div>
           </div>
           <div className="stat-card">
             <div className="stat-value">{stats.done}</div>
-            <div className="stat-label">??????</div>
+            <div className="stat-label">منتهية</div>
           </div>
           <div className="stat-card">
             <div className="stat-value">{stats["in-progress"]}</div>
-            <div className="stat-label">???? ???????</div>
+            <div className="stat-label">جارٍ التنفيذ</div>
           </div>
           <div className="stat-card">
             <div className="stat-value">{stats.planned}</div>
-            <div className="stat-label">??????</div>
+            <div className="stat-label">مجدولة</div>
           </div>
         </div>
       </div>
 
       <div className="card">
-        <div className="section-title">????? ????? ??????</div>
-        <div className="muted">????? ??????: {currentLocation ? "?? ??????" : "??? ????"}</div>
+        <div className="section-title">مساعد تخطيط المسار</div>
+        <div className="muted">موقعك الحالي: {currentLocation ? "تم تحديده" : "غير متاح"}</div>
         <div className="muted">
-          ??? GPS: {locationAccuracy != null ? `${Math.round(locationAccuracy)}?` : "??? ????"}
+          دقة GPS: {locationAccuracy != null ? `${Math.round(locationAccuracy)}م` : "غير متاح"}
         </div>
-        <div className="muted">???? ??????? ????????: {preferences.geofenceRadius}?</div>
+        <div className="muted">نطاق التنبيه الجغرافي: {preferences.geofenceRadius}م</div>
         {locationError ? <div className="muted" style={{ color: "#fca5a5" }}>{locationError}</div> : null}
         {clusterStats.length ? (
           <div className="chip-row" style={{ marginTop: 10 }}>
             {clusterStats.slice(0, 4).map((cluster) => (
               <span key={cluster.key} className="chip">
-                ?????? {cluster.key === "unknown" ? "???? ????" : cluster.key}: {cluster.count}
+                مجموعة {cluster.key === "unknown" ? "بدون موقع" : cluster.key}: {cluster.count}
               </span>
             ))}
           </div>
@@ -186,15 +186,15 @@ export default function TodayRoutePage() {
               <div>
                 <div style={{ fontWeight: 700 }}>{index + 1}. {stop.customerName}</div>
                 <div className="muted">
-                  {stop.address || "????? ??? ?????"} ? {formatDistance(stop.distanceMeters)} ? ETA {stop.etaMinutes ? `${stop.etaMinutes}?` : "-"}
+                  {stop.address || "عنوان غير متوفر"} · {formatDistance(stop.distanceMeters)} · ETA {stop.etaMinutes ? `${stop.etaMinutes}د` : "-"}
                 </div>
               </div>
               <span className="pill">{statusCopy[stop.status]?.label}</span>
             </div>
           ))}
-          {!suggestedStops.length ? <div className="muted">???? GPS ??????? ??????? ??????.</div> : null}
+          {!suggestedStops.length ? <div className="muted">فعّل GPS لاقتراح الترتيب الأمثل.</div> : null}
         </div>
-        <div className="muted" style={{ marginTop: 8 }}>????? ?????: {roleHints[role] || roleHints.rep}</div>
+        <div className="muted" style={{ marginTop: 8 }}>نصيحة الدور: {roleHints[role] || roleHints.rep}</div>
       </div>
 
       <GoogleMapWidget
@@ -211,14 +211,14 @@ export default function TodayRoutePage() {
           }))}
       />
 
-      {loading ? <div className="card">???? ????? ????????...</div> : null}
+      {loading ? <div className="card">جارٍ تحميل البيانات...</div> : null}
       {error ? <div className="card" style={{ color: "#f87171" }}>{error}</div> : null}
 
       {selectedStop ? (
         <div className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontWeight: 700 }}>{selectedStop.customerName}</div>
-            <div className="muted">{selectedStop.address || "????? ??? ?????"}</div>
+            <div className="muted">{selectedStop.address || "عنوان غير متوفر"}</div>
           </div>
           <button
             type="button"
@@ -228,7 +228,7 @@ export default function TodayRoutePage() {
               })
             }
           >
-            ????? ?????
+            إنشاء زيارة
           </button>
         </div>
       ) : null}
@@ -245,9 +245,9 @@ export default function TodayRoutePage() {
             <div>
               <div style={{ fontWeight: 700 }}>{stop.customerName}</div>
               <div className="muted">
-                {stop.address || "????? ??? ?????"}{stop.scheduledFor ? ` - ${new Date(stop.scheduledFor).toLocaleTimeString()}` : ""}
+                {stop.address || "عنوان غير متوفر"}{stop.scheduledFor ? ` - ${new Date(stop.scheduledFor).toLocaleTimeString()}` : ""}
               </div>
-              {stop.distanceMeters != null ? <div className="muted">???????: {formatDistance(stop.distanceMeters)}</div> : null}
+              {stop.distanceMeters != null ? <div className="muted">المسافة: {formatDistance(stop.distanceMeters)}</div> : null}
             </div>
             <span className="pill">
               <span className={`status-dot ${stop.status === "done" ? "done" : stop.status === "in-progress" ? "active" : stop.status === "skipped" ? "skipped" : "planned"}`} />

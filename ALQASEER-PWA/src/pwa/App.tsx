@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { BottomNav } from "./components/navigation/BottomNav";
 import { RequireAuth } from "./components/layout/RequireAuth";
@@ -55,7 +55,9 @@ export default function App() {
   return (
     <div dir="rtl">
       <div className="app-shell">
-        {!isOnline ? <div className="offline-banner">?? ???? ????? ?????????. ???? ??? ???????? ?????? ??? ???? ??????.</div> : null}
+        {!isOnline ? (
+          <div className="offline-banner">لا يوجد اتصال بالإنترنت. سيتم حفظ الزيارات محليًا حتى تعود الشبكة.</div>
+        ) : null}
 
         <Routes>
           <Route path="/login" element={<LoginPage />} />

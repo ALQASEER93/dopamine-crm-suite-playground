@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User } from "../api/types";
 import React, { ReactNode, useEffect } from "react";
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (!hydrated) {
-    return <div style={{ padding: 24, textAlign: "center" }}>???? ????? ??????...</div>;
+    return <div style={{ padding: 24, textAlign: "center" }}>جارٍ تجهيز الجلسة...</div>;
   }
 
   return <>{children}</>;
