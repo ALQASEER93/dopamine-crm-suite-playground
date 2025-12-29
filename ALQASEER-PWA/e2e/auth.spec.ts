@@ -60,6 +60,29 @@ test("PWA login persists after refresh", async ({ page }) => {
   await expect(page).toHaveURL(/\/today-route$/);
   await expect(page.getByLabel("today-route-page")).toBeVisible();
 
+  await page.goto("/visits", { waitUntil: "networkidle" });
+  await page.locator("form").waitFor({ state: "visible" });
+  const customerOptions = page.locator("#customer option");
+  const optionCount = await customerOptions.count();
+  expect(optionCount).toBeGreaterThan(1);
+  const customerValue = await customerOptions.nth(1).getAttribute("value");
+  expect(customerValue).toBeTruthy();
+  await page.locator("#customer").selectOption(customerValue || "");
+  await page.locator("textarea").fill("E2E visit");
+  await page.locator("form button[type=\"submit\"]").click();
+  await expect(page.locator(".list .list-item").first()).toBeVisible();
+
+  await page.context().setOffline(true);
+  await page.locator(".list .list-item").first().locator("button").first().click();
+  const queuedCount = await page.evaluate(() => {
+    const raw = localStorage.getItem("dpm-offline-queue");
+    return raw ? JSON.parse(raw).length : 0;
+  });
+  expect(queuedCount).toBeGreaterThan(0);
+  await page.context().setOffline(false);
+  await page.goto("/today-route", { waitUntil: "networkidle" });
+  await expect(page.getByLabel("today-route-page")).toBeVisible();
+
   const token = await page.evaluate(() => {
     const raw = localStorage.getItem("dpm-auth");
     if (!raw) {

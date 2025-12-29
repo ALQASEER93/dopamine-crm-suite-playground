@@ -1,6 +1,6 @@
 import { apiFetch } from "../api/client";
 
-type MutationType = "visit" | "order" | "location";
+type MutationType = "visit" | "visit-start" | "visit-end" | "order" | "location";
 
 export type QueuedMutation = {
   id: string;
@@ -12,6 +12,12 @@ export type QueuedMutation = {
 };
 
 const STORAGE_KEY = "dpm-offline-queue";
+const META_KEY = "dpm-offline-queue-meta";
+
+type QueueMeta = {
+  lastSyncAt?: string;
+  lastAttemptAt?: string;
+};
 
 function readQueue(): QueuedMutation[] {
   try {
@@ -45,9 +51,30 @@ export function getQueuedMutations() {
   return readQueue();
 }
 
+export function getQueueMeta(): QueueMeta {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    return raw ? (JSON.parse(raw) as QueueMeta) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setQueueMeta(meta: QueueMeta) {
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+  } catch (error) {
+    console.error("failed to persist queue metadata", error);
+  }
+}
+
 export async function replayQueuedMutations() {
   const queue = readQueue();
-  if (!queue.length) return { attempted: 0, pending: 0 };
+  const now = new Date().toISOString();
+  if (!queue.length) {
+    setQueueMeta({ lastAttemptAt: now, lastSyncAt: now });
+    return { attempted: 0, pending: 0 };
+  }
 
   const remaining: QueuedMutation[] = [];
 
@@ -64,5 +91,9 @@ export async function replayQueuedMutations() {
   }
 
   writeQueue(remaining);
+  setQueueMeta({
+    lastAttemptAt: now,
+    lastSyncAt: remaining.length ? undefined : now,
+  });
   return { attempted: queue.length, pending: remaining.length };
 }
