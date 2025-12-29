@@ -1,22 +1,22 @@
 import PropTypes from 'prop-types';
 
 const CARD_CONFIG = [
-  { key: 'totalVisits', label: 'Total Visits', emphasisColor: '#3f83f8' },
-  { key: 'completedVisits', label: 'Completed Visits', emphasisColor: '#0e9f6e' },
-  { key: 'inProgressVisits', label: 'In Progress', emphasisColor: '#2cb1bc' },
-  { key: 'scheduledVisits', label: 'Scheduled Visits', emphasisColor: '#f6ad55' },
-  { key: 'cancelledVisits', label: 'Cancelled Visits', emphasisColor: '#c53030' },
+  { key: 'totalVisits', label: 'إجمالي الزيارات', emphasisColor: '#38bdf8' },
+  { key: 'completedVisits', label: 'الزيارات المكتملة', emphasisColor: '#34d399' },
+  { key: 'inProgressVisits', label: 'قيد التنفيذ', emphasisColor: '#22d3ee' },
+  { key: 'scheduledVisits', label: 'المجدولة', emphasisColor: '#fbbf24' },
+  { key: 'cancelledVisits', label: 'الملغاة', emphasisColor: '#f87171' },
   {
     key: 'completionRate',
-    label: 'Completion Rate',
-    emphasisColor: '#7c3aed',
+    label: 'نسبة الإكمال',
+    emphasisColor: '#a78bfa',
     formatter: value => `${Number(value ?? 0).toFixed(1)}%`,
   },
   {
     key: 'avgDurationMinutes',
-    label: 'Avg Duration (min)',
-    emphasisColor: '#0ea5e9',
-    formatter: value => (value == null ? 'N/A' : `${Number(value).toFixed(1)} min`),
+    label: 'متوسط المدة (دقيقة)',
+    emphasisColor: '#38bdf8',
+    formatter: value => (value == null ? 'غير متاح' : `${Number(value).toFixed(1)} دقيقة`),
   },
 ];
 
@@ -33,7 +33,7 @@ const formatValue = (value, formatter) => {
     return formatter(value);
   }
   if (value == null) {
-    return 'N/A';
+    return 'غير متاح';
   }
   return value.toLocaleString();
 };
@@ -45,19 +45,19 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
         style={{
           marginBottom: '24px',
           padding: '16px',
-          borderRadius: '8px',
-          backgroundColor: '#fde8e8',
-          color: '#b83232',
+          borderRadius: '12px',
+          backgroundColor: 'rgba(248, 113, 113, 0.2)',
+          color: '#fecaca',
         }}
       >
-        Unable to load summary metrics: {error}
+        تعذر تحميل مؤشرات الزيارات: {error}
       </div>
     );
   }
 
   return (
     <section
-      aria-label="Visits summary metrics"
+      aria-label="مؤشرات الزيارات"
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -72,7 +72,7 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
         const displayValue = isLoading ? '...' : formatValue(value, formatter);
         const deltaDisplay =
           typeof delta === 'number'
-            ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% WoW`
+            ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% أسبوعيًا`
             : summary?.weekOverWeek && typeof summary.weekOverWeek === 'object'
             ? summary.weekOverWeek[card.key]
             : undefined;
@@ -81,20 +81,20 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
           <article
             key={card.key}
             style={{
-              borderRadius: '8px',
-              border: '1px solid #d9e2ec',
+              borderRadius: '14px',
+              border: '1px solid rgba(148, 163, 184, 0.2)',
               padding: '16px',
-              backgroundColor: '#ffffff',
-              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
+              backgroundColor: '#111827',
+              boxShadow: '0 10px 24px rgba(0, 0, 0, 0.35)',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
             }}
           >
-            <span style={{ color: '#52606d', fontSize: '14px', fontWeight: 600 }}>{card.label}</span>
+            <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 600 }}>{card.label}</span>
             <strong style={{ fontSize: '28px', color: card.emphasisColor, minHeight: '36px' }}>{displayValue}</strong>
-            <span style={{ color: '#9aa5b1', fontSize: '12px' }}>
-              {isLoading ? 'Refreshing metrics...' : deltaDisplay || 'Week-over-week change pending'}
+            <span style={{ color: '#94a3b8', fontSize: '12px' }}>
+              {isLoading ? 'جاري تحديث المؤشرات...' : deltaDisplay || 'بانتظار المقارنة الأسبوعية'}
             </span>
           </article>
         );

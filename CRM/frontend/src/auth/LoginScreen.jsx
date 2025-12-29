@@ -39,8 +39,8 @@ const LoginScreen = () => {
     <div className="login-screen">
       <form className="login-card" onSubmit={handleSubmit}>
         <div>
-          <h1>CRM Sign in</h1>
-          <p>Use your field ops credentials to open the Visits dashboard.</p>
+          <h1>تسجيل الدخول للوحة الإدارة</h1>
+          <p>استخدم حسابك الإداري لمتابعة الأداء وإدارة الزيارات.</p>
         </div>
 
         {error && (
@@ -50,31 +50,31 @@ const LoginScreen = () => {
         )}
 
         <label>
-          Email
+          البريد الإلكتروني
           <input
             type="email"
             name="email"
             value={formState.email}
             onChange={handleChange}
             required
-            placeholder="you@example.com"
+            placeholder="admin@example.com"
           />
         </label>
 
         <label>
-          Password
+          كلمة المرور
           <input
             type="password"
             name="password"
             value={formState.password}
             onChange={handleChange}
             required
-            placeholder="Enter your password"
+            placeholder="••••••••"
           />
         </label>
 
         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? 'جاري تسجيل الدخول...' : 'دخول'}
         </button>
       </form>
     </div>

@@ -4,19 +4,19 @@ import { useAuth } from '../auth/AuthContext';
 import './MainLayout.css';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Doctors', path: '/doctors' },
-  { label: 'Pharmacies', path: '/pharmacies' },
-  { label: 'Products', path: '/products' },
-  { label: 'Orders', path: '/orders' },
-  { label: 'Visits', path: '/visits' },
-  { label: 'Routes', path: '/routes' },
-  { label: 'Stock', path: '/stock' },
-  { label: 'Targets', path: '/targets' },
-  { label: 'Collections', path: '/collections' },
-  { label: 'Reports', path: '/reports', roles: ['admin', 'sales_manager'] },
-  { label: 'Settings', path: '/settings' },
-  { label: 'Admin', path: '/settings/users', roles: ['admin', 'sales_manager'] },
+  { label: 'لوحة المتابعة', path: '/dashboard' },
+  { label: 'الأطباء', path: '/doctors' },
+  { label: 'الصيدليات', path: '/pharmacies' },
+  { label: 'المنتجات', path: '/products' },
+  { label: 'الطلبات', path: '/orders' },
+  { label: 'الزيارات', path: '/visits' },
+  { label: 'المسارات', path: '/routes' },
+  { label: 'المخزون', path: '/stock' },
+  { label: 'الأهداف', path: '/targets' },
+  { label: 'التحصيلات', path: '/collections' },
+  { label: 'التقارير', path: '/reports', roles: ['admin', 'sales_manager'] },
+  { label: 'الإعدادات', path: '/settings' },
+  { label: 'إدارة المستخدمين', path: '/settings/users', roles: ['admin', 'sales_manager'] },
 ];
 
 const MainLayout = () => {
@@ -44,15 +44,15 @@ const MainLayout = () => {
     navigate('/login', { replace: true });
   };
 
-  const userInitial = (user?.name || user?.email || '?').charAt(0).toUpperCase();
+  const userInitial = (user?.name || user?.email || '?').charAt(0);
   const roleLabel =
     roleSlug === 'sales_rep'
-      ? 'Sales Representative'
+      ? 'مندوب مبيعات'
       : roleSlug === 'sales_manager'
-      ? 'Sales Manager'
+      ? 'مدير مبيعات'
       : roleSlug === 'admin'
-      ? 'Admin'
-      : roleSlug || 'Team Member';
+      ? 'مدير النظام'
+      : roleSlug || 'عضو الفريق';
   const navItems = useMemo(
     () => NAV_ITEMS.filter(item => !item.roles || item.roles.includes(roleSlug)),
     [roleSlug],
@@ -62,7 +62,7 @@ const MainLayout = () => {
     <div className="layout">
       <aside className={`layout__sidebar ${sidebarOpen ? 'layout__sidebar--open' : ''}`}>
         <div className="layout__brand">
-          <span>DOPAMINE CRM</span>
+          <span>دوبامين CRM</span>
         </div>
         <nav className="layout__nav">
           {navItems.map(item => (
@@ -82,13 +82,13 @@ const MainLayout = () => {
             type="button"
             className="layout__menu-button"
             onClick={() => setSidebarOpen(prev => !prev)}
-            aria-label="Toggle navigation"
+            aria-label="إظهار القائمة"
           >
-            Menu
+            القائمة
           </button>
           <div className="layout__header-info">
             <div>
-              <span className="layout__header-app">DOPAMINE CRM</span>
+              <span className="layout__header-app">نظام دوبامين للعمليات</span>
               <span className="layout__header-role">{roleLabel}</span>
             </div>
             <div className="layout__header-user">
@@ -98,7 +98,7 @@ const MainLayout = () => {
                 <span>{user?.email}</span>
               </div>
               <button type="button" className="btn btn-secondary layout__signout" onClick={handleSignOut}>
-                Sign out
+                تسجيل الخروج
               </button>
             </div>
           </div>

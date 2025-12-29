@@ -27,7 +27,7 @@ export default function LoginPage() {
       const redirectTo = (location.state as any)?.from || "/today-route";
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError("تعذّر تسجيل الدخول، تأكد من البيانات أو الاتصال.");
+      setError("تعذر تسجيل الدخول، تأكد من البيانات أو الاتصال.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -36,12 +36,17 @@ export default function LoginPage() {
 
   return (
     <div className="page" aria-label="login-page">
-      <div className="card">
-        <div className="section-title">تسجيل الدخول</div>
-        <p className="muted">استخدم نفس بيانات الدخول الخاصة بنظام الـ CRM.</p>
+      <div className="card auth-card">
+        <div className="auth-header">
+          <div>
+            <div className="section-title">تسجيل دخول المندوب</div>
+            <p className="muted">ادخل بياناتك للوصول إلى مهام اليوم والمسار الميداني.</p>
+          </div>
+          <span className="pill">DPM Field</span>
+        </div>
         <form onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email">البريد الوظيفي</label>
+            <label htmlFor="email">البريد الإلكتروني</label>
             <input
               id="email"
               name="email"
@@ -68,16 +73,16 @@ export default function LoginPage() {
           </div>
           {error ? <div style={{ color: "#f87171", fontSize: 13 }}>{error}</div> : null}
           <button type="submit" disabled={loading}>
-            {loading ? "جاري التحقق..." : "دخول"}
+            {loading ? "جاري تسجيل الدخول..." : "دخول"}
           </button>
         </form>
       </div>
       <div className="card">
-        <div className="section-title">إرشادات سريعة</div>
+        <div className="section-title">ملاحظات سريعة</div>
         <ul style={{ margin: 0, paddingInlineStart: 20, color: "var(--muted)", lineHeight: 1.6 }}>
-          <li>يجب منح إذن تحديد الموقع عند فتح التطبيق.</li>
-          <li>يتم تخزين آخر بيانات مسار اليوم والعملاء للعمل في وضع عدم الاتصال.</li>
-          <li>عند عودة الاتصال يتم إرسال الزيارات والطلبات المعلقة تلقائياً.</li>
+          <li>تأكد من تفعيل GPS للحصول على أفضل دقة.</li>
+          <li>يمكنك العمل دون اتصال، وسيتم المزامنة تلقائيًا.</li>
+          <li>استخدم صفحة المسار لبدء زياراتك بسرعة.</li>
         </ul>
       </div>
     </div>
