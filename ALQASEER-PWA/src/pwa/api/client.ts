@@ -10,7 +10,20 @@ import {
 } from "./types";
 
 const DEFAULT_API_BASE = "/api/v1";
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE;
+
+const resolveApiBase = () => {
+  const envBase = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  if (envBase) return envBase;
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://127.0.0.1:8000/api/v1";
+    }
+  }
+  return DEFAULT_API_BASE;
+};
+
+export const API_BASE_URL = resolveApiBase();
 
 type RequestOptions = Omit<RequestInit, "headers"> & {
   headers?: Record<string, string>;
@@ -61,7 +74,9 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   if (!res.ok) {
     const message = await res.text();
-    throw new Error(message || `Request failed with status ${res.status}`);
+    const error = new Error(message || `Request failed with status ${res.status}`);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
   }
 
   return (await res.json()) as T;

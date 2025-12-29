@@ -18,7 +18,11 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=PaginatedResponse[DoctorOut])
+@router.get(
+    "/",
+    response_model=PaginatedResponse[DoctorOut],
+    dependencies=[Depends(require_roles("sales_manager", "admin", "medical_rep"))],
+)
 def list_doctors(
     page: int = Query(DEFAULT_PAGE, ge=1),
     page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500),
@@ -69,7 +73,11 @@ def create_doctor(payload: DoctorCreate, db: Session = Depends(get_db)) -> Docto
     return doctor
 
 
-@router.get("/{doctor_id}", response_model=DoctorOut)
+@router.get(
+    "/{doctor_id}",
+    response_model=DoctorOut,
+    dependencies=[Depends(require_roles("sales_manager", "admin", "medical_rep"))],
+)
 def get_doctor(doctor_id: int, db: Session = Depends(get_db)) -> Doctor:
     doctor = db.get(Doctor, doctor_id)
     if not doctor:

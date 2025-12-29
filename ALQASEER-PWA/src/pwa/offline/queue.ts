@@ -85,6 +85,11 @@ export async function replayQueuedMutations() {
         body: JSON.stringify(mutation.payload),
       });
     } catch (error) {
+      const status = (error as Error & { status?: number }).status;
+      if (status && status >= 400 && status < 500) {
+        console.warn("dropping mutation after client error", mutation.type, status);
+        continue;
+      }
       console.warn("failed to replay mutation", mutation.type, error);
       remaining.push(mutation);
     }
