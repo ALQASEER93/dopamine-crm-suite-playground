@@ -1,22 +1,22 @@
 import PropTypes from 'prop-types';
 
 const CARD_CONFIG = [
-  { key: 'totalVisits', label: 'إجمالي الزيارات', emphasisColor: '#38bdf8' },
-  { key: 'completedVisits', label: 'الزيارات المكتملة', emphasisColor: '#34d399' },
-  { key: 'inProgressVisits', label: 'قيد التنفيذ', emphasisColor: '#22d3ee' },
-  { key: 'scheduledVisits', label: 'المجدولة', emphasisColor: '#fbbf24' },
-  { key: 'cancelledVisits', label: 'الملغاة', emphasisColor: '#f87171' },
+  { key: 'totalVisits', label: '?????? ????????', emphasisColor: '#38bdf8' },
+  { key: 'completedVisits', label: '?????? ??????', emphasisColor: '#34d399' },
+  { key: 'inProgressVisits', label: '??? ???????', emphasisColor: '#22d3ee' },
+  { key: 'scheduledVisits', label: '??????', emphasisColor: '#fbbf24' },
+  { key: 'cancelledVisits', label: '?????', emphasisColor: '#f87171' },
   {
     key: 'completionRate',
-    label: 'نسبة الإكمال',
+    label: '???? ???????',
     emphasisColor: '#a78bfa',
     formatter: value => `${Number(value ?? 0).toFixed(1)}%`,
   },
   {
     key: 'avgDurationMinutes',
-    label: 'متوسط المدة (دقيقة)',
+    label: '????? ??? ??????? (?????)',
     emphasisColor: '#38bdf8',
-    formatter: value => (value == null ? 'غير متاح' : `${Number(value).toFixed(1)} دقيقة`),
+    formatter: value => (value == null ? '??? ????' : `${Number(value).toFixed(1)} ?????`),
   },
 ];
 
@@ -33,7 +33,7 @@ const formatValue = (value, formatter) => {
     return formatter(value);
   }
   if (value == null) {
-    return 'غير متاح';
+    return '??? ????';
   }
   return value.toLocaleString();
 };
@@ -50,14 +50,14 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
           color: '#fecaca',
         }}
       >
-        تعذر تحميل مؤشرات الزيارات: {error}
+        ???? ????? ???? ????????: {error}
       </div>
     );
   }
 
   return (
     <section
-      aria-label="مؤشرات الزيارات"
+      aria-label="???? ????????"
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -72,7 +72,7 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
         const displayValue = isLoading ? '...' : formatValue(value, formatter);
         const deltaDisplay =
           typeof delta === 'number'
-            ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% أسبوعيًا`
+            ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% ?????? ???????? ??????`
             : summary?.weekOverWeek && typeof summary.weekOverWeek === 'object'
             ? summary.weekOverWeek[card.key]
             : undefined;
@@ -94,7 +94,7 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
             <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 600 }}>{card.label}</span>
             <strong style={{ fontSize: '28px', color: card.emphasisColor, minHeight: '36px' }}>{displayValue}</strong>
             <span style={{ color: '#94a3b8', fontSize: '12px' }}>
-              {isLoading ? 'جاري تحديث المؤشرات...' : deltaDisplay || 'بانتظار المقارنة الأسبوعية'}
+              {isLoading ? '???? ????? ???????? ?????????...' : deltaDisplay || '?? ???? ?????? ??????? ?????'}
             </span>
           </article>
         );

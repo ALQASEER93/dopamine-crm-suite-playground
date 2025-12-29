@@ -3,20 +3,55 @@ import { useNavigate } from "react-router-dom";
 import { GoogleMapWidget } from "../../components/map/GoogleMap";
 import { getTodayRoute } from "../../api/client";
 import { RouteStop } from "../../api/types";
+import { distanceMeters, formatDistance } from "../../utils/geo";
+import { readPreferences } from "../../utils/preferences";
+import { useAuthStore } from "../../state/auth";
+
+type EnrichedStop = RouteStop & {
+  distanceMeters?: number;
+  etaMinutes?: number;
+  clusterKey?: string;
+};
 
 const statusCopy: Record<RouteStop["status"], { label: string; color: string }> = {
-  planned: { label: "مخططة", color: "#fbbf24" },
-  "in-progress": { label: "جارٍ التنفيذ", color: "#22d3ee" },
-  done: { label: "تمت", color: "#34d399" },
-  skipped: { label: "تم التخطي", color: "#f87171" },
+  planned: { label: "?????", color: "#fbbf24" },
+  "in-progress": { label: "???? ???????", color: "#22d3ee" },
+  done: { label: "?????", color: "#34d399" },
+  skipped: { label: "??????", color: "#f87171" },
+};
+
+const roleHints: Record<string, string> = {
+  admin: "???? ???? ???????? ?????? ????? ?? ????????.",
+  supervisor: "???? ???????? ?????? ??????? ?????? ????????.",
+  sales_manager: "???? ?????????? ????? ?????? ??????.",
+  rep: "???? ????? ???? ????? ?????? ?? ????? GPS.",
+};
+
+const getClusterKey = (stop: RouteStop) => {
+  if (!stop.location) return "unknown";
+  const lat = Math.round(stop.location.lat * 100) / 100;
+  const lng = Math.round(stop.location.lng * 100) / 100;
+  return `${lat},${lng}`;
+};
+
+const estimateEtaMinutes = (meters?: number) => {
+  if (!meters) return null;
+  const speedKmh = 28;
+  const minutes = (meters / 1000 / speedKmh) * 60;
+  return Math.max(2, Math.round(minutes));
 };
 
 export default function TodayRoutePage() {
   const navigate = useNavigate();
+  const role = useAuthStore((s) => s.user?.role || "rep");
   const [stops, setStops] = useState<RouteStop[]>([]);
   const [selectedStop, setSelectedStop] = useState<RouteStop | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [preferences] = useState(() => readPreferences());
 
   const stats = useMemo(() => {
     return stops.reduce(
@@ -38,7 +73,7 @@ export default function TodayRoutePage() {
         setStops(data);
         setSelectedStop(data[0] || null);
       } catch (err) {
-        setError("تعذر تحميل مسار اليوم. تحقق من الاتصال أو حدّث الصفحة.");
+        setError("???? ????? ???? ?????. ???? ?? ??????? ?? ???? ??? ????.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -48,41 +83,124 @@ export default function TodayRoutePage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError("?????? ?? ???? ????? ??????.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationAccuracy(pos.coords.accuracy ?? null);
+      },
+      () => setLocationError("???? ????? ?????? ??????."),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 },
+    );
+  }, []);
+
+  const enrichedStops = useMemo<EnrichedStop[]>(() => {
+    return stops.map((stop) => {
+      if (!stop.location || !currentLocation) {
+        return { ...stop, clusterKey: getClusterKey(stop) };
+      }
+      const distance = distanceMeters(currentLocation, stop.location);
+      const eta = estimateEtaMinutes(distance);
+      return {
+        ...stop,
+        distanceMeters: distance,
+        etaMinutes: eta ?? undefined,
+        clusterKey: getClusterKey(stop),
+      };
+    });
+  }, [stops, currentLocation]);
+
+  const suggestedStops = useMemo(() => {
+    return [...enrichedStops]
+      .filter((stop) => stop.distanceMeters != null)
+      .sort((a, b) => (a.distanceMeters ?? 0) - (b.distanceMeters ?? 0));
+  }, [enrichedStops]);
+
+  const clusterStats = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const stop of enrichedStops) {
+      const key = stop.clusterKey || "unknown";
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([key, count]) => ({ key, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [enrichedStops]);
+
   return (
     <div className="page" aria-label="today-route-page">
       <div className="card-header" style={{ padding: "0 4px" }}>
         <div>
-          <div className="section-title">مسار اليوم</div>
-          <div className="muted">استعرض زيارات اليوم واضغط لبدء الزيارة.</div>
+          <div className="section-title">???? ?????</div>
+          <div className="muted">???? ??????? ?????? ???? ??????? ?? GPS.</div>
         </div>
-        <span className="pill">عدد الزيارات: {stops.length}</span>
+        <span className="pill">??? ???????: {stops.length}</span>
       </div>
 
       <div className="card">
         <div className="stat-grid">
           <div className="stat-card">
             <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">إجمالي الزيارات</div>
+            <div className="stat-label">?????? ???????</div>
           </div>
           <div className="stat-card">
             <div className="stat-value">{stats.done}</div>
-            <div className="stat-label">منجزة اليوم</div>
+            <div className="stat-label">??????</div>
           </div>
           <div className="stat-card">
             <div className="stat-value">{stats["in-progress"]}</div>
-            <div className="stat-label">قيد التنفيذ</div>
+            <div className="stat-label">???? ???????</div>
           </div>
           <div className="stat-card">
             <div className="stat-value">{stats.planned}</div>
-            <div className="stat-label">متبقية</div>
+            <div className="stat-label">??????</div>
           </div>
         </div>
       </div>
 
+      <div className="card">
+        <div className="section-title">????? ????? ??????</div>
+        <div className="muted">????? ??????: {currentLocation ? "?? ??????" : "??? ????"}</div>
+        <div className="muted">
+          ??? GPS: {locationAccuracy != null ? `${Math.round(locationAccuracy)}?` : "??? ????"}
+        </div>
+        <div className="muted">???? ??????? ????????: {preferences.geofenceRadius}?</div>
+        {locationError ? <div className="muted" style={{ color: "#fca5a5" }}>{locationError}</div> : null}
+        {clusterStats.length ? (
+          <div className="chip-row" style={{ marginTop: 10 }}>
+            {clusterStats.slice(0, 4).map((cluster) => (
+              <span key={cluster.key} className="chip">
+                ?????? {cluster.key === "unknown" ? "???? ????" : cluster.key}: {cluster.count}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="list" style={{ marginTop: 12 }}>
+          {suggestedStops.slice(0, 5).map((stop, index) => (
+            <div key={stop.id} className="list-item" style={{ alignItems: "center" }}>
+              <div>
+                <div style={{ fontWeight: 700 }}>{index + 1}. {stop.customerName}</div>
+                <div className="muted">
+                  {stop.address || "????? ??? ?????"} ? {formatDistance(stop.distanceMeters)} ? ETA {stop.etaMinutes ? `${stop.etaMinutes}?` : "-"}
+                </div>
+              </div>
+              <span className="pill">{statusCopy[stop.status]?.label}</span>
+            </div>
+          ))}
+          {!suggestedStops.length ? <div className="muted">???? GPS ??????? ??????? ??????.</div> : null}
+        </div>
+        <div className="muted" style={{ marginTop: 8 }}>????? ?????: {roleHints[role] || roleHints.rep}</div>
+      </div>
+
       <GoogleMapWidget
-        center={selectedStop?.location || undefined}
-        currentLocation={null}
-        markers={stops
+        center={selectedStop?.location || currentLocation || undefined}
+        currentLocation={currentLocation || undefined}
+        markers={enrichedStops
           .filter((s) => s.location)
           .map((stop) => ({
             id: stop.id,
@@ -93,14 +211,14 @@ export default function TodayRoutePage() {
           }))}
       />
 
-      {loading ? <div className="card">جاري التحميل...</div> : null}
+      {loading ? <div className="card">???? ????? ????????...</div> : null}
       {error ? <div className="card" style={{ color: "#f87171" }}>{error}</div> : null}
 
       {selectedStop ? (
         <div className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontWeight: 700 }}>{selectedStop.customerName}</div>
-            <div className="muted">{selectedStop.address || "عنوان غير متوفر"}</div>
+            <div className="muted">{selectedStop.address || "????? ??? ?????"}</div>
           </div>
           <button
             type="button"
@@ -110,13 +228,13 @@ export default function TodayRoutePage() {
               })
             }
           >
-            بدء الزيارة
+            ????? ?????
           </button>
         </div>
       ) : null}
 
       <div className="list">
-        {stops.map((stop) => (
+        {enrichedStops.map((stop) => (
           <button
             type="button"
             key={stop.id}
@@ -127,8 +245,9 @@ export default function TodayRoutePage() {
             <div>
               <div style={{ fontWeight: 700 }}>{stop.customerName}</div>
               <div className="muted">
-                {stop.address || "عنوان غير متوفر"}{stop.scheduledFor ? ` - ${new Date(stop.scheduledFor).toLocaleTimeString()}` : ""}
+                {stop.address || "????? ??? ?????"}{stop.scheduledFor ? ` - ${new Date(stop.scheduledFor).toLocaleTimeString()}` : ""}
               </div>
+              {stop.distanceMeters != null ? <div className="muted">???????: {formatDistance(stop.distanceMeters)}</div> : null}
             </div>
             <span className="pill">
               <span className={`status-dot ${stop.status === "done" ? "done" : stop.status === "in-progress" ? "active" : stop.status === "skipped" ? "skipped" : "planned"}`} />

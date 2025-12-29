@@ -15,7 +15,7 @@ const formatDashboardError = error => {
       ? error.payload.detail || error.payload.message
       : null;
   const baseMessage =
-    typeof payloadDetail === 'string' && payloadDetail.trim() ? payloadDetail : error.message || 'تعذر تحميل البيانات';
+    typeof payloadDetail === 'string' && payloadDetail.trim() ? payloadDetail : error.message || '???? ????? ????????';
   return status ? `${baseMessage} (${status})` : baseMessage;
 };
 
@@ -62,15 +62,23 @@ const DashboardPage = () => {
   const recentVisitsErrorMessage = formatDashboardError(recentVisitsQuery.error);
   const recentVisits = useMemo(() => recentVisitsQuery.data ?? [], [recentVisitsQuery.data]);
 
+  const repKpis = useMemo(() => {
+    const reps = Array.isArray(summaryQuery.data?.visitsByRep) ? summaryQuery.data.visitsByRep : [];
+    return reps.map(rep => {
+      const completionRate = rep.totalVisits ? (rep.completedVisits / rep.totalVisits) * 100 : 0;
+      return { ...rep, completionRate };
+    });
+  }, [summaryQuery.data]);
+
   return (
     <div className="page-stack">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">لوحة المتابعة</h1>
-          <p className="page-subtitle">نظرة تنفيذية على الأداء والزيارات الحالية.</p>
+          <h1 className="page-heading">???? ???????</h1>
+          <p className="page-subtitle">?????? ???? ???????? ????????? ????????? ???????.</p>
         </div>
         <Link to="/visits" className="btn btn-primary">
-          إدارة الزيارات
+          ????? ?????
         </Link>
       </div>
 
@@ -82,75 +90,77 @@ const DashboardPage = () => {
 
       {summaryQuery.data?.lastActivityAt && (
         <div className="table-card__empty" style={{ textAlign: 'left' }}>
-          آخر نشاط: {new Date(summaryQuery.data.lastActivityAt).toLocaleString()}
+          ??? ????: {new Date(summaryQuery.data.lastActivityAt).toLocaleString()}
         </div>
       )}
 
       <section className="table-card">
         <div className="table-card__header">
           <div>
-            <h2>زيارات حسب المندوب</h2>
-            <p>نسبة الإكمال ومتوسط المدة لكل مندوب.</p>
+            <h2>?????? ???? ?????????</h2>
+            <p>?????? ??????? ?????? ?????? ???????? ??? ?????.</p>
           </div>
         </div>
         {summaryQuery.isLoading ? (
-          <div className="table-card__empty">جاري تحميل مؤشرات المندوبين...</div>
-        ) : Array.isArray(summaryQuery.data?.visitsByRep) && summaryQuery.data.visitsByRep.length > 0 ? (
+          <div className="table-card__empty">???? ????? ?????? ?????????...</div>
+        ) : repKpis.length ? (
           <table>
             <thead>
               <tr>
-                <th>المندوب</th>
-                <th>الإجمالي</th>
-                <th>المنجزة</th>
-                <th>متوسط المدة</th>
-                <th>آخر زيارة</th>
+                <th>???????</th>
+                <th>?????? ????????</th>
+                <th>?????? ??????</th>
+                <th>???? ???????</th>
+                <th>????? ??? ???????</th>
+                <th>??? ?????</th>
               </tr>
             </thead>
             <tbody>
-              {summaryQuery.data.visitsByRep.map(rep => (
+              {repKpis.map(rep => (
                 <tr key={rep.repId}>
                   <td>{rep.repName}</td>
                   <td>{rep.totalVisits}</td>
                   <td>{rep.completedVisits}</td>
-                  <td>{rep.avgDurationMinutes != null ? `${rep.avgDurationMinutes} دقيقة` : 'غير متاح'}</td>
-                  <td>{rep.lastVisitAt ? new Date(rep.lastVisitAt).toLocaleString() : 'غير متاح'}</td>
+                  <td>{rep.completionRate.toFixed(1)}%</td>
+                  <td>{rep.avgDurationMinutes != null ? `${rep.avgDurationMinutes} ?????` : '??? ????'}</td>
+                  <td>{rep.lastVisitAt ? new Date(rep.lastVisitAt).toLocaleString() : '??? ????'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <div className="table-card__empty">لا توجد مؤشرات بعد.</div>
+          <div className="table-card__empty">?? ???? ?????? ???? ????? ???.</div>
         )}
       </section>
 
       <section className="table-card">
         <div className="table-card__header">
           <div>
-            <h2>أحدث الزيارات</h2>
-            <p>آخر الزيارات على جميع المناطق.</p>
+            <h2>???????? ??????</h2>
+            <p>???? ?????? ?????? ???? ?????.</p>
           </div>
           <Link to="/visits" className="btn btn-secondary">
-            عرض الكل
+            ??? ????
           </Link>
         </div>
         {recentVisitsQuery.error && (
-          <div className="table-card__empty">تعذر تحميل أحدث الزيارات: {recentVisitsErrorMessage}</div>
+          <div className="table-card__empty">???? ????? ???? ????????: {recentVisitsErrorMessage}</div>
         )}
         {!recentVisitsQuery.error && recentVisits.length === 0 && !recentVisitsQuery.isLoading && (
-          <div className="table-card__empty">لا توجد زيارات مسجلة بعد.</div>
+          <div className="table-card__empty">?? ???? ?????? ????? ??? ????.</div>
         )}
         {recentVisitsQuery.isLoading ? (
-          <div className="table-card__empty">جاري تحميل أحدث الزيارات...</div>
+          <div className="table-card__empty">???? ????? ????????...</div>
         ) : (
           recentVisits.length > 0 && (
             <table>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>المندوب</th>
-                  <th>الحساب</th>
-                  <th>الحالة</th>
-                  <th>المدة</th>
+                  <th>???????</th>
+                  <th>???????</th>
+                  <th>??????</th>
+                  <th>??????</th>
+                  <th>?????</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,7 +172,7 @@ const DashboardPage = () => {
                     <td>
                       <span className="badge">{(visit.status || 'scheduled').replace(/_/g, ' ')}</span>
                     </td>
-                    <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : 'غير متاح'}</td>
+                    <td>{visit.durationMinutes != null ? `${visit.durationMinutes} ?????` : '??? ????'}</td>
                   </tr>
                 ))}
               </tbody>

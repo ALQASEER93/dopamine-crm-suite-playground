@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (!hydrated) {
-    return <div style={{ padding: 24, textAlign: "center" }}>...جاري التحميل</div>;
+    return <div style={{ padding: 24, textAlign: "center" }}>???? ????? ??????...</div>;
   }
 
   return <>{children}</>;

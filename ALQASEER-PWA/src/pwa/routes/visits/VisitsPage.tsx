@@ -1,12 +1,64 @@
-import React, { FormEvent, useEffect, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { createVisit, endVisit, getCustomers, getVisits, startVisit } from "../../api/client";
 import { Customer, Visit } from "../../api/types";
 import { enqueueMutation, getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../offline/queue";
+import { distanceMeters, formatDistance } from "../../utils/geo";
+import { readPreferences } from "../../utils/preferences";
+
+type VisitMeta = {
+  coords: { lat: number; lng: number };
+  accuracy: number | null;
+  distanceMeters?: number | null;
+  capturedAt: string;
+};
+
+type VisitAttachment = {
+  id: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  dataUrl?: string;
+  createdAt: string;
+};
+
+type VisitWithMeta = Visit & {
+  createdMeta?: VisitMeta;
+  startMeta?: VisitMeta;
+  endMeta?: VisitMeta;
+};
+
+const attachmentKey = (visitId: string) => `dpm-visit-attachments:${visitId}`;
+
+const readAttachments = (visitId: string): VisitAttachment[] => {
+  try {
+    const raw = window.localStorage.getItem(attachmentKey(visitId));
+    return raw ? (JSON.parse(raw) as VisitAttachment[]) : [];
+  } catch (error) {
+    console.warn("Failed to read attachments", error);
+    return [];
+  }
+};
+
+const writeAttachments = (visitId: string, attachments: VisitAttachment[]) => {
+  try {
+    window.localStorage.setItem(attachmentKey(visitId), JSON.stringify(attachments));
+  } catch (error) {
+    console.warn("Failed to persist attachments", error);
+  }
+};
+
+const fileToDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 
 export default function VisitsPage() {
   const location = useLocation();
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const [visits, setVisits] = useState<VisitWithMeta[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filters, setFilters] = useState({ date: "", status: "" });
   const [newVisit, setNewVisit] = useState({
@@ -21,8 +73,8 @@ export default function VisitsPage() {
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [queueCount, setQueueCount] = useState(0);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
-
-  const accuracyThreshold = 80;
+  const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
+  const [attachmentsByVisit, setAttachmentsByVisit] = useState<Record<string, VisitAttachment[]>>({});
 
   const refreshQueue = () => {
     setQueueCount(getQueuedMutations().length);
@@ -39,14 +91,51 @@ export default function VisitsPage() {
       });
     });
 
+  const getCustomer = (customerId: string) => customers.find((c) => c.id === customerId);
+
+  const buildMeta = (position: { coords: { lat: number; lng: number }; accuracy: number | null }, customer?: Customer): VisitMeta => {
+    const distance = customer?.location ? distanceMeters(position.coords, customer.location) : null;
+    return {
+      coords: position.coords,
+      accuracy: position.accuracy,
+      distanceMeters: distance,
+      capturedAt: new Date().toISOString(),
+    };
+  };
+
+  const validateAccuracy = (value: number | null) => {
+    const prefs = readPreferences();
+    if (value !== null && value > prefs.gpsAccuracyThreshold) {
+      setMessage(`??? GPS ??? ????? (${Math.round(value)}?). ????? ?? ?????? ?? ??? ????????.`);
+      return false;
+    }
+    return true;
+  };
+
+  const warnGeofence = (distance?: number | null) => {
+    if (distance == null) return;
+    const prefs = readPreferences();
+    if (prefs.gpsAlerts && distance > prefs.geofenceRadius) {
+      setMessage(`????? ??????: ??? ???? ${formatDistance(distance)} ?? ???? ??????.`);
+    }
+  };
+
+  const ensurePosition = async () => {
+    try {
+      const pos = await readPosition();
+      const nextCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setCoords(nextCoords);
+      setAccuracy(pos.coords.accuracy ?? null);
+      return { coords: nextCoords, accuracy: pos.coords.accuracy ?? null };
+    } catch (err) {
+      setMessage("???? ????? ???? GPS. ???? ????? ???????? ????????? ??? ????.");
+      return null;
+    }
+  };
+
   useEffect(() => {
     refreshQueue();
-    readPosition()
-      .then((pos) => {
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setAccuracy(pos.coords.accuracy ?? null);
-      })
-      .catch(() => undefined);
+    ensurePosition().catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -67,9 +156,9 @@ export default function VisitsPage() {
     setLoading(true);
     setMessage(null);
 
-    const customer = customers.find((c) => c.id === newVisit.customerId);
+    const customer = getCustomer(newVisit.customerId);
     if (!customer) {
-      setMessage("يرجى اختيار العميل أولاً.");
+      setMessage("???? ?????? ?????? ?????.");
       setLoading(false);
       return;
     }
@@ -95,12 +184,15 @@ export default function VisitsPage() {
       visitedAt: new Date().toISOString(),
     };
 
+    const meta = buildMeta(position, customer);
+    warnGeofence(meta.distanceMeters);
+
     const online = navigator.onLine;
     try {
       if (online) {
         const created = await createVisit(payload);
-        setVisits((prev) => [{ ...created, serverStatus: "scheduled" }, ...prev]);
-        setMessage("تم حفظ الزيارة بنجاح.");
+        setVisits((prev) => [{ ...created, serverStatus: "scheduled", createdMeta: meta }, ...prev]);
+        setMessage("?? ????? ??????? ?????.");
       } else {
         enqueueMutation({
           endpoint: "visits",
@@ -109,50 +201,29 @@ export default function VisitsPage() {
           type: "visit",
         });
         refreshQueue();
-        setVisits((prev) => [{ ...payload, id: crypto.randomUUID(), serverStatus: "pending_create" } as Visit, ...prev]);
-        setMessage("تم حفظ الزيارة دون اتصال وسيتم مزامنتها لاحقًا.");
+        setVisits((prev) => [{ ...payload, id: crypto.randomUUID(), serverStatus: "pending_create", createdMeta: meta } as VisitWithMeta, ...prev]);
+        setMessage("?? ??? ??????? ?????? ????? ???????? ??? ???? ???????.");
       }
       setNewVisit({ customerId: "", visitType: "follow-up", status: "success", notes: "" });
     } catch (err) {
-      setMessage("تعذر حفظ الزيارة. حاول مرة أخرى.");
+      setMessage("???? ????? ???????. ???? ??? ????.");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateVisit = (visitId: string, patch: Partial<Visit>) => {
+  const updateVisit = (visitId: string, patch: Partial<VisitWithMeta>) => {
     setVisits((prev) => prev.map((visit) => (visit.id === visitId ? { ...visit, ...patch } : visit)));
-  };
-
-  const ensurePosition = async () => {
-    try {
-      const pos = await readPosition();
-      const nextCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setCoords(nextCoords);
-      setAccuracy(pos.coords.accuracy ?? null);
-      return { coords: nextCoords, accuracy: pos.coords.accuracy ?? null };
-    } catch (err) {
-      setMessage("تعذر الحصول على موقع GPS.");
-      return null;
-    }
-  };
-
-  const validateAccuracy = (value: number | null) => {
-    if (value !== null && value > accuracyThreshold) {
-      setMessage(`دقة GPS منخفضة (${Math.round(value)}م). انتقل لمكان مفتوح وحاول مرة أخرى.`);
-      return false;
-    }
-    return true;
   };
 
   const syncQueue = async () => {
     const res = await replayQueuedMutations();
     refreshQueue();
-    setMessage(`تمت محاولة مزامنة ${res.attempted}، المتبقي ${res.pending}.`);
+    setMessage(`??? ?????? ?????? ${res.attempted} ??????? ??????? ${res.pending}.`);
   };
 
-  const handleStart = async (visit: Visit) => {
+  const handleStart = async (visit: VisitWithMeta) => {
     setLoading(true);
     setMessage(null);
     const position = await ensurePosition();
@@ -172,6 +243,10 @@ export default function VisitsPage() {
       startedAt: new Date().toISOString(),
     };
 
+    const customer = getCustomer(visit.customerId);
+    const meta = buildMeta(position, customer);
+    warnGeofence(meta.distanceMeters);
+
     if (!navigator.onLine) {
       enqueueMutation({
         endpoint: `visits/${visit.id}/start`,
@@ -180,25 +255,25 @@ export default function VisitsPage() {
         type: "visit-start",
       });
       refreshQueue();
-      updateVisit(visit.id, { serverStatus: "pending_start", startedAt: payload.startedAt });
+      updateVisit(visit.id, { serverStatus: "pending_start", startedAt: payload.startedAt, startMeta: meta });
       setLoading(false);
-      setMessage("تمت إضافة بدء الزيارة للطابور دون اتصال.");
+      setMessage("?? ??? ??? ??????? ?????? ???????? ??????.");
       return;
     }
 
     try {
       await startVisit(visit.id, payload);
-      updateVisit(visit.id, { serverStatus: "in_progress", startedAt: payload.startedAt });
-      setMessage("تم بدء الزيارة.");
+      updateVisit(visit.id, { serverStatus: "in_progress", startedAt: payload.startedAt, startMeta: meta });
+      setMessage("?? ??? ???????.");
     } catch (err) {
-      setMessage("تعذر بدء الزيارة. تحقق من GPS ثم أعد المحاولة.");
+      setMessage("???? ??? ???????. ???? ?? GPS ?? ??? ????????.");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEnd = async (visit: Visit) => {
+  const handleEnd = async (visit: VisitWithMeta) => {
     setLoading(true);
     setMessage(null);
     const position = await ensurePosition();
@@ -218,6 +293,10 @@ export default function VisitsPage() {
       endedAt: new Date().toISOString(),
     };
 
+    const customer = getCustomer(visit.customerId);
+    const meta = buildMeta(position, customer);
+    warnGeofence(meta.distanceMeters);
+
     if (!navigator.onLine) {
       enqueueMutation({
         endpoint: `visits/${visit.id}/end`,
@@ -226,101 +305,140 @@ export default function VisitsPage() {
         type: "visit-end",
       });
       refreshQueue();
-      updateVisit(visit.id, { serverStatus: "pending_end", endedAt: payload.endedAt });
+      updateVisit(visit.id, { serverStatus: "pending_end", endedAt: payload.endedAt, endMeta: meta });
       setLoading(false);
-      setMessage("تمت إضافة إنهاء الزيارة للطابور دون اتصال.");
+      setMessage("?? ??? ????? ??????? ?????? ???????? ??????.");
       return;
     }
 
     try {
       await endVisit(visit.id, payload);
-      updateVisit(visit.id, { serverStatus: "completed", endedAt: payload.endedAt });
-      setMessage("تم إنهاء الزيارة.");
+      updateVisit(visit.id, { serverStatus: "completed", endedAt: payload.endedAt, endMeta: meta });
+      setMessage("?? ????? ???????.");
     } catch (err) {
-      setMessage("تعذر إنهاء الزيارة. تحقق من GPS ثم أعد المحاولة.");
+      setMessage("???? ????? ???????. ???? ?? GPS ?? ??? ????????.");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredVisits = visits.filter((visit) => {
-    const matchesDate = filters.date ? visit.visitedAt?.slice(0, 10) === filters.date : true;
-    const matchesStatus = filters.status ? visit.status === filters.status : true;
-    return matchesDate && matchesStatus;
-  });
+  const handleAttach = async (visitId: string, file?: File | null) => {
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      setMessage("????? ???? ????. ???? ?????? 1MB.");
+      return;
+    }
+
+    const attachments = attachmentsByVisit[visitId] || readAttachments(visitId);
+    const next: VisitAttachment = {
+      id: crypto.randomUUID(),
+      name: file.name,
+      size: file.size,
+      mimeType: file.type || "file",
+      createdAt: new Date().toISOString(),
+    };
+
+    if (file.type.startsWith("image/")) {
+      try {
+        next.dataUrl = await fileToDataUrl(file);
+      } catch (error) {
+        console.warn("Failed to read attachment", error);
+      }
+    }
+
+    const updated = [next, ...attachments];
+    setAttachmentsByVisit((prev) => ({ ...prev, [visitId]: updated }));
+    writeAttachments(visitId, updated);
+    setMessage("??? ????? ??????.");
+  };
+
+  const loadAttachmentsFor = (visitId: string) => {
+    setAttachmentsByVisit((prev) => {
+      if (prev[visitId]) return prev;
+      return { ...prev, [visitId]: readAttachments(visitId) };
+    });
+  };
+
+  const filteredVisits = useMemo(() => {
+    return visits.filter((visit) => {
+      const matchesDate = filters.date ? visit.visitedAt?.slice(0, 10) === filters.date : true;
+      const matchesStatus = filters.status ? visit.status === filters.status : true;
+      return matchesDate && matchesStatus;
+    });
+  }, [visits, filters]);
 
   return (
     <div className="page">
       <div className="card">
-        <div className="section-title">إضافة الزيارة</div>
-        <div className="muted">دقة GPS: {accuracy !== null ? `${Math.round(accuracy)}م` : "غير متاح"}</div>
-        <div className="muted">معلق للمزامنة: {queueCount}</div>
-        <div className="muted">آخر مزامنة: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "لم تتم بعد"}</div>
+        <div className="section-title">????? ????????</div>
+        <div className="muted">??? GPS: {accuracy !== null ? `${Math.round(accuracy)}?` : "??? ????"}</div>
+        <div className="muted">?????? ????? ????????: {queueCount}</div>
+        <div className="muted">??? ??????: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "?? ??? ???"}</div>
         <button type="button" onClick={syncQueue} disabled={!queueCount}>
-          مزامنة الآن
+          ?????? ????
         </button>
         <form onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="customer">العميل</label>
+            <label htmlFor="customer">??????</label>
             <select
               id="customer"
               value={newVisit.customerId}
               onChange={(e) => setNewVisit((s) => ({ ...s, customerId: e.target.value }))}
               required
             >
-              <option value="">اختر</option>
+              <option value="">????</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} - {c.type === "doctor" ? "طبيب" : "صيدلية"}
+                  {c.name} - {c.type === "doctor" ? "????" : "??????"}
                 </option>
               ))}
             </select>
           </div>
           <div className="grid">
             <div>
-              <label>نوع الزيارة</label>
+              <label>??? ???????</label>
               <select value={newVisit.visitType} onChange={(e) => setNewVisit((s) => ({ ...s, visitType: e.target.value }))}>
-                <option value="follow-up">متابعة</option>
-                <option value="new">جديدة</option>
-                <option value="reminder">تذكير</option>
+                <option value="follow-up">??????</option>
+                <option value="new">????? ?????</option>
+                <option value="reminder">?????</option>
               </select>
             </div>
             <div>
-              <label>الحالة</label>
+              <label>??????</label>
               <select value={newVisit.status} onChange={(e) => setNewVisit((s) => ({ ...s, status: e.target.value }))}>
-                <option value="success">ناجحة</option>
-                <option value="refused">مرفوضة</option>
-                <option value="no-show">لم يحضر</option>
+                <option value="success">?????</option>
+                <option value="refused">??????</option>
+                <option value="no-show">?? ??? ??????</option>
               </select>
             </div>
           </div>
           <div>
-            <label>ملاحظات</label>
+            <label>???????</label>
             <textarea
               rows={3}
               value={newVisit.notes}
               onChange={(e) => setNewVisit((s) => ({ ...s, notes: e.target.value }))}
-              placeholder="اكتب تفاصيل الزيارة..."
+              placeholder="???? ??????? ???????..."
             />
           </div>
           {message ? <div className="muted">{message}</div> : null}
           <button type="submit" disabled={loading}>
-            {loading ? "جاري الحفظ..." : "حفظ الزيارة"}
+            {loading ? "???? ?????..." : "????? ?????"}
           </button>
         </form>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <div className="section-title">سجل الزيارات</div>
+          <div className="section-title">??? ????????</div>
           <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <input type="date" value={filters.date} onChange={(e) => setFilters((s) => ({ ...s, date: e.target.value }))} />
             <select value={filters.status} onChange={(e) => setFilters((s) => ({ ...s, status: e.target.value }))}>
-              <option value="">الكل</option>
-              <option value="success">ناجحة</option>
-              <option value="refused">مرفوضة</option>
-              <option value="no-show">لم يحضر</option>
+              <option value="">????</option>
+              <option value="success">?????</option>
+              <option value="refused">??????</option>
+              <option value="no-show">?? ??? ??????</option>
             </select>
           </div>
         </div>
@@ -329,28 +447,106 @@ export default function VisitsPage() {
             const statusLabel = visit.serverStatus || visit.status;
             const canStart = !visit.startedAt && statusLabel !== "completed" && statusLabel !== "pending_start";
             const canEnd = statusLabel === "in_progress" || (!!visit.startedAt && statusLabel !== "completed" && statusLabel !== "pending_end");
+            const isExpanded = expandedVisitId === visit.id;
+            const attachments = attachmentsByVisit[visit.id] || [];
 
             return (
-              <div key={visit.id} className="list-item" style={{ alignItems: "flex-start" }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{visit.customerName}</div>
-                  <div className="muted">
-                    {visit.visitType} - {visit.visitedAt ? new Date(visit.visitedAt).toLocaleString() : ""}
+              <div key={visit.id} className="list-item" style={{ alignItems: "flex-start", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", width: "100%", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{visit.customerName}</div>
+                    <div className="muted">
+                      {visit.visitType} - {visit.visitedAt ? new Date(visit.visitedAt).toLocaleString() : ""}
+                    </div>
+                    {visit.startedAt ? <div className="muted">???: {new Date(visit.startedAt).toLocaleString()}</div> : null}
+                    {visit.endedAt ? <div className="muted">?????: {new Date(visit.endedAt).toLocaleString()}</div> : null}
                   </div>
-                  {visit.startedAt ? <div className="muted">بدء: {new Date(visit.startedAt).toLocaleString()}</div> : null}
-                  {visit.endedAt ? <div className="muted">انتهاء: {new Date(visit.endedAt).toLocaleString()}</div> : null}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                  <span className="pill">{statusLabel}</span>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" onClick={() => handleStart(visit)} disabled={loading || !canStart}>بدء</button>
-                    <button type="button" onClick={() => handleEnd(visit)} disabled={loading || !canEnd}>إنهاء</button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                    <span className="pill">{statusLabel}</span>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button type="button" onClick={() => handleStart(visit)} disabled={loading || !canStart}>???</button>
+                      <button type="button" onClick={() => handleEnd(visit)} disabled={loading || !canEnd}>?????</button>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => {
+                          setExpandedVisitId(isExpanded ? null : visit.id);
+                          if (!isExpanded) {
+                            loadAttachmentsFor(visit.id);
+                          }
+                        }}
+                      >
+                        {isExpanded ? "????? ????????" : "??? ????????"}
+                      </button>
+                    </div>
                   </div>
                 </div>
+
+                {isExpanded ? (
+                  <div className="visit-details">
+                    <div className="timeline">
+                      <div className="timeline-item">
+                        <div className="timeline-title">?? ????? ???????</div>
+                        <div className="muted">{visit.visitedAt ? new Date(visit.visitedAt).toLocaleString() : "-"}</div>
+                        {visit.createdMeta ? (
+                          <div className="chip-row">
+                            <span className="chip">GPS {visit.createdMeta.accuracy != null ? `${Math.round(visit.createdMeta.accuracy)}?` : "-"}</span>
+                            <span className="chip">??? {formatDistance(visit.createdMeta.distanceMeters)}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="timeline-item">
+                        <div className="timeline-title">??? ???????</div>
+                        <div className="muted">{visit.startedAt ? new Date(visit.startedAt).toLocaleString() : "-"}</div>
+                        {visit.startMeta ? (
+                          <div className="chip-row">
+                            <span className="chip">GPS {visit.startMeta.accuracy != null ? `${Math.round(visit.startMeta.accuracy)}?` : "-"}</span>
+                            <span className="chip">??? {formatDistance(visit.startMeta.distanceMeters)}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="timeline-item">
+                        <div className="timeline-title">????? ???????</div>
+                        <div className="muted">{visit.endedAt ? new Date(visit.endedAt).toLocaleString() : "-"}</div>
+                        {visit.endMeta ? (
+                          <div className="chip-row">
+                            <span className="chip">GPS {visit.endMeta.accuracy != null ? `${Math.round(visit.endMeta.accuracy)}?` : "-"}</span>
+                            <span className="chip">??? {formatDistance(visit.endMeta.distanceMeters)}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="attachments">
+                      <div className="section-title">?????? ???????</div>
+                      <div className="muted">???? ????? ???? ?? ????? ???? (??? 1MB).</div>
+                      <input
+                        type="file"
+                        onChange={(e) => handleAttach(visit.id, e.target.files?.[0])}
+                      />
+                      <div className="attachment-list">
+                        {attachments.map((att) => (
+                          <div key={att.id} className="attachment-card">
+                            {att.dataUrl ? (
+                              <img src={att.dataUrl} alt={att.name} />
+                            ) : (
+                              <div className="attachment-placeholder">{att.mimeType}</div>
+                            )}
+                            <div>
+                              <div style={{ fontWeight: 700 }}>{att.name}</div>
+                              <div className="muted">{Math.round(att.size / 1024)}KB ? {new Date(att.createdAt).toLocaleString()}</div>
+                            </div>
+                          </div>
+                        ))}
+                        {!attachments.length ? <div className="muted">?? ???? ?????? ???.</div> : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             );
           })}
-          {!filteredVisits.length ? <div className="muted">لا توجد زيارات حتى الآن.</div> : null}
+          {!filteredVisits.length ? <div className="muted">?? ???? ?????? ???? ?????? ???????.</div> : null}
         </div>
       </div>
     </div>

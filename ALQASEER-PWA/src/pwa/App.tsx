@@ -12,9 +12,11 @@ import AccountPage from "./routes/account/AccountPage";
 import { registerServiceWorker } from "./offline/serviceWorkerRegistration";
 import { replayQueuedMutations } from "./offline/queue";
 import { useAuthStore } from "./state/auth";
+import { readPreferences } from "./utils/preferences";
 
 export default function App() {
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== "undefined" ? navigator.onLine : true);
 
   useEffect(() => {
@@ -35,10 +37,25 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const preferences = readPreferences();
+    const role = user?.role || preferences.roleTheme || "rep";
+    const accents: Record<string, string> = {
+      admin: "#f59e0b",
+      supervisor: "#22d3ee",
+      sales_manager: "#38bdf8",
+      sales: "#38bdf8",
+      rep: "#22c55e",
+    };
+    const fallback = "#22c55e";
+    document.documentElement.dataset.role = role;
+    document.documentElement.style.setProperty("--role-accent", accents[role] || fallback);
+  }, [user?.role]);
+
   return (
     <div dir="rtl">
       <div className="app-shell">
-        {!isOnline ? <div className="offline-banner">الاتصال مفقود، يتم استخدام البيانات المخزنة.</div> : null}
+        {!isOnline ? <div className="offline-banner">?? ???? ????? ?????????. ???? ??? ???????? ?????? ??? ???? ??????.</div> : null}
 
         <Routes>
           <Route path="/login" element={<LoginPage />} />
