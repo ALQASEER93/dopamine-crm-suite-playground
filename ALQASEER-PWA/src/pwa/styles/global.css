@@ -129,6 +129,34 @@ label {
   font-size: 12px;
 }
 
+.pill.overdue {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.priority-pill {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.priority-pill[data-level="A"] {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+}
+
+.priority-pill[data-level="B"] {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fcd34d;
+}
+
+.priority-pill[data-level="C"] {
+  background: rgba(56, 189, 248, 0.2);
+  color: #bae6fd;
+}
+
 .list {
   display: flex;
   flex-direction: column;

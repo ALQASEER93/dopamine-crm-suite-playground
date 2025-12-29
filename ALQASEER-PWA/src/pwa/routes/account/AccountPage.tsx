@@ -4,6 +4,16 @@ import { getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../o
 import { useAuthStore } from "../../state/auth";
 import { useNavigate } from "react-router-dom";
 import { readPreferences, savePreferences } from "../../utils/preferences";
+import { Visit } from "../../api/types";
+
+const readCachedVisits = () => {
+  try {
+    const raw = window.localStorage.getItem("visits");
+    return raw ? (JSON.parse(raw) as Visit[]) : [];
+  } catch {
+    return [];
+  }
+};
 
 export default function AccountPage() {
   const user = useAuthStore((s) => s.user);
@@ -15,6 +25,7 @@ export default function AccountPage() {
   const [lastAttemptAt, setLastAttemptAt] = useState<string | null>(null);
   const [queueItems, setQueueItems] = useState(() => getQueuedMutations());
   const [preferences, setPreferences] = useState(() => readPreferences());
+  const [visitStats, setVisitStats] = useState({ today: 0, month: 0 });
 
   const logout = () => {
     clearSession();
@@ -30,8 +41,18 @@ export default function AccountPage() {
     setLastAttemptAt(meta.lastAttemptAt ?? null);
   };
 
+  const refreshVisitStats = () => {
+    const visits = readCachedVisits();
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const monthKey = new Date().toISOString().slice(0, 7);
+    const todayCount = visits.filter((v) => (v.visitedAt || "").startsWith(todayKey)).length;
+    const monthCount = visits.filter((v) => (v.visitedAt || "").startsWith(monthKey)).length;
+    setVisitStats({ today: todayCount, month: monthCount });
+  };
+
   useEffect(() => {
     refreshQueue();
+    refreshVisitStats();
   }, []);
 
   useEffect(() => {
@@ -48,6 +69,7 @@ export default function AccountPage() {
   const syncNow = async () => {
     const res = await replayQueuedMutations();
     refreshQueue();
+    refreshVisitStats();
     setSyncResult(`تمت محاولة مزامنة ${res.attempted} عمليات، المتبقي ${res.pending}.`);
   };
 
@@ -60,6 +82,43 @@ export default function AccountPage() {
           <div>البريد: {user?.email || "غير متوفر"}</div>
           <div>الدور: {user?.role || "غير متوفر"}</div>
           <div>الخادم: {API_BASE_URL}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="section-title">الأهداف التشغيلية</div>
+        <div className="stat-grid">
+          <div className="stat-card">
+            <div className="stat-value">{visitStats.today}</div>
+            <div className="stat-label">زيارات اليوم</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{visitStats.month}</div>
+            <div className="stat-label">زيارات الشهر</div>
+          </div>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          <div>
+            <label>هدف زيارات اليوم</label>
+            <input
+              type="number"
+              min={1}
+              value={preferences.dailyTargetVisits}
+              onChange={(e) => setPreferences((prev) => ({ ...prev, dailyTargetVisits: Number(e.target.value) }))}
+            />
+          </div>
+          <div>
+            <label>هدف زيارات الشهر</label>
+            <input
+              type="number"
+              min={1}
+              value={preferences.monthlyTargetVisits}
+              onChange={(e) => setPreferences((prev) => ({ ...prev, monthlyTargetVisits: Number(e.target.value) }))}
+            />
+          </div>
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          نسبة الإنجاز اليومي: {preferences.dailyTargetVisits ? Math.min(100, (visitStats.today / preferences.dailyTargetVisits) * 100).toFixed(0) : 0}%
         </div>
       </div>
 
@@ -101,6 +160,14 @@ export default function AccountPage() {
             onChange={(e) => setPreferences((prev) => ({ ...prev, gpsAlerts: e.target.checked }))}
           />
           تنبيهات GPS عند الخروج عن نطاق العميل
+        </label>
+        <label className="settings-toggle">
+          <input
+            type="checkbox"
+            checked={preferences.geofenceRequired}
+            onChange={(e) => setPreferences((prev) => ({ ...prev, geofenceRequired: e.target.checked }))}
+          />
+          منع تسجيل الزيارة خارج النطاق الجغرافي
         </label>
         <label className="settings-toggle">
           <input

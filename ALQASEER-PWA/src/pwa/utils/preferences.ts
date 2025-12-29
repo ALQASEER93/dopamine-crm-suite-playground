@@ -4,6 +4,9 @@ export type PwaPreferences = {
   dailyDigest: boolean;
   gpsAccuracyThreshold: number;
   geofenceRadius: number;
+  geofenceRequired: boolean;
+  dailyTargetVisits: number;
+  monthlyTargetVisits: number;
   roleTheme: "rep" | "sales" | "admin" | "supervisor";
 };
 
@@ -15,6 +18,9 @@ const DEFAULT_PREFERENCES: PwaPreferences = {
   dailyDigest: false,
   gpsAccuracyThreshold: 80,
   geofenceRadius: 250,
+  geofenceRequired: false,
+  dailyTargetVisits: 10,
+  monthlyTargetVisits: 200,
   roleTheme: "rep",
 };
 
@@ -49,4 +55,3 @@ export const savePreferences = (next: PwaPreferences) => {
     console.warn("Failed to persist PWA preferences", error);
   }
 };
-

@@ -11,6 +11,7 @@ type EnrichedStop = RouteStop & {
   distanceMeters?: number;
   etaMinutes?: number;
   clusterKey?: string;
+  overdue?: boolean;
 };
 
 const statusCopy: Record<RouteStop["status"], { label: string; color: string }> = {
@@ -100,9 +101,11 @@ export default function TodayRoutePage() {
   }, []);
 
   const enrichedStops = useMemo<EnrichedStop[]>(() => {
+    const now = Date.now();
     return stops.map((stop) => {
+      const overdue = stop.scheduledFor ? new Date(stop.scheduledFor).getTime() < now && stop.status !== "done" : false;
       if (!stop.location || !currentLocation) {
-        return { ...stop, clusterKey: getClusterKey(stop) };
+        return { ...stop, clusterKey: getClusterKey(stop), overdue };
       }
       const distance = distanceMeters(currentLocation, stop.location);
       const eta = estimateEtaMinutes(distance);
@@ -111,9 +114,12 @@ export default function TodayRoutePage() {
         distanceMeters: distance,
         etaMinutes: eta ?? undefined,
         clusterKey: getClusterKey(stop),
+        overdue,
       };
     });
   }, [stops, currentLocation]);
+
+  const overdueCount = useMemo(() => enrichedStops.filter((stop) => stop.overdue).length, [enrichedStops]);
 
   const suggestedStops = useMemo(() => {
     return [...enrichedStops]
@@ -141,6 +147,12 @@ export default function TodayRoutePage() {
         </div>
         <span className="pill">عدد المحطات: {stops.length}</span>
       </div>
+
+      {overdueCount ? (
+        <div className="card" style={{ borderColor: "rgba(248, 113, 113, 0.4)", color: "#fecaca" }}>
+          يوجد {overdueCount} زيارة متأخرة عن وقتها المجدول. يرجى إعطاءها أولوية.
+        </div>
+      ) : null}
 
       <div className="card">
         <div className="stat-grid">
@@ -189,7 +201,7 @@ export default function TodayRoutePage() {
                   {stop.address || "عنوان غير متوفر"} · {formatDistance(stop.distanceMeters)} · ETA {stop.etaMinutes ? `${stop.etaMinutes}د` : "-"}
                 </div>
               </div>
-              <span className="pill">{statusCopy[stop.status]?.label}</span>
+              <span className={stop.overdue ? "pill overdue" : "pill"}>{statusCopy[stop.status]?.label}</span>
             </div>
           ))}
           {!suggestedStops.length ? <div className="muted">فعّل GPS لاقتراح الترتيب الأمثل.</div> : null}
@@ -206,7 +218,7 @@ export default function TodayRoutePage() {
             id: stop.id,
             position: stop.location!,
             label: stop.customerName,
-            color: statusCopy[stop.status]?.color,
+            color: stop.overdue ? "#f87171" : statusCopy[stop.status]?.color,
             timestamp: stop.scheduledFor || null,
           }))}
       />
@@ -249,7 +261,7 @@ export default function TodayRoutePage() {
               </div>
               {stop.distanceMeters != null ? <div className="muted">المسافة: {formatDistance(stop.distanceMeters)}</div> : null}
             </div>
-            <span className="pill">
+            <span className={stop.overdue ? "pill overdue" : "pill"}>
               <span className={`status-dot ${stop.status === "done" ? "done" : stop.status === "in-progress" ? "active" : stop.status === "skipped" ? "skipped" : "planned"}`} />
               {statusCopy[stop.status]?.label}
             </span>

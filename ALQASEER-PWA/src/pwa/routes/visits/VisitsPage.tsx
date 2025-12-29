@@ -28,6 +28,13 @@ type VisitWithMeta = Visit & {
   endMeta?: VisitMeta;
 };
 
+type VisitTasks = {
+  samples: boolean;
+  brochure: boolean;
+  collection: boolean;
+  order: boolean;
+};
+
 const attachmentKey = (visitId: string) => `dpm-visit-attachments:${visitId}`;
 
 const readAttachments = (visitId: string): VisitAttachment[] => {
@@ -66,6 +73,12 @@ export default function VisitsPage() {
     visitType: "follow-up",
     status: "success",
     notes: "",
+  });
+  const [visitTasks, setVisitTasks] = useState<VisitTasks>({
+    samples: false,
+    brochure: false,
+    collection: false,
+    order: false,
   });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -112,6 +125,15 @@ export default function VisitsPage() {
     return true;
   };
 
+  const enforceGeofence = (distance?: number | null) => {
+    const prefs = readPreferences();
+    if (prefs.geofenceRequired && distance != null && distance > prefs.geofenceRadius) {
+      setMessage(`لا يمكن تسجيل الزيارة خارج النطاق الجغرافي (${formatDistance(distance)}).`);
+      return false;
+    }
+    return true;
+  };
+
   const warnGeofence = (distance?: number | null) => {
     if (distance == null) return;
     const prefs = readPreferences();
@@ -131,6 +153,18 @@ export default function VisitsPage() {
       setMessage("تعذر تحديد موقع GPS. يرجى تفعيل الأذونات والمحاولة مرة أخرى.");
       return null;
     }
+  };
+
+  const buildNotes = () => {
+    const tasks: string[] = [];
+    if (visitTasks.samples) tasks.push("تسليم عينات");
+    if (visitTasks.brochure) tasks.push("تقديم بروشور");
+    if (visitTasks.collection) tasks.push("تحصيل");
+    if (visitTasks.order) tasks.push("طلبية");
+    const base = newVisit.notes?.trim() || "";
+    if (!tasks.length) return base;
+    const tasksLine = `المهام: ${tasks.join("، ")}`;
+    return base ? `${base}\n${tasksLine}` : tasksLine;
   };
 
   useEffect(() => {
@@ -179,13 +213,17 @@ export default function VisitsPage() {
       customerType: customer.type,
       visitType: newVisit.visitType as Visit["visitType"],
       status: newVisit.status as Visit["status"],
-      notes: newVisit.notes,
+      notes: buildNotes(),
       coordinates: position.coords,
       visitedAt: new Date().toISOString(),
     };
 
     const meta = buildMeta(position, customer);
     warnGeofence(meta.distanceMeters);
+    if (!enforceGeofence(meta.distanceMeters)) {
+      setLoading(false);
+      return;
+    }
 
     const online = navigator.onLine;
     try {
@@ -205,6 +243,7 @@ export default function VisitsPage() {
         setMessage("تم حفظ الزيارة محليًا وستتم مزامنتها عند توفر الاتصال.");
       }
       setNewVisit({ customerId: "", visitType: "follow-up", status: "success", notes: "" });
+      setVisitTasks({ samples: false, brochure: false, collection: false, order: false });
     } catch (err) {
       setMessage("تعذر إنشاء الزيارة. حاول مرة أخرى.");
       console.error(err);
@@ -246,6 +285,10 @@ export default function VisitsPage() {
     const customer = getCustomer(visit.customerId);
     const meta = buildMeta(position, customer);
     warnGeofence(meta.distanceMeters);
+    if (!enforceGeofence(meta.distanceMeters)) {
+      setLoading(false);
+      return;
+    }
 
     if (!navigator.onLine) {
       enqueueMutation({
@@ -296,6 +339,10 @@ export default function VisitsPage() {
     const customer = getCustomer(visit.customerId);
     const meta = buildMeta(position, customer);
     warnGeofence(meta.distanceMeters);
+    if (!enforceGeofence(meta.distanceMeters)) {
+      setLoading(false);
+      return;
+    }
 
     if (!navigator.onLine) {
       enqueueMutation({
@@ -422,6 +469,41 @@ export default function VisitsPage() {
               placeholder="اكتب ملاحظات الزيارة..."
             />
           </div>
+          <div>
+            <div className="section-title" style={{ fontSize: 16 }}>مهام الزيارة</div>
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={visitTasks.samples}
+                onChange={(e) => setVisitTasks((prev) => ({ ...prev, samples: e.target.checked }))}
+              />
+              تسليم عينات
+            </label>
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={visitTasks.brochure}
+                onChange={(e) => setVisitTasks((prev) => ({ ...prev, brochure: e.target.checked }))}
+              />
+              تقديم بروشور
+            </label>
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={visitTasks.collection}
+                onChange={(e) => setVisitTasks((prev) => ({ ...prev, collection: e.target.checked }))}
+              />
+              تحصيل
+            </label>
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={visitTasks.order}
+                onChange={(e) => setVisitTasks((prev) => ({ ...prev, order: e.target.checked }))}
+              />
+              طلبية
+            </label>
+          </div>
           {message ? <div className="muted">{message}</div> : null}
           <button type="submit" disabled={loading}>
             {loading ? "جارٍ الحفظ..." : "إضافة زيارة"}
@@ -449,6 +531,9 @@ export default function VisitsPage() {
             const canEnd = statusLabel === "in_progress" || (!!visit.startedAt && statusLabel !== "completed" && statusLabel !== "pending_end");
             const isExpanded = expandedVisitId === visit.id;
             const attachments = attachmentsByVisit[visit.id] || [];
+            const durationMinutes = visit.startedAt && visit.endedAt
+              ? Math.max(1, Math.round((new Date(visit.endedAt).getTime() - new Date(visit.startedAt).getTime()) / 60000))
+              : null;
 
             return (
               <div key={visit.id} className="list-item" style={{ alignItems: "flex-start", flexDirection: "column", gap: 12 }}>
@@ -460,6 +545,7 @@ export default function VisitsPage() {
                     </div>
                     {visit.startedAt ? <div className="muted">بدء: {new Date(visit.startedAt).toLocaleString()}</div> : null}
                     {visit.endedAt ? <div className="muted">إنهاء: {new Date(visit.endedAt).toLocaleString()}</div> : null}
+                    {durationMinutes ? <div className="muted">مدة الزيارة: {durationMinutes} دقيقة</div> : null}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
                     <span className="pill">{statusLabel}</span>
@@ -540,6 +626,11 @@ export default function VisitsPage() {
                         ))}
                         {!attachments.length ? <div className="muted">لا توجد مرفقات بعد.</div> : null}
                       </div>
+                    </div>
+
+                    <div>
+                      <div className="section-title">ملاحظات ومهام</div>
+                      <div className="muted">{visit.notes || "لا توجد ملاحظات."}</div>
                     </div>
                   </div>
                 ) : null}
