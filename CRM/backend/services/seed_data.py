@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+import logging
+from pathlib import Path
+from typing import Any
 
 from sqlalchemy.orm import Session
+from openpyxl import load_workbook
 
 from models.crm import (
     Collection,
@@ -24,34 +28,180 @@ from models.crm import (
 )
 from services.auth import seed_admin_and_rep
 
+logger = logging.getLogger(__name__)
+
+
+def _normalize_string(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _normalize_phone(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).replace(" ", "").replace("-", "").strip()
+    return text or None
+
+
+def _pick_value(row: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in row and row[key] is not None:
+            return row[key]
+    return None
+
+
+def _load_accounts_from_excel() -> tuple[list[dict[str, Any]], list[dict[str, Any]]] | None:
+    excel_path = Path(__file__).resolve().parents[2] / "hcps.xlsx"
+    if not excel_path.exists():
+        return None
+
+    workbook = load_workbook(excel_path, read_only=True, data_only=True)
+    sheet = None
+    for name in ("Name", "HCPs"):
+        if name in workbook.sheetnames:
+            sheet = workbook[name]
+            break
+    if sheet is None:
+        sheet = workbook[workbook.sheetnames[0]]
+
+    rows = list(sheet.iter_rows(values_only=True))
+    if not rows:
+        return None
+
+    headers = [str(cell).strip() if cell is not None else "" for cell in rows[0]]
+    doctors: list[dict[str, Any]] = []
+    pharmacies: list[dict[str, Any]] = []
+
+    for row in rows[1:]:
+        row_dict = {headers[idx]: row[idx] for idx in range(min(len(headers), len(row)))}
+        name = _normalize_string(_pick_value(row_dict, "Name", "name"))
+        if not name:
+            continue
+
+        client_tag = _normalize_string(_pick_value(row_dict, "Client Tag", "clientTag"))
+        specialty = _normalize_string(_pick_value(row_dict, "Speciality", "Specialty", "speciality", "specialty"))
+        is_pharmacy = False
+        if specialty and specialty.lower() == "pharmacy":
+            is_pharmacy = True
+        if client_tag and client_tag.lower() == "pharmacy":
+            is_pharmacy = True
+
+        if is_pharmacy:
+            pharmacies.append(
+                {
+                    "name": name,
+                    "city": _normalize_string(_pick_value(row_dict, "City", "city")),
+                    "area": _normalize_string(_pick_value(row_dict, "Area", "area")),
+                    "phone": _normalize_phone(_pick_value(row_dict, "Phone", "phone")),
+                    "segment": "Retail",
+                }
+            )
+        else:
+            doctors.append(
+                {
+                    "name": name,
+                    "specialty": specialty,
+                    "clinic": _normalize_string(_pick_value(row_dict, "Clinic", "Hospital", "clinic")),
+                    "city": _normalize_string(_pick_value(row_dict, "City", "city")),
+                    "area": _normalize_string(_pick_value(row_dict, "Area", "area")),
+                    "classification": _normalize_string(_pick_value(row_dict, "Classification", "Class", "class")),
+                    "phone": _normalize_phone(_pick_value(row_dict, "Phone", "phone")),
+                }
+            )
+
+    return doctors, pharmacies
+
 
 def seed_reference_data(db: Session) -> None:
     seed_admin_and_rep(db)
 
-    doctor = db.query(Doctor).filter(Doctor.name == "Dr. Lina Haddad").first()
-    if not doctor:
-        doctor = Doctor(
-            name="Dr. Lina Haddad",
-            specialty="Cardiology",
-            clinic="Heart Center",
-            city="Amman",
-            area="Shmeisani",
-            classification="A",
-            phone="0790000001",
-        )
-        db.add(doctor)
+    seed_doctors = [
+        {
+            "name": "Dr. Lina Haddad",
+            "specialty": "Cardiology",
+            "clinic": "Heart Center",
+            "city": "Amman",
+            "area": "Shmeisani",
+            "classification": "A",
+            "phone": "0790000001",
+        },
+        {
+            "name": "Dr. Omar Saleh",
+            "specialty": "Neurology",
+            "clinic": "Neuro Care",
+            "city": "Amman",
+            "area": "Abdoun",
+            "classification": "B",
+            "phone": "0790000002",
+        },
+        {
+            "name": "Dr. Rana Qasem",
+            "specialty": "Endocrinology",
+            "clinic": "Endo Clinic",
+            "city": "Amman",
+            "area": "Dabouq",
+            "classification": "A",
+            "phone": "0790000003",
+        },
+    ]
+    for doc in seed_doctors:
+        existing = db.query(Doctor).filter(Doctor.name == doc["name"]).first()
+        if not existing:
+            db.add(Doctor(**doc))
 
-    pharmacy = db.query(Pharmacy).filter(Pharmacy.name == "WellCare Pharmacy").first()
-    if not pharmacy:
-        pharmacy = Pharmacy(
-            name="WellCare Pharmacy",
-            city="Amman",
-            area="Abdali",
-            segment="Retail",
-            credit_limit=Decimal("5000"),
-            payment_terms="30 days",
+    seed_pharmacies = [
+        {
+            "name": "WellCare Pharmacy",
+            "city": "Amman",
+            "area": "Abdali",
+            "segment": "Retail",
+            "credit_limit": Decimal("5000"),
+            "payment_terms": "30 days",
+        },
+        {
+            "name": "CityCare Pharmacy",
+            "city": "Amman",
+            "area": "Khalda",
+            "segment": "Retail",
+            "credit_limit": Decimal("3500"),
+            "payment_terms": "45 days",
+        },
+        {
+            "name": "Hope Pharmacy",
+            "city": "Amman",
+            "area": "Sweifieh",
+            "segment": "Retail",
+            "credit_limit": Decimal("4000"),
+            "payment_terms": "30 days",
+        },
+    ]
+    for pharmacy_item in seed_pharmacies:
+        existing = db.query(Pharmacy).filter(Pharmacy.name == pharmacy_item["name"]).first()
+        if not existing:
+            db.add(Pharmacy(**pharmacy_item))
+
+    excel_accounts = _load_accounts_from_excel()
+    if excel_accounts:
+        excel_doctors, excel_pharmacies = excel_accounts
+        for doc in excel_doctors:
+            if not doc.get("name"):
+                continue
+            existing = db.query(Doctor).filter(Doctor.name == doc["name"]).first()
+            if not existing:
+                db.add(Doctor(**doc))
+        for pharmacy_item in excel_pharmacies:
+            if not pharmacy_item.get("name"):
+                continue
+            existing = db.query(Pharmacy).filter(Pharmacy.name == pharmacy_item["name"]).first()
+            if not existing:
+                db.add(Pharmacy(**pharmacy_item))
+        logger.info(
+            "Seeded %s doctor(s) and %s pharmacy record(s) from hcps.xlsx.",
+            len(excel_doctors),
+            len(excel_pharmacies),
         )
-        db.add(pharmacy)
 
     product = db.query(Product).filter(Product.code == "DPM-001").first()
     if not product:
@@ -67,6 +217,9 @@ def seed_reference_data(db: Session) -> None:
         db.add(product)
 
     db.commit()
+
+    doctor = db.query(Doctor).filter(Doctor.name == "Dr. Lina Haddad").first()
+    pharmacy = db.query(Pharmacy).filter(Pharmacy.name == "WellCare Pharmacy").first()
 
     rep_emails = [
         "rep1@example.com",
@@ -135,15 +288,15 @@ def seed_reference_data(db: Session) -> None:
                     notes="Introductory visit.",
                     samples_given="Starter pack",
                     next_action="Follow-up call",
-                    status="completed",
+                    status="COMPLETED",
                     started_at=started_at,
                     ended_at=ended_at,
                     start_lat=31.9539,
                     start_lng=35.9106,
                     end_lat=31.9566,
                     end_lng=35.9450,
-                    start_accuracy=12.5,
-                    end_accuracy=15.3,
+                    start_accuracy_m=12.5,
+                    end_accuracy_m=15.3,
                     duration_seconds=int((ended_at - started_at).total_seconds()),
                 )
             )

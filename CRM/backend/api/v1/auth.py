@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from core.config import settings
@@ -15,7 +15,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
+def login(
+    payload: LoginRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> AuthResponse:
     user = authenticate(db, payload.email, payload.password)
     if not user:
         raise HTTPException(
@@ -24,11 +28,23 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
         )
 
     token = issue_token(user, settings.jwt_expires_minutes)
+    response.set_cookie(
+        "access_token",
+        token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.app_env.lower() == "production",
+        max_age=settings.jwt_expires_minutes * 60,
+    )
     return AuthResponse(token=token, user=user)  # type: ignore[arg-type]
 
 
 @router.post("/bootstrap", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def bootstrap(payload: BootstrapRequest, db: Session = Depends(get_db)) -> AuthResponse:
+def bootstrap(
+    payload: BootstrapRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> AuthResponse:
     if not settings.bootstrap_code:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bootstrap disabled.")
     if payload.code != settings.bootstrap_code:
@@ -47,6 +63,14 @@ def bootstrap(payload: BootstrapRequest, db: Session = Depends(get_db)) -> AuthR
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     token = issue_token(user, settings.jwt_expires_minutes)
+    response.set_cookie(
+        "access_token",
+        token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.app_env.lower() == "production",
+        max_age=settings.jwt_expires_minutes * 60,
+    )
     return AuthResponse(token=token, user=user)  # type: ignore[arg-type]
 
 

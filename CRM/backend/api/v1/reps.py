@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+import traceback
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -8,8 +11,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
-from core.security import get_current_user, require_roles
-from models.crm import Role, Route, RouteAccount, User
+from core.security import get_current_user, has_any_role, require_roles
+from models.crm import Device, LocationEvent, Role, Route, RouteAccount, User, Visit
 from schemas.common import PaginatedResponse
 from schemas.crm import RouteCreate, RouteOut, RouteStopOut
 from schemas.user import RepCreate, RepUpdate, UserOut
@@ -49,6 +52,24 @@ def _get_rep_or_404(db: Session, rep_id: int) -> User:
 def _format_address(*parts: Optional[str]) -> Optional[str]:
     cleaned = [part.strip() for part in parts if part and part.strip()]
     return ", ".join(cleaned) if cleaned else None
+
+
+def _coerce_datetime(value) -> Optional[datetime]:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return parsed
+        except ValueError:
+            return None
+    return None
 
 
 @router.get("/reps", response_model=list[UserOut])
@@ -263,3 +284,105 @@ def get_route(route_id: int, db: Session = Depends(get_db)) -> Route:
     if not route:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
     return route
+
+
+@router.get("/reps/{rep_id}/tracking-status")
+def get_rep_tracking_status(
+    rep_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        rep = _get_rep_or_404(db, rep_id)
+        if has_any_role(current_user, ["medical_rep"]) and current_user.id != rep_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
+
+        device_last_seen = (
+            db.query(func.max(Device.last_seen_at))
+            .filter(Device.user_id == rep_id, Device.is_active.is_(True))
+            .scalar()
+        )
+
+        device_last_seen_dt = _coerce_datetime(device_last_seen)
+        now = datetime.now(timezone.utc)
+        tracking_active = bool(
+            device_last_seen_dt and (now - device_last_seen_dt).total_seconds() <= 300
+        )
+
+        today = date.today()
+        today_completed = (
+            db.query(func.count(Visit.id))
+            .filter(
+                Visit.rep_id == rep_id,
+                Visit.visit_date == today,
+                Visit.status == "COMPLETED",
+                Visit.is_deleted.is_(False),
+            )
+            .scalar()
+            or 0
+        )
+
+        late_visits = (
+            db.query(func.count(Visit.id))
+            .filter(
+                Visit.rep_id == rep_id,
+                Visit.visit_date < today,
+                Visit.status.in_(["SCHEDULED", "IN_PROGRESS"]),
+                Visit.is_deleted.is_(False),
+            )
+            .scalar()
+            or 0
+        )
+
+        now = datetime.now(timezone.utc)
+        window_start = now - timedelta(hours=24)
+        recent_events = (
+            db.query(LocationEvent)
+            .join(Device, Device.id == LocationEvent.device_id)
+            .filter(
+                Device.user_id == rep_id,
+                Device.is_active.is_(True),
+                LocationEvent.ts >= window_start,
+            )
+            .order_by(LocationEvent.ts.asc())
+            .all()
+        )
+
+        gap_count = 0
+        max_gap_seconds = 0.0
+        suspicious_jump_count = 0
+        last_suspicious_at = None
+        last_event_at = None
+
+        for event in recent_events:
+            last_event_at = event.ts
+            if event.gap_seconds and event.gap_seconds > 900:
+                gap_count += 1
+                max_gap_seconds = max(max_gap_seconds, float(event.gap_seconds))
+            if event.suspicious_jump:
+                suspicious_jump_count += 1
+                if not last_suspicious_at or event.ts > last_suspicious_at:
+                    last_suspicious_at = event.ts
+
+        return {
+            "repId": rep_id,
+            "repName": rep.name,
+            "lastSeenAt": device_last_seen_dt.isoformat() if device_last_seen_dt else None,
+            "trackingActive": tracking_active,
+            "todayCompletedVisits": today_completed,
+            "lateVisits": late_visits,
+            "lastEventAt": last_event_at.isoformat() if last_event_at else None,
+            "gapCount": gap_count,
+            "maxGapSeconds": max_gap_seconds if gap_count else 0,
+            "suspiciousJumpCount": suspicious_jump_count,
+            "lastSuspiciousAt": last_suspicious_at.isoformat() if last_suspicious_at else None,
+        }
+    except Exception:
+        run_dir = Path("docs/_runs")
+        run_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        (run_dir / f"tracking_status_error_{ts}.txt").write_text(
+            traceback.format_exc(),
+            encoding="utf-8",
+        )
+        raise

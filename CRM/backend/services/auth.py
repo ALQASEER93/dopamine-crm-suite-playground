@@ -125,9 +125,6 @@ def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
 
         user = db.query(User).filter(User.email.in_(candidates)).first()
         if not user:
-            user = db.query(User).filter(User.role_id == role_id).first()
-
-        if not user:
             user = User(email=email, name=name, role_id=role_id, is_active=True, password_hash="")
             db.add(user)
 

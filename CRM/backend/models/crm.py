@@ -195,6 +195,7 @@ class Visit(Base):
 
     id = Column(Integer, primary_key=True)
     visit_date = Column(Date, nullable=False)
+    planned_at = Column(DateTime(timezone=True), nullable=True)
     rep_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True)
     pharmacy_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=True)
@@ -203,20 +204,32 @@ class Visit(Base):
     next_action = Column(Text, nullable=True)
     next_action_date = Column(Date, nullable=True)
     status = Column(
-        Enum("scheduled", "in_progress", "completed", "cancelled", name="visit_status"),
+        Enum(
+            "SCHEDULED",
+            "IN_PROGRESS",
+            "COMPLETED",
+            "CANCELED",
+            "NO_SHOW",
+            name="visit_status",
+        ),
         nullable=False,
-        default="scheduled",
-        server_default="scheduled",
+        default="SCHEDULED",
+        server_default="SCHEDULED",
     )
     started_at = Column(DateTime(timezone=True), nullable=True)
     ended_at = Column(DateTime(timezone=True), nullable=True)
     start_lat = Column(Float, nullable=True)
     start_lng = Column(Float, nullable=True)
-    start_accuracy = Column(Float, nullable=True)
+    start_accuracy_m = Column("start_accuracy", Float, nullable=True)
     end_lat = Column(Float, nullable=True)
     end_lng = Column(Float, nullable=True)
-    end_accuracy = Column(Float, nullable=True)
+    end_accuracy_m = Column("end_accuracy", Float, nullable=True)
     duration_seconds = Column(Integer, nullable=True)
+    override_reason = Column(Text, nullable=True)
+    did_samples = Column(Boolean, nullable=False, default=False, server_default="0")
+    did_brochure = Column(Boolean, nullable=False, default=False, server_default="0")
+    did_collection = Column(Boolean, nullable=False, default=False, server_default="0")
+    did_order = Column(Boolean, nullable=False, default=False, server_default="0")
     is_deleted = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
@@ -234,6 +247,21 @@ class Visit(Base):
     rep = relationship(User)
     doctor = relationship(Doctor, back_populates="visits")
     pharmacy = relationship(Pharmacy, back_populates="visits")
+    attachments = relationship("VisitAttachment", back_populates="visit", cascade="all, delete-orphan")
+
+
+class VisitAttachment(Base):
+    __tablename__ = "visit_attachments"
+
+    id = Column(Integer, primary_key=True)
+    visit_id = Column(Integer, ForeignKey("visits.id"), nullable=False)
+    filename = Column(String(255), nullable=False)
+    content_type = Column(String(100), nullable=True)
+    file_path = Column(String(500), nullable=False)
+    size_bytes = Column(Integer, nullable=True)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    visit = relationship("Visit", back_populates="attachments")
 
 
 class Order(Base):
@@ -345,6 +373,59 @@ class Target(Base):
 
     rep = relationship(User)
     product = relationship(Product, back_populates="targets")
+
+
+class VisitTarget(Base):
+    __tablename__ = "visit_targets"
+
+    id = Column(Integer, primary_key=True)
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    period = Column(String(20), nullable=False)  # e.g., 2024-11
+    daily_target_visits = Column(Integer, nullable=False)
+    monthly_target_visits = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (UniqueConstraint("rep_id", "period", name="uq_visit_targets_rep_period"),)
+
+    rep = relationship(User)
+
+
+class Device(Base):
+    __tablename__ = "devices"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    platform = Column(String(50), nullable=False)
+    device_label = Column(String(150), nullable=True)
+    registered_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_seen_at = Column(DateTime(timezone=True), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
+
+    user = relationship(User)
+    location_events = relationship("LocationEvent", back_populates="device", cascade="all, delete-orphan")
+
+
+class LocationEvent(Base):
+    __tablename__ = "location_events"
+
+    id = Column(Integer, primary_key=True)
+    device_id = Column(Integer, ForeignKey("devices.id"), nullable=False)
+    ts = Column(DateTime(timezone=True), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    accuracy_m = Column(Float, nullable=True)
+    distance_m = Column(Float, nullable=True)
+    gap_seconds = Column(Float, nullable=True)
+    speed_kmh = Column(Float, nullable=True)
+    suspicious_jump = Column(Boolean, nullable=False, default=False, server_default="0")
+    tamper_flags = Column(Text, nullable=True)
+    source = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    device = relationship(Device, back_populates="location_events")
 
 
 class Collection(Base):

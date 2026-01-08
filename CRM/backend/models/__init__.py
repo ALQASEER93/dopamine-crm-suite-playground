@@ -8,7 +8,9 @@ from models.ai import (  # noqa: F401
 )
 from models.crm import (  # noqa: F401
     Collection,
+    Device,
     Doctor,
+    LocationEvent,
     Order,
     OrderLine,
     Pharmacy,
@@ -19,6 +21,8 @@ from models.crm import (  # noqa: F401
     StockLocation,
     StockMovement,
     Target,
+    VisitAttachment,
+    VisitTarget,
     Territory,
     User,
     RepProfile,
