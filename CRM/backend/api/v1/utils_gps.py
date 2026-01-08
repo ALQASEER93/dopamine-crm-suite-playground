@@ -29,7 +29,7 @@ def validate_accuracy(accuracy: Optional[float]) -> None:
         return
     if accuracy > threshold:
         raise GPSValidationError(
-            f"GPS accuracy is too low (>{threshold}m). Please ensure GPS signal is strong."
+            f"GPS accuracy is too low (>{threshold}m)."
         )
 
 
@@ -51,9 +51,25 @@ def validate_max_distance(
         )
 
 
+def validate_geofence_distance(distance_m: float) -> None:
+    limits = [
+        value
+        for value in (settings.gps_max_distance_m, settings.geofence_radius_m)
+        if value is not None and value > 0
+    ]
+    if not limits:
+        return
+    limit = min(limits)
+    if distance_m > limit:
+        raise GPSValidationError(
+            f"Outside geofence radius ({distance_m:.1f}m > {limit}m)."
+        )
+
+
 def policy_snapshot() -> dict:
     return {
         "gpsMaxDistanceM": settings.gps_max_distance_m,
         "gpsMinAccuracyM": settings.gps_min_accuracy_m,
         "geofenceRadiusM": settings.geofence_radius_m,
+        "requireAccuracyMetersMax": settings.gps_min_accuracy_m,
     }

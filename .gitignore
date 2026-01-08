@@ -30,6 +30,9 @@ FINAL_STATUS.md
 PR_BLOCKER_ANALYSIS.md
 _runs/
 CRM/backend/data/
+.npm-cache/
+.npm-cache2/
+.npm-cache3/
 
 # Local archives
 ARCHIVE/

@@ -288,15 +288,15 @@ def seed_reference_data(db: Session) -> None:
                     notes="Introductory visit.",
                     samples_given="Starter pack",
                     next_action="Follow-up call",
-                    status="completed",
+                    status="COMPLETED",
                     started_at=started_at,
                     ended_at=ended_at,
                     start_lat=31.9539,
                     start_lng=35.9106,
                     end_lat=31.9566,
                     end_lng=35.9450,
-                    start_accuracy=12.5,
-                    end_accuracy=15.3,
+                    start_accuracy_m=12.5,
+                    end_accuracy_m=15.3,
                     duration_seconds=int((ended_at - started_at).total_seconds()),
                 )
             )

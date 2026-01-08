@@ -127,11 +127,17 @@ class VisitBase(BaseModel):
     rep_id: int
     doctor_id: Optional[int] = None
     pharmacy_id: Optional[int] = None
+    planned_at: Optional[datetime] = None
     notes: Optional[str] = None
     samples_given: Optional[str] = None
     next_action: Optional[str] = None
     next_action_date: Optional[date] = None
-    status: Literal["scheduled", "in_progress", "completed", "cancelled"] = "scheduled"
+    status: Literal["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELED", "NO_SHOW"] = "SCHEDULED"
+    did_samples: bool = False
+    did_brochure: bool = False
+    did_collection: bool = False
+    did_order: bool = False
+    override_reason: Optional[str] = None
 
     @field_validator("pharmacy_id")
     @classmethod
@@ -155,20 +161,26 @@ class VisitUpdate(BaseModel):
     rep_id: Optional[int] = None
     doctor_id: Optional[int] = None
     pharmacy_id: Optional[int] = None
+    planned_at: Optional[datetime] = None
     notes: Optional[str] = None
     samples_given: Optional[str] = None
     next_action: Optional[str] = None
     next_action_date: Optional[date] = None
-    status: Optional[Literal["scheduled", "in_progress", "completed", "cancelled"]] = None
+    status: Optional[Literal["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELED", "NO_SHOW"]] = None
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
     start_lat: Optional[float] = None
     start_lng: Optional[float] = None
-    start_accuracy: Optional[float] = None
+    start_accuracy_m: Optional[float] = None
     end_lat: Optional[float] = None
     end_lng: Optional[float] = None
-    end_accuracy: Optional[float] = None
+    end_accuracy_m: Optional[float] = None
     duration_seconds: Optional[int] = Field(default=None, ge=0)
+    did_samples: Optional[bool] = None
+    did_brochure: Optional[bool] = None
+    did_collection: Optional[bool] = None
+    did_order: Optional[bool] = None
+    override_reason: Optional[str] = None
 
     @field_validator("pharmacy_id")
     @classmethod
@@ -191,10 +203,10 @@ class VisitOut(VisitBase):
     ended_at: Optional[datetime] = None
     start_lat: Optional[float] = None
     start_lng: Optional[float] = None
-    start_accuracy: Optional[float] = None
+    start_accuracy_m: Optional[float] = None
     end_lat: Optional[float] = None
     end_lng: Optional[float] = None
-    end_accuracy: Optional[float] = None
+    end_accuracy_m: Optional[float] = None
     duration_seconds: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
@@ -212,18 +224,31 @@ class VisitOut(VisitBase):
 
 class VisitStart(BaseModel):
     started_at: Optional[datetime] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    accuracy: Optional[float] = None
+    lat: float = Field(..., description="Start latitude (required).")
+    lng: float = Field(..., description="Start longitude (required).")
+    accuracy: float = Field(..., description="GPS accuracy in meters (<= 50 required unless override_reason).")
+    override_reason: Optional[str] = Field(
+        None,
+        description="Provide to bypass GPS accuracy<=50 requirement when needed.",
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
 
 class VisitEnd(BaseModel):
     ended_at: Optional[datetime] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    accuracy: Optional[float] = None
+    lat: float = Field(..., description="End latitude (required).")
+    lng: float = Field(..., description="End longitude (required).")
+    accuracy: float = Field(..., description="GPS accuracy in meters (<= 50 required unless override_reason).")
+    notes: Optional[str] = None
+    did_samples: Optional[bool] = None
+    did_brochure: Optional[bool] = None
+    did_collection: Optional[bool] = None
+    did_order: Optional[bool] = None
+    override_reason: Optional[str] = Field(
+        None,
+        description="Provide to bypass GPS accuracy<=50 and geofence<=150 requirements when needed.",
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -403,6 +428,65 @@ class TargetOut(TargetBase):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class VisitTargetBase(BaseModel):
+    rep_id: int
+    period: str = Field(..., min_length=4, max_length=20)
+    daily_target_visits: int = Field(..., ge=0)
+    monthly_target_visits: int = Field(..., ge=0)
+
+
+class VisitTargetCreate(VisitTargetBase):
+    ...
+
+
+class VisitTargetOut(VisitTargetBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VisitAttachmentOut(BaseModel):
+    id: int
+    visit_id: int
+    filename: str
+    content_type: Optional[str] = None
+    file_path: str
+    size_bytes: Optional[int] = None
+    uploaded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DeviceRegister(BaseModel):
+    platform: str = Field(..., min_length=2, max_length=50)
+    device_label: Optional[str] = Field(None, max_length=150)
+
+
+class DeviceOut(BaseModel):
+    id: int
+    user_id: int
+    platform: str
+    device_label: Optional[str] = None
+    registered_at: datetime
+    last_seen_at: Optional[datetime] = None
+    is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LocationEventIn(BaseModel):
+    device_id: int
+    ts: datetime
+    lat: float
+    lng: float
+    accuracy_m: Optional[float] = None
+    source: Optional[str] = None
+
+
+class LocationEventBatch(BaseModel):
+    events: List[LocationEventIn]
 
 
 class CollectionBase(BaseModel):

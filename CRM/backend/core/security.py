@@ -39,6 +39,10 @@ def _extract_token(request: Request, credentials: HTTPAuthorizationCredentials |
     if credentials and credentials.scheme.lower() == "bearer":
         return credentials.credentials
 
+    cookie_token = request.cookies.get("access_token")
+    if cookie_token:
+        return cookie_token
+
     header_token = request.headers.get("X-Auth-Token")
     if header_token:
         return header_token

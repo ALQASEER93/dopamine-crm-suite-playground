@@ -99,11 +99,9 @@ def list_customers(
 
 
 def _map_visit_status(status: str | None) -> str:
-    if status == "completed":
-        return "success"
-    if status == "cancelled":
-        return "no-show"
-    return "reminder"
+    if not status:
+        return "SCHEDULED"
+    return status
 
 
 @router.get("/visits")
@@ -147,6 +145,11 @@ def list_visits(
                 "visitType": "follow-up",
                 "status": _map_visit_status(visit.status),
                 "notes": visit.notes,
+                "didSamples": visit.did_samples,
+                "didBrochure": visit.did_brochure,
+                "didCollection": visit.did_collection,
+                "didOrder": visit.did_order,
+                "overrideReason": visit.override_reason,
                 "coordinates": {
                     "lat": visit.start_lat,
                     "lng": visit.start_lng,
@@ -156,11 +159,14 @@ def list_visits(
                 "visitedAt": (visit.started_at or datetime.combine(visit.visit_date, datetime.min.time(), tzinfo=timezone.utc)).isoformat()
                 if visit.visit_date
                 else None,
+                "startedAt": visit.started_at.isoformat() if visit.started_at else None,
+                "endedAt": visit.ended_at.isoformat() if visit.ended_at else None,
+                "durationSeconds": visit.duration_seconds,
             }
         )
 
     if status_filter:
-        status_filter = status_filter.strip().lower()
+        status_filter = status_filter.strip().upper()
         results = [visit for visit in results if visit.get("status") == status_filter]
 
     return results
@@ -190,24 +196,14 @@ def create_visit(
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid customer type.")
 
-    status_map = {
-        "success": "completed",
-        "no-show": "cancelled",
-        "refused": "cancelled",
-    }
-    normalized_status = status_map.get(payload.get("status"), "scheduled")
-
     visited_at = payload.get("visitedAt")
     visit_date = date.today()
     started_at = None
-    ended_at = None
     if visited_at:
         try:
             parsed = datetime.fromisoformat(visited_at)
             visit_date = parsed.date()
             started_at = parsed
-            if normalized_status == "completed":
-                ended_at = parsed
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid visitedAt format.") from exc
 
@@ -218,11 +214,14 @@ def create_visit(
         doctor_id=doctor_id,
         pharmacy_id=pharmacy_id,
         notes=payload.get("notes"),
-        status=normalized_status,
+        status="SCHEDULED",
         started_at=started_at,
-        ended_at=ended_at,
         start_lat=coordinates.get("lat"),
         start_lng=coordinates.get("lng"),
+        did_samples=bool(payload.get("didSamples")) if payload.get("didSamples") is not None else False,
+        did_brochure=bool(payload.get("didBrochure")) if payload.get("didBrochure") is not None else False,
+        did_collection=bool(payload.get("didCollection")) if payload.get("didCollection") is not None else False,
+        did_order=bool(payload.get("didOrder")) if payload.get("didOrder") is not None else False,
     )
     db.add(visit)
     db.commit()
@@ -235,8 +234,13 @@ def create_visit(
         "customerName": payload.get("customerName") or "",
         "customerType": customer_type,
         "visitType": payload.get("visitType") or "follow-up",
-        "status": payload.get("status") or "success",
+        "status": visit.status,
         "notes": visit.notes,
+        "didSamples": visit.did_samples,
+        "didBrochure": visit.did_brochure,
+        "didCollection": visit.did_collection,
+        "didOrder": visit.did_order,
+        "overrideReason": visit.override_reason,
         "coordinates": coordinates if coordinates else None,
         "visitedAt": visited_at or datetime.now(timezone.utc).isoformat(),
     }

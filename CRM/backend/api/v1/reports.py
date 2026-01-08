@@ -49,7 +49,7 @@ def reports_overview(
 
     visit_query = _visit_query(db, date_from, date_to)
     total_visits = visit_query.count()
-    successful_visits = visit_query.filter(Visit.status == "completed").count()
+    successful_visits = visit_query.filter(Visit.status == "COMPLETED").count()
 
     orders_query = db.query(Order)
     if date_from:
@@ -100,11 +100,11 @@ def rep_performance(
             }
         entry = metrics[rep_id]
         entry["totalVisits"] += 1
-        if visit.status == "completed":
+        if visit.status == "COMPLETED":
             entry["completedVisits"] += 1
-        if visit.status == "scheduled":
+        if visit.status == "SCHEDULED":
             entry["scheduledVisits"] += 1
-        if visit.status == "cancelled":
+        if visit.status in {"CANCELED", "NO_SHOW"}:
             entry["cancelledVisits"] += 1
         if visit.doctor_id:
             entry["uniqueAccounts"].add(f"doctor:{visit.doctor_id}")
@@ -261,7 +261,7 @@ def territory_performance(
             }
         entry = metrics[territory_id]
         entry["totalVisits"] += 1
-        if visit.status == "completed":
+        if visit.status == "COMPLETED":
             entry["completedVisits"] += 1
         if visit.doctor_id:
             entry["uniqueAccounts"].add(f"doctor:{visit.doctor_id}")

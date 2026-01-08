@@ -1,17 +1,21 @@
 import logging
 import os
+import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
+from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
 from api import api_router
 from core.config import settings
 from core.db import Base, SessionLocal, build_fallback_engine, engine, swap_engine
 from services.seed_data import seed_reference_data
+from scripts.migrate_sqlite import run_sqlite_migrations
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +36,25 @@ tags_metadata = [
     {"name": "targets", "description": "Sales targets tracking."},
     {"name": "collections", "description": "Collections and receipts."},
 ]
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _read_git_commit() -> str:
+    head_path = REPO_ROOT / ".git" / "HEAD"
+    if not head_path.exists():
+        return "unknown"
+    head = head_path.read_text(encoding="utf-8").strip()
+    if head.startswith("ref:"):
+        ref_path = REPO_ROOT / ".git" / head.split(" ", 1)[1].strip()
+        if ref_path.exists():
+            return ref_path.read_text(encoding="utf-8").strip()
+    return head
+
+
+GIT_COMMIT = _read_git_commit()
+BUILD_TIME = datetime.now(timezone.utc).isoformat()
+OPENAPI_MARKER = f"DPM-COMMIT-{GIT_COMMIT}"
 
 
 def init_database() -> None:
@@ -58,6 +81,7 @@ def init_database() -> None:
             )
         else:
             raise
+    run_sqlite_migrations(engine)
     with SessionLocal() as session:
         seed_reference_data(session)
     logger.info("Database schema ensured and seeded.")
@@ -106,10 +130,11 @@ async def read_status() -> dict:
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
+    description = f"ALQASEER CRM API\\n\\nCommit: {GIT_COMMIT}\\nMarker: {OPENAPI_MARKER}"
     openapi_schema = get_openapi(
         title=app.title,
         version=settings.app_version,
-        description="ALQASEER CRM API",
+        description=description,
         routes=app.routes,
         tags=tags_metadata,
     )
@@ -131,6 +156,19 @@ def custom_openapi():
 app.openapi = custom_openapi  # type: ignore[assignment]
 
 app.include_router(api_router, prefix="/api")
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):  # noqa: ARG001
+    run_dir = Path("docs/_runs")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    log_path = run_dir / f"unhandled_exception_{ts}.txt"
+    log_path.write_text(traceback.format_exc(), encoding="utf-8")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error_id": log_path.name},
+    )
 
 
 if __name__ == "__main__":
