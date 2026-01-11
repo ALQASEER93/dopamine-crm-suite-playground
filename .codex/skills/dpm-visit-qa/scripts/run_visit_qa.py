@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import datetime, timezone, date
 import urllib.request
 import urllib.error
+import urllib.parse
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8000/api/v1"
 DEFAULT_EMAIL = "rep1@example.com"
@@ -132,6 +133,8 @@ def main():
     notes = []
     token = None
     rep_id = None
+    role_slug = None
+    tracking_rep_id = None
     visit_id = None
     device_id = None
 
@@ -168,13 +171,42 @@ def main():
     data = parse_json(body)
     if status == 200 and data and data.get("token"):
         token = data["token"]
-        rep_id = (data.get("user") or {}).get("id")
-        results.append({"name": "Auth login", "ok": True, "detail": f"rep_id={rep_id}"})
+        user = data.get("user") or {}
+        rep_id = user.get("id")
+        role_slug = (user.get("role") or {}).get("slug")
+        tracking_rep_id = rep_id
+        results.append({
+            "name": "Auth login",
+            "ok": True,
+            "detail": f"rep_id={rep_id} role={role_slug}",
+        })
     else:
         results.append({"name": "Auth login", "ok": False, "detail": f"status={status} body={body}"})
         write_report(report_path, context, results, notes)
         print(report_path)
         return 1
+
+    if role_slug in ("admin", "supervisor"):
+        lookup_email = DEFAULT_EMAIL
+        encoded_email = urllib.parse.quote(lookup_email)
+        status, body = http_request(
+            "GET",
+            f"{base_url}/reps?email={encoded_email}",
+            token=token,
+        )
+        data = parse_json(body) or []
+        tracking_rep_id = data[0].get("id") if status == 200 and data else None
+        results.append({
+            "name": "Resolve rep for tracking status (admin)",
+            "ok": tracking_rep_id is not None,
+            "detail": f"status={status} email={lookup_email} rep_id={tracking_rep_id} body={body}"
+            if status != 200 or tracking_rep_id is None
+            else f"status={status} email={lookup_email} rep_id={tracking_rep_id}",
+        })
+        if tracking_rep_id is None:
+            write_report(report_path, context, results, notes)
+            print(report_path)
+            return 1
 
     # Get a doctor
     status, body = http_request("GET", f"{base_url}/doctors/?page=1&page_size=1", token=token)
@@ -368,18 +400,27 @@ def main():
             })
 
         # Tracking status
-        status, body = http_request(
-            "GET",
-            f"{base_url}/reps/{rep_id}/tracking-status",
-            token=token,
-        )
+        if role_slug in ("admin", "supervisor"):
+            status, body = http_request(
+                "GET",
+                f"{base_url}/reps/tracking-status?rep_id={tracking_rep_id}",
+                token=token,
+            )
+        else:
+            status, body = http_request(
+                "GET",
+                f"{base_url}/reps/{rep_id}/tracking-status",
+                token=token,
+            )
         data = parse_json(body) or {}
         tracking_active = data.get("trackingActive")
         ok_tracking = status == 200 and tracking_active is not None
         results.append({
             "name": "Tracking status",
             "ok": ok_tracking,
-            "detail": f"status={status} trackingActive={tracking_active} body={body}" if status != 200 else f"status={status} trackingActive={tracking_active}",
+            "detail": f"status={status} rep_id={tracking_rep_id} trackingActive={tracking_active} body={body}"
+            if status != 200
+            else f"status={status} rep_id={tracking_rep_id} trackingActive={tracking_active}",
         })
         if status == 200 and tracking_active is False:
             notes.append("Tracking status returned trackingActive=false. This may be expected if no recent device activity.")

@@ -34,6 +34,7 @@ def get_version(request: Request) -> dict:
         "/api/v1/devices/register",
         "/api/v1/location-events/batch",
         "/api/v1/reps/{rep_id}/tracking-status",
+        "/api/v1/reps/tracking-status",
     ]
     openapi_has_tracking = all(_has_route(request, path) for path in tracking_paths)
     return {
