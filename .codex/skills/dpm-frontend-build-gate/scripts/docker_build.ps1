@@ -28,11 +28,37 @@ $frontendCmd = "cd /repo/CRM/frontend && npm ci && npm test --if-present && npm 
 $pwaCmd = "cd /repo/ALQASEER-PWA && npm ci && npm run build"
 
 $repoMount = "{0}:/repo" -f $RepoRoot
+$frontendNodeModulesVolume = "dpm_frontend_node_modules"
+$pwaNodeModulesVolume = "dpm_pwa_node_modules"
 
-& docker run --rm -v $repoMount -w /repo node:20-bullseye /bin/bash -lc $frontendCmd 2>&1 | Tee-Object -FilePath $logFrontend
+$dockerFrontendArgs = @(
+  "run",
+  "--rm",
+  "-v", $repoMount,
+  "-v", "{0}:/repo/CRM/frontend/node_modules" -f $frontendNodeModulesVolume,
+  "-w", "/repo",
+  "node:20-bullseye",
+  "/bin/bash",
+  "-lc",
+  $frontendCmd
+)
+
+$dockerPwaArgs = @(
+  "run",
+  "--rm",
+  "-v", $repoMount,
+  "-v", "{0}:/repo/ALQASEER-PWA/node_modules" -f $pwaNodeModulesVolume,
+  "-w", "/repo",
+  "node:20-bullseye",
+  "/bin/bash",
+  "-lc",
+  $pwaCmd
+)
+
+& docker @dockerFrontendArgs 2>&1 | Tee-Object -FilePath $logFrontend
 $frontendExit = $LASTEXITCODE
 
-& docker run --rm -v $repoMount -w /repo node:20-bullseye /bin/bash -lc $pwaCmd 2>&1 | Tee-Object -FilePath $logPwa
+& docker @dockerPwaArgs 2>&1 | Tee-Object -FilePath $logPwa
 $pwaExit = $LASTEXITCODE
 
 @{

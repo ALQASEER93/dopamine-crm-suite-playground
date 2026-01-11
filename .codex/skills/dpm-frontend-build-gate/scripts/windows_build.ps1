@@ -4,6 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $false
 
 $runDir = Join-Path $RepoRoot "docs/_runs"
 New-Item -ItemType Directory -Force -Path $runDir | Out-Null
@@ -11,14 +12,17 @@ New-Item -ItemType Directory -Force -Path $runDir | Out-Null
 $logFrontend = Join-Path $runDir ("windows_build_frontend_{0}.log" -f $Timestamp)
 $logPwa = Join-Path $runDir ("windows_build_pwa_{0}.log" -f $Timestamp)
 
-$frontendCmd = "cd /d \"$RepoRoot\CRM\frontend\" && npm ci && npm test --if-present && npm run build"
-$pwaCmd = "cd /d \"$RepoRoot\ALQASEER-PWA\" && npm ci && npm run build"
+$frontendCmd = 'cd /d "{0}\CRM\frontend" && npm ci && npm run --silent test --if-present && npm run --silent build' -f $RepoRoot
+$pwaCmd = 'cd /d "{0}\ALQASEER-PWA" && npm ci && npm run --silent build' -f $RepoRoot
 
-cmd /c $frontendCmd 2>&1 | Tee-Object -FilePath $logFrontend
+$savedErrorAction = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+cmd /c $frontendCmd 2>&1 | Tee-Object -FilePath $logFrontend | Out-Null
 $frontendExit = $LASTEXITCODE
 
-cmd /c $pwaCmd 2>&1 | Tee-Object -FilePath $logPwa
+cmd /c $pwaCmd 2>&1 | Tee-Object -FilePath $logPwa | Out-Null
 $pwaExit = $LASTEXITCODE
+$ErrorActionPreference = $savedErrorAction
 
 $spawnBlocked = $false
 $logText = @()

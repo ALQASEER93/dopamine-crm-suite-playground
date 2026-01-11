@@ -26,6 +26,7 @@ Tracking
 - POST /location-events/batch
   - body: {"events": [{"device_id": <id>, "ts": "ISO", "lat": 31.95, "lng": 35.91, "accuracy_m": 12, "source": "qa"}]}
 - GET /reps/{rep_id}/tracking-status
+- GET /reps/tracking-status?rep_id=<rep_id> (admin/supervisor)
 
 GPS policy defaults (server-side)
 - gps_min_accuracy_m = 50

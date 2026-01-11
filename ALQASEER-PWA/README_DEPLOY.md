@@ -132,3 +132,14 @@ git push -u origin main
 - إذا أردت تعطيل أو تغيير Google Maps في المستقبل:
   - المتغير `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` يمكن تعديله أو حذفه من Vercel ومن `.env.local`.
 
+---
+
+## 7 – تشغيل أدوات أندرويد لـ TWA (بدون تعديل PATH النظام)
+
+- لتجنب مشاكل `setx` وتقطيع PATH، استخدم السكربت التالي في كل جلسة قبل أي بناء TWA:
+  - `scripts/ANDROID_ENV.ps1`
+- السكربت يضبط:
+  - `JAVA_HOME`
+  - `ANDROID_SDK_ROOT`
+  - ويضيف المسارات المطلوبة إلى PATH **داخل نفس الجلسة فقط**.
+
