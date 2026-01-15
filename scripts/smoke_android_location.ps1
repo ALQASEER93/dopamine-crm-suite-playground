@@ -232,12 +232,22 @@ try {
     & $adb.Source -s $deviceId shell pm grant com.alqaseer.pwa $perm 2>$null
   }
   $reportLines += "- Granted permissions: $($grantList -join ", ")"
+  & $adb.Source -s $deviceId shell cmd deviceidle whitelist +com.alqaseer.pwa 2>$null
+  & $adb.Source -s $deviceId shell cmd deviceidle disable 2>$null
+  $reportLines += "- Device idle: whitelisted + disabled"
   $appOps = @(
     "ACCESS_FINE_LOCATION",
     "ACCESS_COARSE_LOCATION",
     "ACCESS_BACKGROUND_LOCATION"
   )
   foreach ($op in $appOps) {
+    & $adb.Source -s $deviceId shell appops set com.alqaseer.pwa $op allow 2>$null
+  }
+  $backgroundOps = @(
+    "RUN_IN_BACKGROUND",
+    "RUN_ANY_IN_BACKGROUND"
+  )
+  foreach ($op in $backgroundOps) {
     & $adb.Source -s $deviceId shell appops set com.alqaseer.pwa $op allow 2>$null
   }
   & $adb.Source -s $deviceId shell settings put secure location_mode 3 2>$null
