@@ -75,6 +75,26 @@ function Resolve-Emulator {
   return $null
 }
 
+function Capture-Screenshot {
+  param(
+    [pscustomobject]$Adb,
+    [string]$DeviceId,
+    [string]$OutputPath
+  )
+  $parentDir = Split-Path $OutputPath -Parent
+  if (-not (Test-Path $parentDir)) {
+    New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+  }
+  $proc = Start-Process -FilePath $Adb.Source -ArgumentList @("-s", $DeviceId, "exec-out", "screencap", "-p") `
+    -RedirectStandardOutput $OutputPath -NoNewWindow -Wait -PassThru
+  if ($proc.ExitCode -ne 0) {
+    throw "adb exec-out screencap failed with exit code $($proc.ExitCode)"
+  }
+  if (-not (Test-Path $OutputPath) -or (Get-Item $OutputPath).Length -eq 0) {
+    throw "screencap produced empty output"
+  }
+}
+
 function Wait-ForEmulator {
   param(
     [pscustomobject]$Adb,
@@ -204,6 +224,8 @@ try {
     "android.permission.ACCESS_FINE_LOCATION",
     "android.permission.ACCESS_COARSE_LOCATION",
     "android.permission.ACCESS_BACKGROUND_LOCATION",
+    "android.permission.FOREGROUND_SERVICE",
+    "android.permission.FOREGROUND_SERVICE_LOCATION",
     "android.permission.POST_NOTIFICATIONS"
   )
   foreach ($perm in $grantList) {
@@ -222,11 +244,9 @@ try {
   & $adb.Source -s $deviceId shell settings put secure location_providers_allowed +gps 2>$null
   & $adb.Source -s $deviceId shell cmd location set-location-enabled true 2>$null
   $reportLines += "- Location mode: enabled (gps)"
-  $startShotDevice = "/sdcard/visit_start.png"
   $startShotLocal = Join-Path $assetDir "visit_start.png"
   try {
-    & $adb.Source -s $deviceId shell screencap -p $startShotDevice | Out-Host
-    & $adb.Source -s $deviceId pull $startShotDevice $startShotLocal | Out-Host
+    Capture-Screenshot -Adb $adb -DeviceId $deviceId -OutputPath $startShotLocal
     $startShotRelative = $startShotLocal.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
     $reportLines += "- Visit start screenshot: $startShotRelative"
   } catch {
@@ -360,11 +380,9 @@ try {
   $backendPayloadRelative = $backendPayloadPath.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
   $reportLines += "- Backend payload: $backendPayloadRelative"
 
-  $endShotDevice = "/sdcard/visit_end.png"
   $endShotLocal = Join-Path $assetDir "visit_end.png"
   try {
-    & $adb.Source -s $deviceId shell screencap -p $endShotDevice | Out-Host
-    & $adb.Source -s $deviceId pull $endShotDevice $endShotLocal | Out-Host
+    Capture-Screenshot -Adb $adb -DeviceId $deviceId -OutputPath $endShotLocal
     $endShotRelative = $endShotLocal.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
     $reportLines += "- Visit end screenshot: $endShotRelative"
   } catch {
