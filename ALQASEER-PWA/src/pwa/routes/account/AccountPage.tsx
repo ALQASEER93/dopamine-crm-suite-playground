@@ -25,9 +25,10 @@ export default function AccountPage() {
   const debugEnabled = useMemo(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      return params.get("debug") === "1" || localStorage.getItem("pwa.debug") === "1";
+      const envFlag = import.meta.env.VITE_DEBUG_PANEL === "1";
+      return envFlag || params.get("debug") === "1" || localStorage.getItem("pwa.debug") === "1";
     } catch {
-      return false;
+      return import.meta.env.VITE_DEBUG_PANEL === "1";
     }
   }, []);
 
@@ -38,12 +39,15 @@ export default function AccountPage() {
     return `${base.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
   }, []);
 
-  const logError = useCallback(
-    (reason: string, detail?: unknown) => {
-      console.error("[account]", { reason, detail, online: isOnline, token: Boolean(token) });
-    },
-    [isOnline, token],
-  );
+  const logEvent = useCallback((event: string, detail?: unknown) => {
+    console.error("[account]", {
+      event,
+      detail,
+      online: isOnline,
+      token: Boolean(token),
+      at: new Date().toISOString(),
+    });
+  }, [isOnline, token]);
 
   const loadProfile = useCallback(async () => {
     if (!token) {
@@ -60,14 +64,15 @@ export default function AccountPage() {
       if (res.status === 401) {
         setStatus("unauthorized");
         setError("انتهت صلاحية الجلسة. يرجى إعادة تسجيل الدخول.");
-        logError("unauthorized", { status: res.status });
+        clearSession();
+        logEvent("unauthorized", { status: res.status });
         return;
       }
       if (!res.ok) {
         const message = await res.text();
         setStatus("error");
         setError(message || "تعذر تحميل بيانات الحساب.");
-        logError("fetch_failed", { status: res.status, message });
+        logEvent("fetch_failed", { status: res.status, message });
         return;
       }
       const data = await res.json();
@@ -77,9 +82,9 @@ export default function AccountPage() {
     } catch (err) {
       setStatus("error");
       setError("تعذر الاتصال بالخادم. تحقق من الاتصال.");
-      logError("network_error", err);
+      logEvent("network_error", err);
     }
-  }, [buildApiUrl, logError, token]);
+  }, [buildApiUrl, clearSession, logEvent, token]);
 
   const logout = () => {
     clearSession();
