@@ -30,16 +30,16 @@ const RepForm = ({ initialValues, onSubmit, onCancel, submitting, error, isEdit 
   return (
     <form className="form" onSubmit={handleSubmit}>
       <label className="form__label">
-        Name
+        الاسم
         <input type="text" value={form.name} onChange={e => updateField('name', e.target.value)} required />
       </label>
       <label className="form__label">
-        Email
+        البريد الإلكتروني
         <input type="email" value={form.email} onChange={e => updateField('email', e.target.value)} required />
       </label>
       {!isEdit && (
         <label className="form__label">
-          Password
+          كلمة المرور
           <input
             type="password"
             value={form.password}
@@ -54,7 +54,7 @@ const RepForm = ({ initialValues, onSubmit, onCancel, submitting, error, isEdit 
           checked={form.is_active}
           onChange={e => updateField('is_active', e.target.checked)}
         />
-        Active
+        نشط
       </label>
 
       {error && (
@@ -65,10 +65,10 @@ const RepForm = ({ initialValues, onSubmit, onCancel, submitting, error, isEdit 
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Save'}
+          {submitting ? 'جارٍ الحفظ...' : 'حفظ'}
         </button>
         <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
+          إلغاء
         </button>
       </div>
     </form>
@@ -104,7 +104,7 @@ const RepsPage = () => {
       queryClient.invalidateQueries({ queryKey: repKeys.all });
       closeForm();
     },
-    onError: error => setFormError(error.message || 'Unable to create rep'),
+    onError: error => setFormError(error.message || 'تعذر إنشاء المندوب'),
   });
 
   const updateMutation = useMutation({
@@ -113,7 +113,7 @@ const RepsPage = () => {
       queryClient.invalidateQueries({ queryKey: repKeys.all });
       closeForm();
     },
-    onError: error => setFormError(error.message || 'Unable to update rep'),
+    onError: error => setFormError(error.message || 'تعذر تحديث المندوب'),
   });
 
   const deleteMutation = useMutation({
@@ -162,37 +162,37 @@ const RepsPage = () => {
     <div className="entity-page">
       <div className="entity-toolbar">
         <div>
-          <h1 className="page-heading">Medical Reps</h1>
-          <p className="page-subtitle">Manage field reps and their access.</p>
+          <h1 className="page-heading">المندوبون الطبيون</h1>
+          <p className="page-subtitle">إدارة المندوبين الميدانيين وصلاحياتهم.</p>
         </div>
         <div className="entity-search">
           <input
             type="search"
             className="input"
-            placeholder="Search by name or email"
+            placeholder="ابحث بالاسم أو البريد"
             value={search}
             onChange={event => setSearch(event.target.value)}
           />
         </div>
         <button type="button" className="btn btn-primary" onClick={openCreate}>
-          Add rep
+          إضافة مندوب
         </button>
       </div>
 
       <section className="table-card entity-table">
-        {repsQuery.error && <div className="entity-empty">Unable to load reps: {repsQuery.error.message}</div>}
-        {!repsQuery.error && repsQuery.isLoading && <div className="entity-empty">Loading reps...</div>}
+        {repsQuery.error && <div className="entity-empty">تعذر تحميل المندوبين: {repsQuery.error.message}</div>}
+        {!repsQuery.error && repsQuery.isLoading && <div className="entity-empty">جارٍ تحميل المندوبين...</div>}
         {!repsQuery.error && !repsQuery.isLoading && reps.length === 0 && (
-          <div className="entity-empty">No reps found.</div>
+          <div className="entity-empty">لا يوجد مندوبون.</div>
         )}
         {!repsQuery.error && reps.length > 0 && (
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
+                <th>الاسم</th>
+                <th>البريد</th>
+                <th>الدور</th>
+                <th>الحالة</th>
               </tr>
             </thead>
             <tbody>
@@ -200,8 +200,8 @@ const RepsPage = () => {
                 <tr key={rep.id} onClick={() => setSelected(rep)}>
                   <td>{rep.name}</td>
                   <td>{rep.email}</td>
-                  <td>{rep.role?.name || rep.role?.slug || 'Rep'}</td>
-                  <td>{rep.is_active === false ? 'Inactive' : 'Active'}</td>
+                  <td>{rep.role?.name || rep.role?.slug || 'مندوب'}</td>
+                  <td>{rep.is_active === false ? 'غير نشط' : 'نشط'}</td>
                 </tr>
               ))}
             </tbody>
@@ -213,14 +213,14 @@ const RepsPage = () => {
         {selected && (
           <div className="detail-grid">
             <p>
-              <strong>Email:</strong> {selected.email}
+              <strong>البريد الإلكتروني:</strong> {selected.email}
             </p>
             <p>
-              <strong>Status:</strong> {selected.is_active === false ? 'Inactive' : 'Active'}
+              <strong>الحالة:</strong> {selected.is_active === false ? 'غير نشط' : 'نشط'}
             </p>
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
-                Edit
+                تعديل
               </button>
               <button
                 type="button"
@@ -228,10 +228,10 @@ const RepsPage = () => {
                 onClick={() => deleteMutation.mutate(selected.id)}
                 disabled={deleteMutation.isPending}
               >
-                Deactivate
+                تعطيل
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
-                Close
+                إغلاق
               </button>
             </div>
           </div>
@@ -239,7 +239,7 @@ const RepsPage = () => {
       </DetailDrawer>
 
       <DetailDrawer
-        title={formMode === 'edit' ? 'Edit rep' : 'Add rep'}
+        title={formMode === 'edit' ? 'تعديل مندوب' : 'إضافة مندوب'}
         isOpen={Boolean(formMode)}
         onClose={closeForm}
       >

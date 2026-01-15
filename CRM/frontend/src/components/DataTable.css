@@ -1,0 +1,93 @@
+.datatable {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.datatable__toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.datatable__filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.datatable__search {
+  min-width: 220px;
+}
+
+.datatable__table-wrapper {
+  overflow-x: auto;
+}
+
+.datatable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.datatable th,
+.datatable td {
+  padding: 12px 10px;
+  text-align: start;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.datatable th {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.datatable__sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.datatable__sort {
+  margin-inline-start: 6px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.datatable__sort--active {
+  color: var(--color-primary);
+}
+
+.datatable__row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.datatable__empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 24px 0;
+}
+
+.datatable__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.datatable__skeleton-row td {
+  padding: 14px 10px;
+}
+
+.datatable__skeleton {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}

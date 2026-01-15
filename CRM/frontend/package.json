@@ -11,7 +11,9 @@
     "test:ci": "node ./scripts/vitest-ci.cjs",
     "smoke:dashboard": "set \"RUN_SMOKE_DASHBOARD=1\" && vitest run --watch=false src/pages/DashboardPage.smoke.test.jsx",
     "smoke:dashboard:node": "node ./scripts/smoke-dashboard.mjs",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.11",
@@ -22,6 +24,7 @@
     "react-router-dom": "^6.27.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@vitejs/plugin-react": "^5.1.1",

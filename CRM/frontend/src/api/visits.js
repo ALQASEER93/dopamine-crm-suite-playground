@@ -18,12 +18,12 @@ export const normalizeVisit = visit => {
   const startLocation = {
     lat: visit.start_lat ?? visit.startLocation?.lat ?? null,
     lng: visit.start_lng ?? visit.startLocation?.lng ?? null,
-    accuracy: visit.start_accuracy ?? visit.startLocation?.accuracy ?? null,
+    accuracy: visit.start_accuracy_m ?? visit.start_accuracy ?? visit.startLocation?.accuracy ?? null,
   };
   const endLocation = {
     lat: visit.end_lat ?? visit.endLocation?.lat ?? null,
     lng: visit.end_lng ?? visit.endLocation?.lng ?? null,
-    accuracy: visit.end_accuracy ?? visit.endLocation?.accuracy ?? null,
+    accuracy: visit.end_accuracy_m ?? visit.end_accuracy ?? visit.endLocation?.accuracy ?? null,
   };
 
   return {
@@ -42,6 +42,7 @@ export const normalizeVisit = visit => {
     samples_given: visit.samples_given ?? visit.samplesGiven ?? null,
     next_action: visit.next_action ?? visit.nextAction ?? null,
     next_action_date: visit.next_action_date ?? visit.nextActionDate ?? null,
+    override_reason: visit.override_reason ?? visit.overrideReason ?? null,
     startLocation,
     endLocation,
     durationSeconds,
@@ -119,11 +120,12 @@ export const updateVisit = async (id, payload) => {
     ended_at: payload.ended_at,
     start_lat: payload.start_lat,
     start_lng: payload.start_lng,
-    start_accuracy: payload.start_accuracy,
+    start_accuracy_m: payload.start_accuracy_m ?? payload.start_accuracy,
     end_lat: payload.end_lat,
     end_lng: payload.end_lng,
-    end_accuracy: payload.end_accuracy,
+    end_accuracy_m: payload.end_accuracy_m ?? payload.end_accuracy,
     duration_seconds: payload.duration_seconds,
+    override_reason: payload.override_reason,
   };
   const { data } = await apiClient.put(`/visits/${id}`, { body });
   const payloadData = data?.data || data;
@@ -141,6 +143,7 @@ export const startVisit = async (id, payload = {}) => {
     lng: payload.lng,
     accuracy: payload.accuracy,
     started_at: payload.started_at,
+    override_reason: payload.override_reason,
   };
   const { data } = await apiClient.post(`/visits/${id}/start`, { body });
   return normalizeVisit(data?.data || data);
@@ -152,7 +155,28 @@ export const endVisit = async (id, payload = {}) => {
     lng: payload.lng,
     accuracy: payload.accuracy,
     ended_at: payload.ended_at,
+    override_reason: payload.override_reason,
   };
   const { data } = await apiClient.post(`/visits/${id}/end`, { body });
   return normalizeVisit(data?.data || data);
+};
+
+export const listVisitAttachments = async visitId => {
+  const { data } = await apiClient.get(`/visits/${visitId}/attachments`);
+  if (Array.isArray(data?.data)) return data.data;
+  return Array.isArray(data) ? data : [];
+};
+
+export const uploadVisitAttachment = async (visitId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await apiClient.post(`/visits/${visitId}/attachments`, { body: formData });
+  return data?.data || data;
+};
+
+export const downloadVisitAttachment = async (visitId, attachmentId) => {
+  const { data, response } = await apiClient.get(`/visits/${visitId}/attachments/${attachmentId}`, {
+    responseType: 'blob',
+  });
+  return { blob: data, response };
 };

@@ -12,6 +12,7 @@ from api.v1 import (
     pharmacies,
     products,
     reports,
+    routes,
     reps,
     stock,
     targets,
@@ -19,6 +20,7 @@ from api.v1 import (
     territories,
     visits,
     admin_users,
+    telemetry,
     pwa,
     tracking,
 )
@@ -41,7 +43,9 @@ router.include_router(visit_targets.router)
 router.include_router(collections.router)
 router.include_router(health.router)
 router.include_router(reports.router)
+router.include_router(routes.router)
 router.include_router(territories.router)
 router.include_router(admin_users.router)
+router.include_router(telemetry.router)
 router.include_router(pwa.router)
 router.include_router(tracking.router)

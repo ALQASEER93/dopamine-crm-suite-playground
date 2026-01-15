@@ -61,9 +61,11 @@ def _rebuild_visits_table(conn) -> None:
                 start_lat FLOAT,
                 start_lng FLOAT,
                 start_accuracy FLOAT,
+                start_device_info TEXT,
                 end_lat FLOAT,
                 end_lng FLOAT,
                 end_accuracy FLOAT,
+                end_device_info TEXT,
                 duration_seconds INTEGER,
                 override_reason TEXT,
                 did_samples INTEGER NOT NULL DEFAULT 0,
@@ -110,9 +112,11 @@ def _rebuild_visits_table(conn) -> None:
                 start_lat,
                 start_lng,
                 start_accuracy,
+                start_device_info,
                 end_lat,
                 end_lng,
                 end_accuracy,
+                end_device_info,
                 duration_seconds,
                 override_reason,
                 did_samples,
@@ -147,9 +151,11 @@ def _rebuild_visits_table(conn) -> None:
                 {_select_column("start_lat")},
                 {_select_column("start_lng")},
                 {_select_column("start_accuracy")},
+                {_select_column("start_device_info")},
                 {_select_column("end_lat")},
                 {_select_column("end_lng")},
                 {_select_column("end_accuracy")},
+                {_select_column("end_device_info")},
                 {_select_column("duration_seconds")},
                 {_select_column("override_reason")},
                 COALESCE({_select_column("did_samples", "0")}, 0),
@@ -189,6 +195,10 @@ def _ensure_visits_columns(engine: Engine) -> None:
             conn.execute(text("ALTER TABLE visits ADD COLUMN did_collection INTEGER NOT NULL DEFAULT 0"))
         if "did_order" not in columns:
             conn.execute(text("ALTER TABLE visits ADD COLUMN did_order INTEGER NOT NULL DEFAULT 0"))
+        if "start_device_info" not in columns:
+            conn.execute(text("ALTER TABLE visits ADD COLUMN start_device_info TEXT"))
+        if "end_device_info" not in columns:
+            conn.execute(text("ALTER TABLE visits ADD COLUMN end_device_info TEXT"))
 
         if "status" in columns:
             try:
@@ -265,6 +275,45 @@ def _ensure_tracking_tables(engine: Engine) -> None:
             conn.execute(text("ALTER TABLE location_events ADD COLUMN tamper_flags TEXT"))
 
 
+def _ensure_telemetry_table(engine: Engine) -> None:
+    if engine.url.get_backend_name() != "sqlite":
+        return
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS telemetry_locations (
+                    id INTEGER PRIMARY KEY,
+                    rep_id INTEGER NOT NULL,
+                    lat FLOAT NOT NULL,
+                    lng FLOAT NOT NULL,
+                    accuracy_m FLOAT,
+                    speed_mps FLOAT,
+                    bearing_deg FLOAT,
+                    ts DATETIME NOT NULL,
+                    device_info TEXT,
+                    source VARCHAR(50),
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    FOREIGN KEY(rep_id) REFERENCES users(id)
+                )
+                """
+            )
+        )
+
+        columns = _get_sqlite_columns(conn, "telemetry_locations")
+        if "accuracy_m" not in columns:
+            conn.execute(text("ALTER TABLE telemetry_locations ADD COLUMN accuracy_m FLOAT"))
+        if "speed_mps" not in columns:
+            conn.execute(text("ALTER TABLE telemetry_locations ADD COLUMN speed_mps FLOAT"))
+        if "bearing_deg" not in columns:
+            conn.execute(text("ALTER TABLE telemetry_locations ADD COLUMN bearing_deg FLOAT"))
+        if "device_info" not in columns:
+            conn.execute(text("ALTER TABLE telemetry_locations ADD COLUMN device_info TEXT"))
+        if "source" not in columns:
+            conn.execute(text("ALTER TABLE telemetry_locations ADD COLUMN source VARCHAR(50)"))
+
+
 def _ensure_visit_targets_table(engine: Engine) -> None:
     if engine.url.get_backend_name() != "sqlite":
         return
@@ -308,8 +357,23 @@ def _ensure_visit_attachments_table(engine: Engine) -> None:
                     FOREIGN KEY(visit_id) REFERENCES visits(id)
                 )
                 """
-            )
+    )            
         )
+
+
+def _ensure_products_is_active(engine: Engine) -> None:
+    if engine.url.get_backend_name() != "sqlite":
+        return
+
+    with engine.begin() as conn:
+        columns = _get_sqlite_columns(conn, "products")
+        if not columns:
+            logger.info("products table not found; skipping is_active migration.")
+            return
+        if "is_active" in columns:
+            return
+        logger.info("Adding products.is_active column (INTEGER NOT NULL DEFAULT 1).")
+        conn.execute(text("ALTER TABLE products ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"))
 
 
 def run_sqlite_migrations(engine: Engine) -> None:
@@ -320,5 +384,7 @@ def run_sqlite_migrations(engine: Engine) -> None:
     _ensure_visits_is_deleted(engine)
     _ensure_visits_columns(engine)
     _ensure_tracking_tables(engine)
+    _ensure_telemetry_table(engine)
     _ensure_visit_targets_table(engine)
     _ensure_visit_attachments_table(engine)
+    _ensure_products_is_active(engine)

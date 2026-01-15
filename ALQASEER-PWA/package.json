@@ -12,6 +12,9 @@
     "e2e": "npx playwright test --config=playwright.config.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@react-google-maps/api": "^2.20.7",
     "idb-keyval": "^6.2.1",
     "picocolors": "^1.1.1",

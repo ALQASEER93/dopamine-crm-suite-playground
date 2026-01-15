@@ -1,9 +1,9 @@
 const NotAuthorized = () => (
   <div className="page">
     <div className="card">
-      <h1 className="page-heading">Not authorized</h1>
-      <p>You do not have access to this page.</p>
-      <p>Please contact your administrator if you believe this is an error.</p>
+      <h1 className="page-heading">غير مصرح</h1>
+      <p>ليست لديك صلاحية للوصول إلى هذه الصفحة.</p>
+      <p>يرجى التواصل مع مدير النظام إذا كنت تعتقد أن هناك خطأ.</p>
     </div>
   </div>
 );

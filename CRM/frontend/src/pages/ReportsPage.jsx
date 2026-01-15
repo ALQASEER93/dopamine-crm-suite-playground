@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../api/client';
+import { listReps } from '../api/reps';
 import ReportsOverview from '../reports/ReportsOverview';
 import RepPerformanceTable from '../reports/RepPerformanceTable';
 import ProductPerformanceTable from '../reports/ProductPerformanceTable';
@@ -38,6 +41,9 @@ const ReportsPage = () => {
   const [from, setFrom] = useState(defaultRange.from);
   const [to, setTo] = useState(defaultRange.to);
   const [appliedRange, setAppliedRange] = useState(defaultRange);
+  const [repFilter, setRepFilter] = useState('');
+  const [territoryFilter, setTerritoryFilter] = useState('');
+  const [accountType, setAccountType] = useState('');
 
   const handleApplyRange = event => {
     event.preventDefault();
@@ -51,18 +57,32 @@ const ReportsPage = () => {
     setAppliedRange(range);
   };
 
+  const repsQuery = useQuery({
+    queryKey: ['reports', 'reps'],
+    queryFn: () => listReps({ include_inactive: true }),
+  });
+
+  const territoriesQuery = useQuery({
+    queryKey: ['reports', 'territories'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/territories?page=1&pageSize=500');
+      const rows = data?.data || data || [];
+      return Array.isArray(rows) ? rows : [];
+    },
+  });
+
   return (
     <div className="page-stack">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">Reports</h1>
+          <h1 className="page-heading">التقارير</h1>
           <p className="page-subtitle">
-            Analytics for visits, representatives, products and territories.
+            تحليلات الزيارات والمندوبين والمنتجات والمناطق.
           </p>
         </div>
         <form className="page-filters" onSubmit={handleApplyRange}>
           <label>
-            <span>From</span>
+            <span>من</span>
             <input
               type="date"
               className="input"
@@ -71,7 +91,7 @@ const ReportsPage = () => {
             />
           </label>
           <label>
-            <span>To</span>
+            <span>إلى</span>
             <input
               type="date"
               className="input"
@@ -80,9 +100,45 @@ const ReportsPage = () => {
             />
           </label>
           <button type="submit" className="btn btn-secondary">
-            Apply
+            تطبيق
           </button>
         </form>
+      </div>
+
+      <div className="page-filters" style={{ marginBottom: '16px', gap: '8px' }}>
+        <select
+          className="input"
+          value={repFilter}
+          onChange={event => setRepFilter(event.target.value)}
+        >
+          <option value="">كل المندوبين</option>
+          {(repsQuery.data || []).map(rep => (
+            <option key={rep.id} value={rep.id}>
+              {rep.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="input"
+          value={territoryFilter}
+          onChange={event => setTerritoryFilter(event.target.value)}
+        >
+          <option value="">كل المناطق</option>
+          {(territoriesQuery.data || []).map(territory => (
+            <option key={territory.id} value={territory.id}>
+              {territory.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="input"
+          value={accountType}
+          onChange={event => setAccountType(event.target.value)}
+        >
+          <option value="">كل الحسابات</option>
+          <option value="doctor">الأطباء</option>
+          <option value="pharmacy">الصيدليات</option>
+        </select>
       </div>
 
       <div className="page-filters" style={{ marginBottom: '16px', gap: '8px' }}>
@@ -91,31 +147,52 @@ const ReportsPage = () => {
           className="btn btn-secondary"
           onClick={() => handlePreset('week')}
         >
-          This week
+          هذا الأسبوع
         </button>
         <button
           type="button"
           className="btn btn-secondary"
           onClick={() => handlePreset('month')}
         >
-          This month
+          هذا الشهر
         </button>
         <button
           type="button"
           className="btn btn-secondary"
           onClick={() => handlePreset('quarter')}
         >
-          This quarter
+          هذا الربع
         </button>
       </div>
 
-      <ReportsOverview from={appliedRange.from} to={appliedRange.to} />
+      <ReportsOverview
+        from={appliedRange.from}
+        to={appliedRange.to}
+        repId={repFilter}
+        territoryId={territoryFilter}
+        accountType={accountType}
+      />
 
-      <RepPerformanceTable from={appliedRange.from} to={appliedRange.to} />
+      <RepPerformanceTable
+        from={appliedRange.from}
+        to={appliedRange.to}
+        repId={repFilter}
+        territoryId={territoryFilter}
+        accountType={accountType}
+      />
 
-      <ProductPerformanceTable from={appliedRange.from} to={appliedRange.to} />
+      <ProductPerformanceTable
+        from={appliedRange.from}
+        to={appliedRange.to}
+        accountType={accountType}
+      />
 
-      <TerritoryPerformanceTable from={appliedRange.from} to={appliedRange.to} />
+      <TerritoryPerformanceTable
+        from={appliedRange.from}
+        to={appliedRange.to}
+        territoryId={territoryFilter}
+        accountType={accountType}
+      />
     </div>
   );
 };

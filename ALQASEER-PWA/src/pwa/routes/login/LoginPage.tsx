@@ -14,7 +14,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (token) {
-      navigate("/today-route", { replace: true });
+      navigate("/today", { replace: true });
     }
   }, [navigate, token]);
 
@@ -24,7 +24,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login({ email, password });
-      const redirectTo = (location.state as any)?.from || "/today-route";
+      const redirectTo = (location.state as any)?.from || "/today";
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError("تعذّر تسجيل الدخول، تأكد من البيانات أو الاتصال.");
@@ -67,7 +67,7 @@ export default function LoginPage() {
             />
           </div>
           {error ? <div style={{ color: "#f87171", fontSize: 13 }}>{error}</div> : null}
-          <button type="submit" disabled={loading}>
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             {loading ? "جاري التحقق..." : "دخول"}
           </button>
         </form>

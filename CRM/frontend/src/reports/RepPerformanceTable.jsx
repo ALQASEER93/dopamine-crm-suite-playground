@@ -1,17 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
+import { normalizeRole } from '../auth/roleAccess';
 import { apiClient } from '../api/client';
 
-const RepPerformanceTable = ({ from, to }) => {
+const RepPerformanceTable = ({ from, to, repId, territoryId, accountType }) => {
   const { user, token } = useAuth();
-  const userRole = user?.role?.slug;
+  const userRole = normalizeRole(user?.role?.slug || user?.roleSlug || user?.role);
   const [exportMessage, setExportMessage] = useState(null);
 
   const repQuery = useQuery({
-    queryKey: ['reports', 'rep-performance', { from, to }],
+    queryKey: ['reports', 'rep-performance', { from, to, repId, territoryId, accountType }],
     queryFn: async () => {
       const params = new URLSearchParams({ from, to });
+      if (repId) params.set('rep_id', repId);
+      if (territoryId) params.set('territory_id', territoryId);
+      if (accountType) params.set('account_type', accountType);
       const { data } = await apiClient.get(`/reports/rep-performance?${params.toString()}`);
       return Array.isArray(data) ? data : data?.data || [];
     },
@@ -20,13 +24,16 @@ const RepPerformanceTable = ({ from, to }) => {
   });
 
   const rows = repQuery.data || [];
-  const canExport = useMemo(() => userRole === 'sales_manager', [userRole]);
+  const canExport = useMemo(() => ['sales_manager', 'admin'].includes(userRole), [userRole]);
 
   const handleExport = async () => {
     if (!token || !canExport) return;
     setExportMessage(null);
     try {
       const params = new URLSearchParams({ from, to });
+      if (repId) params.set('rep_id', repId);
+      if (territoryId) params.set('territory_id', territoryId);
+      if (accountType) params.set('account_type', accountType);
       const { data: blob, response } = await apiClient.get(
         `/reports/rep-performance/export?${params.toString()}`,
         {
@@ -46,9 +53,9 @@ const RepPerformanceTable = ({ from, to }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      setExportMessage({ type: 'success', text: 'Export started. Your download should begin shortly.' });
+      setExportMessage({ type: 'success', text: 'تم بدء التصدير. سيبدأ التحميل قريباً.' });
     } catch (err) {
-      setExportMessage({ type: 'error', text: err.message || 'Unable to export CSV.' });
+      setExportMessage({ type: 'error', text: err.message || 'تعذر تصدير ملف CSV.' });
     }
   };
 
@@ -59,12 +66,12 @@ const RepPerformanceTable = ({ from, to }) => {
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
       >
         <div>
-          <h2>Rep performance</h2>
-          <p>Visits, order value and quality per representative.</p>
+          <h2>أداء المندوبين</h2>
+          <p>الزيارات وقيمة الطلبات وجودة الأداء لكل مندوب.</p>
         </div>
         {canExport && rows.length > 0 && (
           <button type="button" className="btn btn-secondary" onClick={handleExport}>
-            Export CSV
+            تصدير CSV
           </button>
         )}
       </div>
@@ -84,11 +91,11 @@ const RepPerformanceTable = ({ from, to }) => {
         </div>
       )}
 
-      {repQuery.error && <div className="table-card__empty">Unable to load rep performance: {repQuery.error.message}</div>}
-      {repQuery.isLoading && !repQuery.error && <div className="table-card__empty">Loading rep performance...</div>}
+      {repQuery.error && <div className="table-card__empty">تعذر تحميل أداء المندوبين: {repQuery.error.message}</div>}
+      {repQuery.isLoading && !repQuery.error && <div className="table-card__empty">جارٍ تحميل أداء المندوبين...</div>}
 
       {!repQuery.isLoading && !repQuery.error && rows.length === 0 && (
-        <div className="table-card__empty">No data for selected period.</div>
+        <div className="table-card__empty">لا توجد بيانات للفترة المختارة.</div>
       )}
 
       {!repQuery.isLoading && !repQuery.error && rows.length > 0 && (
@@ -96,16 +103,16 @@ const RepPerformanceTable = ({ from, to }) => {
           <table>
             <thead>
               <tr>
-                <th>Representative</th>
-                <th>Territories</th>
-                <th>Total visits</th>
-                <th>Completed</th>
-                <th>Scheduled</th>
-                <th>Cancelled</th>
-                <th>Unique accounts</th>
-                <th>Total order (JOD)</th>
-                <th>Avg order (JOD)</th>
-                <th>Avg rating</th>
+                <th>المندوب</th>
+                <th>المناطق</th>
+                <th>إجمالي الزيارات</th>
+                <th>المكتملة</th>
+                <th>المجدولة</th>
+                <th>الملغاة</th>
+                <th>حسابات فريدة</th>
+                <th>إجمالي الطلبات (JOD)</th>
+                <th>متوسط الطلب (JOD)</th>
+                <th>متوسط التقييم</th>
               </tr>
             </thead>
             <tbody>

@@ -1,9 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
+import { normalizeRole } from '../auth/roleAccess';
+import { apiClient } from '../api/client';
 import { listReps, repKeys } from '../api/reps';
 import { doctorKeys, listDoctors } from '../api/endpoints/doctors';
-import { createVisit, deleteVisit, endVisit, listVisits, startVisit, updateVisit, visitKeys } from '../api/visits';
+import {
+  createVisit,
+  deleteVisit,
+  downloadVisitAttachment,
+  endVisit,
+  listVisitAttachments,
+  listVisits,
+  startVisit,
+  updateVisit,
+  uploadVisitAttachment,
+  visitKeys,
+} from '../api/visits';
 import DetailDrawer from '../components/DetailDrawer';
 import { buildGoogleMapsUrl, buildOpenStreetMapUrl, formatCoords } from '../utils/mapLinks';
 import './EntityListPage.css';
@@ -28,6 +41,40 @@ const DEFAULT_VISIT_FORM = {
   next_action_date: '',
 };
 
+const formatBytes = value => {
+  if (!value && value !== 0) return 'غير متوفر';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = Number(value);
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+};
+
+const haversineDistanceMeters = (start, end) => {
+  if (!start || !end) return null;
+  if (start.lat == null || start.lng == null || end.lat == null || end.lng == null) return null;
+  const toRad = value => (value * Math.PI) / 180;
+  const earthRadius = 6371000;
+  const dLat = toRad(end.lat - start.lat);
+  const dLng = toRad(end.lng - start.lng);
+  const lat1 = toRad(start.lat);
+  const lat2 = toRad(end.lat);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadius * c;
+};
+
+const formatDistance = value => {
+  if (value == null || Number.isNaN(value)) return 'غير متوفر';
+  if (value >= 1000) return `${(value / 1000).toFixed(2)} كم`;
+  return `${value.toFixed(1)} م`;
+};
+
 const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps, doctors }) => {
   const [form, setForm] = useState(initialValues || DEFAULT_VISIT_FORM);
 
@@ -49,7 +96,7 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
   return (
     <form className="form" onSubmit={handleSubmit}>
       <label className="form__label">
-        Visit date
+        تاريخ الزيارة
         <input
           type="date"
           value={form.visit_date}
@@ -58,9 +105,9 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
         />
       </label>
       <label className="form__label">
-        Rep
+        المندوب
         <select value={form.rep_id} onChange={e => updateField('rep_id', e.target.value)} required>
-          <option value="">Select rep</option>
+          <option value="">اختر المندوب</option>
           {reps.map(rep => (
             <option key={rep.id} value={rep.id}>
               {rep.name} ({rep.email})
@@ -69,9 +116,9 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
         </select>
       </label>
       <label className="form__label">
-        Doctor
+        الطبيب
         <select value={form.doctor_id} onChange={e => updateField('doctor_id', e.target.value)}>
-          <option value="">Select doctor</option>
+          <option value="">اختر الطبيب</option>
           {doctors.map(doc => (
             <option key={doc.id} value={doc.id}>
               {doc.name} {doc.city ? `- ${doc.city}` : ''}
@@ -80,15 +127,15 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
         </select>
       </label>
       <label className="form__label">
-        Notes
+        ملاحظات
         <textarea value={form.notes} onChange={e => updateField('notes', e.target.value)} rows={3} />
       </label>
       <label className="form__label">
-        Next action
+        الإجراء التالي
         <input type="text" value={form.next_action} onChange={e => updateField('next_action', e.target.value)} />
       </label>
       <label className="form__label">
-        Next action date
+        تاريخ المتابعة
         <input
           type="date"
           value={form.next_action_date}
@@ -104,10 +151,10 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Save'}
+          {submitting ? 'جارٍ الحفظ...' : 'حفظ'}
         </button>
         <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
+          إلغاء
         </button>
       </div>
     </form>
@@ -117,6 +164,9 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
 const VisitsPage = () => {
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
+  const roleSlug = normalizeRole(user?.role?.slug || user?.roleSlug || user?.role);
+  const isManager = ['admin', 'sales_manager'].includes(roleSlug);
+  const uploadInputRef = useRef(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -125,6 +175,8 @@ const VisitsPage = () => {
   const [formInitial, setFormInitial] = useState(DEFAULT_VISIT_FORM);
   const [formError, setFormError] = useState(null);
   const [actionError, setActionError] = useState(null);
+  const [attachmentError, setAttachmentError] = useState(null);
+  const [overrideReason, setOverrideReason] = useState('');
 
   const repQuery = useQuery({
     queryKey: repKeys.all,
@@ -138,6 +190,16 @@ const VisitsPage = () => {
     queryFn: () => listDoctors({ page_size: pageSize }),
     enabled: !!token,
     select: data => (Array.isArray(data?.data) ? data.data : []),
+  });
+
+  const gpsPolicyQuery = useQuery({
+    queryKey: ['gps-policy'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/gps-policy');
+      return data?.data || data;
+    },
+    enabled: !!token && isManager,
+    staleTime: 5 * 60_000,
   });
 
   const normalizedFilters = useMemo(() => {
@@ -172,13 +234,19 @@ const VisitsPage = () => {
     keepPreviousData: true,
   });
 
+  const attachmentsQuery = useQuery({
+    queryKey: ['visits', 'attachments', selected?.id],
+    queryFn: () => listVisitAttachments(selected.id),
+    enabled: !!token && !!selected?.id,
+  });
+
   const createMutation = useMutation({
     mutationFn: payload => createVisit(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: visitKeys.all });
       closeForm();
     },
-    onError: error => setFormError(error.message || 'Unable to create visit'),
+    onError: error => setFormError(error.message || 'تعذر إنشاء الزيارة'),
   });
 
   const updateMutation = useMutation({
@@ -187,7 +255,30 @@ const VisitsPage = () => {
       queryClient.invalidateQueries({ queryKey: visitKeys.all });
       closeForm();
     },
-    onError: error => setFormError(error.message || 'Unable to update visit'),
+    onError: error => setFormError(error.message || 'تعذر تحديث الزيارة'),
+  });
+
+  const overrideMutation = useMutation({
+    mutationFn: ({ id, reason }) => updateVisit(id, { override_reason: reason }),
+    onSuccess: data => {
+      queryClient.invalidateQueries({ queryKey: visitKeys.all });
+      setSelected(data);
+      setOverrideReason('');
+      setActionError(null);
+    },
+    onError: error => setActionError(error.message || 'تعذر اعتماد الاستثناء'),
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: file => uploadVisitAttachment(selected.id, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['visits', 'attachments', selected?.id] });
+      setAttachmentError(null);
+      if (uploadInputRef.current) {
+        uploadInputRef.current.value = '';
+      }
+    },
+    onError: error => setAttachmentError(error.message || 'تعذر رفع المرفق'),
   });
 
   const deleteMutation = useMutation({
@@ -200,7 +291,7 @@ const VisitsPage = () => {
 
   const captureLocation = async () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      throw new Error('GPS not available in this browser.');
+      throw new Error('ميزة GPS غير متاحة في هذا المتصفح.');
     }
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
@@ -210,7 +301,7 @@ const VisitsPage = () => {
             lng: position.coords.longitude,
             accuracy: position.coords.accuracy,
           }),
-        error => reject(new Error(error.message || 'Unable to capture location')),
+        error => reject(new Error(error.message || 'تعذر تحديد الموقع')),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
       );
     });
@@ -226,7 +317,7 @@ const VisitsPage = () => {
       setSelected(data);
       setActionError(null);
     },
-    onError: error => setActionError(error.message || 'Unable to start visit'),
+    onError: error => setActionError(error.message || 'تعذر بدء الزيارة'),
   });
 
   const endMutation = useMutation({
@@ -239,7 +330,7 @@ const VisitsPage = () => {
       setSelected(data);
       setActionError(null);
     },
-    onError: error => setActionError(error.message || 'Unable to end visit'),
+    onError: error => setActionError(error.message || 'تعذر إنهاء الزيارة'),
   });
 
   const openCreate = () => {
@@ -278,7 +369,7 @@ const VisitsPage = () => {
     try {
       await startMutation.mutateAsync(selected.id);
     } catch (error) {
-      setActionError(error.message || 'Unable to start visit');
+      setActionError(error.message || 'تعذر بدء الزيارة');
     }
   };
 
@@ -288,7 +379,48 @@ const VisitsPage = () => {
     try {
       await endMutation.mutateAsync(selected.id);
     } catch (error) {
-      setActionError(error.message || 'Unable to end visit');
+      setActionError(error.message || 'تعذر إنهاء الزيارة');
+    }
+  };
+
+  const handleApproveOverride = async () => {
+    if (!selected || !overrideReason.trim()) return;
+    setActionError(null);
+    try {
+      await overrideMutation.mutateAsync({ id: selected.id, reason: overrideReason.trim() });
+    } catch (error) {
+      setActionError(error.message || 'تعذر اعتماد الاستثناء');
+    }
+  };
+
+  const handleAttachmentUpload = async event => {
+    const file = event.target.files?.[0];
+    if (!file || !selected) return;
+    setAttachmentError(null);
+    try {
+      await uploadMutation.mutateAsync(file);
+    } catch (error) {
+      setAttachmentError(error.message || 'تعذر رفع المرفق');
+    }
+  };
+
+  const handleDownloadAttachment = async attachment => {
+    if (!selected) return;
+    setAttachmentError(null);
+    try {
+      const { blob, response } = await downloadVisitAttachment(selected.id, attachment.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const header = response.headers.get('Content-Disposition') || '';
+      const headerName = header.split('filename=')[1]?.replace(/\"/g, '');
+      link.href = url;
+      link.download = headerName || attachment.filename || 'attachment';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setAttachmentError(error.message || 'تعذر تنزيل المرفق');
     }
   };
 
@@ -306,22 +438,74 @@ const VisitsPage = () => {
   const visits = visitsQuery.data?.rows || [];
   const totalVisits = visitsQuery.data?.total || 0;
   const totalPages = visitsQuery.data?.totalPages || 1;
+  const attachments = attachmentsQuery.data || [];
 
   const renderAccount = visit => {
-    if (visit.doctor) return `Doctor: ${visit.doctor.name}`;
-    if (visit.pharmacy) return `Pharmacy: ${visit.pharmacy.name}`;
-    return 'N/A';
+    if (visit.doctor) return `طبيب: ${visit.doctor.name}`;
+    if (visit.pharmacy) return `صيدلية: ${visit.pharmacy.name}`;
+    return 'غير متاح';
   };
 
-  const formatTimestamp = value => (value ? new Date(value).toLocaleString() : 'Not captured');
+  const formatTimestamp = value => (value ? new Date(value).toLocaleString() : 'غير مسجل');
 
   const formatLocation = location => {
-    if (!location || location.lat == null || location.lng == null) return 'Not captured';
+    if (!location || location.lat == null || location.lng == null) return 'غير مسجل';
     const accuracyText =
       location.accuracy != null && Number.isFinite(Number(location.accuracy))
-        ? ` (+/-${Number(location.accuracy).toFixed(1)}m)`
+        ? ` (±${Number(location.accuracy).toFixed(1)}م)`
         : '';
     return `${formatCoords(location.lat, location.lng)}${accuracyText}`;
+  };
+
+  const gpsPolicy = gpsPolicyQuery.data || {};
+  const compliance = useMemo(() => {
+    if (!selected) return null;
+    const accuracyLimit = gpsPolicy.gpsMinAccuracyM ?? 50;
+    const distanceLimit = gpsPolicy.gpsMaxDistanceM ?? 150;
+    const startAccuracy = selected.startLocation?.accuracy;
+    const endAccuracy = selected.endLocation?.accuracy;
+    const distanceMeters = haversineDistanceMeters(selected.startLocation, selected.endLocation);
+    const issues = [];
+
+    if (startAccuracy == null) {
+      issues.push('لم يتم تسجيل دقة GPS للبداية');
+    } else if (accuracyLimit && startAccuracy > accuracyLimit) {
+      issues.push('دقة GPS عند البداية أقل من المطلوب');
+    }
+
+    if (endAccuracy == null) {
+      issues.push('لم يتم تسجيل دقة GPS للنهاية');
+    } else if (accuracyLimit && endAccuracy > accuracyLimit) {
+      issues.push('دقة GPS عند النهاية أقل من المطلوب');
+    }
+
+    if (distanceMeters != null && distanceLimit && distanceMeters > distanceLimit) {
+      issues.push('المسافة بين البداية والنهاية تجاوزت الحد');
+    }
+
+    return {
+      accuracyLimit,
+      distanceLimit,
+      distanceMeters,
+      issues,
+    };
+  }, [gpsPolicy.gpsMinAccuracyM, gpsPolicy.gpsMaxDistanceM, selected]);
+
+  const STATUS_LABELS = {
+    scheduled: 'مجدولة',
+    in_progress: 'قيد التنفيذ',
+    completed: 'مكتملة',
+    canceled: 'ملغاة',
+    cancelled: 'ملغاة',
+    no_show: 'لم تتم',
+    started: 'جارية',
+    pending: 'معلقة',
+  };
+
+  const formatStatus = status => {
+    if (!status) return '-';
+    const normalized = String(status).toLowerCase();
+    return STATUS_LABELS[normalized] || normalized.replace(/_/g, ' ');
   };
 
   const renderGpsLinks = location => {
@@ -331,13 +515,13 @@ const VisitsPage = () => {
     return (
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
         <a className="btn btn-secondary" href={buildOpenStreetMapUrl(lat, lng)} target="_blank" rel="noreferrer">
-          Open in OpenStreetMap
+          فتح في OpenStreetMap
         </a>
         <a className="btn btn-secondary" href={buildGoogleMapsUrl(lat, lng)} target="_blank" rel="noreferrer">
-          Open in Google Maps
+          فتح في خرائط Google
         </a>
         <span style={{ fontSize: '11px', color: '#6b7280', alignSelf: 'center' }}>
-          (c) OpenStreetMap contributors
+          (c) مساهمو OpenStreetMap
         </span>
       </div>
     );
@@ -352,11 +536,11 @@ const VisitsPage = () => {
     <div className="entity-page">
       <div className="entity-toolbar">
         <div>
-          <h1 className="page-heading">Visits</h1>
-          <p className="page-subtitle">Track field visits and follow-ups.</p>
+          <h1 className="page-heading">الزيارات</h1>
+          <p className="page-subtitle">متابعة زيارات الميدان وخطط المتابعة.</p>
         </div>
         <button type="button" className="btn btn-primary" onClick={openCreate}>
-          Add visit
+          إضافة زيارة
         </button>
       </div>
 
@@ -370,7 +554,7 @@ const VisitsPage = () => {
           }}
           disabled={user?.role?.slug === 'medical_rep'}
         >
-          <option value="">All reps</option>
+          <option value="">كل المندوبين</option>
           {reps.map(rep => (
             <option key={rep.id} value={rep.id}>
               {rep.name}
@@ -385,7 +569,7 @@ const VisitsPage = () => {
             setPage(1);
           }}
         >
-          <option value="">All doctors</option>
+          <option value="">كل الأطباء</option>
           {doctors.map(doc => (
             <option key={doc.id} value={doc.id}>
               {doc.name}
@@ -411,27 +595,27 @@ const VisitsPage = () => {
           }}
         />
         <button type="button" className="btn btn-secondary" onClick={resetFilters}>
-          Clear filters
+          مسح الفلاتر
         </button>
       </div>
 
       <section className="table-card entity-table">
-        {visitsQuery.error && <div className="entity-empty">Unable to load visits: {visitsQuery.error.message}</div>}
-        {!visitsQuery.error && visitsQuery.isLoading && <div className="entity-empty">Loading visits...</div>}
+        {visitsQuery.error && <div className="entity-empty">تعذر تحميل الزيارات: {visitsQuery.error.message}</div>}
+        {!visitsQuery.error && visitsQuery.isLoading && <div className="entity-empty">جارٍ تحميل الزيارات...</div>}
         {!visitsQuery.error && !visitsQuery.isLoading && visits.length === 0 && (
-          <div className="entity-empty">No visits found for the selected filters.</div>
+          <div className="entity-empty">لا توجد نتائج مطابقة.</div>
         )}
         {!visitsQuery.error && visits.length > 0 && (
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Rep</th>
-                <th>Account</th>
-                <th>Status</th>
-                <th>Duration</th>
-                <th>Notes</th>
-                <th>Next action</th>
+                <th>التاريخ</th>
+                <th>المندوب</th>
+                <th>الحساب</th>
+                <th>الحالة</th>
+                <th>المدة</th>
+                <th>ملاحظات</th>
+                <th>الإجراء التالي</th>
               </tr>
             </thead>
             <tbody>
@@ -440,14 +624,16 @@ const VisitsPage = () => {
                   key={visit.id}
                   onClick={() => {
                     setActionError(null);
+                    setAttachmentError(null);
+                    setOverrideReason('');
                     setSelected(visit);
                   }}
                 >
                   <td>{visit.visitDate || visit.visit_date}</td>
                   <td>{visit.rep?.name || visit.rep_id || '-'}</td>
                   <td>{renderAccount(visit)}</td>
-                  <td>{visit.status ? visit.status.replace(/_/g, ' ') : '-'}</td>
-                  <td>{visit.durationMinutes != null ? `${visit.durationMinutes} min` : '-'}</td>
+                  <td>{formatStatus(visit.status)}</td>
+                  <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : '-'}</td>
                   <td>{visit.notes || '-'}</td>
                   <td>
                     {visit.next_action || '-'} {visit.next_action_date ? `(${visit.next_action_date})` : ''}
@@ -460,7 +646,7 @@ const VisitsPage = () => {
 
         <div className="entity-pagination">
           <span>
-            Page {page} of {totalPages}
+            صفحة {page} من {totalPages}
           </span>
           <div>
             <button
@@ -469,7 +655,7 @@ const VisitsPage = () => {
               onClick={() => setPage(prev => Math.max(1, prev - 1))}
               disabled={page === 1}
             >
-              Prev
+              السابق
             </button>
             <button
               type="button"
@@ -477,11 +663,11 @@ const VisitsPage = () => {
               onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
               disabled={page >= totalPages}
             >
-              Next
+              التالي
             </button>
           </div>
           <div>
-            Rows
+            الصفوف
             <select
               value={pageSize}
               onChange={event => {
@@ -495,59 +681,176 @@ const VisitsPage = () => {
                 </option>
               ))}
             </select>
-            <span style={{ marginLeft: '8px' }}>Total: {totalVisits}</span>
+            <span style={{ marginLeft: '8px' }}>الإجمالي: {totalVisits}</span>
           </div>
         </div>
       </section>
 
       <DetailDrawer
-        title={selected ? `Visit on ${selected.visitDate || selected.visit_date}` : ''}
+        title={selected ? `زيارة بتاريخ ${selected.visitDate || selected.visit_date}` : ''}
         isOpen={Boolean(selected)}
         onClose={() => setSelected(null)}
       >
         {selected && (
           <div className="detail-grid">
             <p>
-              <strong>Rep:</strong> {selected.rep?.name || selected.rep_id}
+              <strong>المندوب:</strong> {selected.rep?.name || selected.rep_id}
             </p>
             <p>
-              <strong>Doctor:</strong> {selected.doctor?.name || '-'}
+              <strong>الطبيب:</strong> {selected.doctor?.name || '-'}
             </p>
             <p>
-              <strong>Pharmacy:</strong> {selected.pharmacy?.name || '-'}
+              <strong>الصيدلية:</strong> {selected.pharmacy?.name || '-'}
             </p>
             <p>
-              <strong>Status:</strong> {selected.status ? selected.status.replace(/_/g, ' ') : '-'}
+              <strong>الحالة:</strong> {formatStatus(selected.status)}
             </p>
             <p>
-              <strong>Duration:</strong>{' '}
-              {selected.durationMinutes != null ? `${selected.durationMinutes} min` : 'Not finished'}
+              <strong>المدة:</strong>{' '}
+              {selected.durationMinutes != null ? `${selected.durationMinutes} دقيقة` : 'غير مكتملة'}
             </p>
             <p>
-              <strong>Started:</strong> {formatTimestamp(selected.startedAt || selected.started_at)}
+              <strong>البداية:</strong> {formatTimestamp(selected.startedAt || selected.started_at)}
             </p>
             <div>
-              <strong>Start GPS:</strong> {formatLocation(selected.startLocation)}
+              <strong>GPS البداية:</strong> {formatLocation(selected.startLocation)}
               <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                Timestamp: {formatTimestamp(selected.startedAt || selected.started_at)}
+                التوقيت: {formatTimestamp(selected.startedAt || selected.started_at)}
               </div>
               {renderGpsLinks(selected.startLocation)}
             </div>
             <p>
-              <strong>Ended:</strong> {formatTimestamp(selected.endedAt || selected.ended_at)}
+              <strong>النهاية:</strong> {formatTimestamp(selected.endedAt || selected.ended_at)}
             </p>
             <div>
-              <strong>End GPS:</strong> {formatLocation(selected.endLocation)}
+              <strong>GPS النهاية:</strong> {formatLocation(selected.endLocation)}
               <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                Timestamp: {formatTimestamp(selected.endedAt || selected.ended_at)}
+                التوقيت: {formatTimestamp(selected.endedAt || selected.ended_at)}
               </div>
               {renderGpsLinks(selected.endLocation)}
             </div>
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                padding: '12px',
+                borderRadius: '10px',
+                border: '1px solid #1f2937',
+                background: '#0f172a',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                <strong>امتثال GPS</strong>
+                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                  الحدود: دقة ≤ {compliance?.accuracyLimit ?? 50}م | مسافة ≤ {compliance?.distanceLimit ?? 150}م
+                </span>
+              </div>
+              <div style={{ marginTop: '8px', fontSize: '13px', color: '#cbd5f5' }}>
+                دقة البداية: {selected.startLocation?.accuracy != null ? `${selected.startLocation.accuracy}م` : 'غير متوفر'}
+              </div>
+              <div style={{ marginTop: '4px', fontSize: '13px', color: '#cbd5f5' }}>
+                دقة النهاية: {selected.endLocation?.accuracy != null ? `${selected.endLocation.accuracy}م` : 'غير متوفر'}
+              </div>
+              <div style={{ marginTop: '4px', fontSize: '13px', color: '#cbd5f5' }}>
+                مسافة الحركة: {formatDistance(compliance?.distanceMeters)}
+              </div>
+              {compliance?.issues?.length > 0 ? (
+                <div style={{ marginTop: '8px' }}>
+                  <div style={{ fontSize: '12px', color: '#fca5a5' }}>ملاحظات التحقق:</div>
+                  {compliance.issues.map(issue => (
+                    <div key={issue} style={{ fontSize: '12px', color: '#fca5a5' }}>
+                      - {issue}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#86efac' }}>متوافق مع سياسة GPS.</div>
+              )}
+              {selected.override_reason && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#fbbf24' }}>
+                  سبب الاستثناء: {selected.override_reason}
+                </div>
+              )}
+              {isManager && compliance?.issues?.length > 0 && !selected.override_reason && (
+                <div style={{ marginTop: '10px' }}>
+                  <label style={{ fontSize: '12px', color: '#cbd5f5' }}>اعتماد استثناء</label>
+                  <textarea
+                    value={overrideReason}
+                    onChange={event => setOverrideReason(event.target.value)}
+                    rows={2}
+                    className="input"
+                    placeholder="اكتب سبب الاعتماد..."
+                    style={{ marginTop: '4px' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleApproveOverride}
+                    disabled={overrideMutation.isPending || !overrideReason.trim()}
+                    style={{ marginTop: '8px' }}
+                  >
+                    {overrideMutation.isPending ? 'جارٍ الاعتماد...' : 'اعتماد الاستثناء'}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                padding: '12px',
+                borderRadius: '10px',
+                border: '1px solid #1f2937',
+                background: '#111827',
+              }}
+            >
+              <strong>المرفقات</strong>
+              {attachmentsQuery.error && (
+                <div className="alert alert-danger" style={{ marginTop: '8px' }}>
+                  تعذر تحميل المرفقات: {attachmentsQuery.error.message}
+                </div>
+              )}
+              {attachmentsQuery.isLoading && <div style={{ fontSize: '12px', color: '#94a3b8' }}>جارٍ التحميل...</div>}
+              {!attachmentsQuery.isLoading && attachments.length === 0 && (
+                <div style={{ fontSize: '12px', color: '#94a3b8' }}>لا توجد مرفقات.</div>
+              )}
+              {attachments.length > 0 && (
+                <div style={{ marginTop: '8px', display: 'grid', gap: '6px' }}>
+                  {attachments.map(item => (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '13px', color: '#e2e8f0' }}>{item.filename}</div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                          {formatBytes(item.size_bytes)} · {item.content_type || 'ملف'}
+                        </div>
+                      </div>
+                      <button type="button" className="btn btn-secondary" onClick={() => handleDownloadAttachment(item)}>
+                        تنزيل
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ marginTop: '10px' }}>
+                <input type="file" ref={uploadInputRef} onChange={handleAttachmentUpload} className="input" />
+              </div>
+              {attachmentError && (
+                <div className="alert alert-danger" style={{ marginTop: '8px' }}>
+                  {attachmentError}
+                </div>
+              )}
+            </div>
             <p>
-              <strong>Notes:</strong> {selected.notes || '-'}
+              <strong>ملاحظات:</strong> {selected.notes || '-'}
             </p>
             <p>
-              <strong>Next action:</strong> {selected.next_action || '-'} {selected.next_action_date || ''}
+              <strong>الإجراء التالي:</strong> {selected.next_action || '-'} {selected.next_action_date || ''}
             </p>
             {actionError && (
               <div className="alert alert-danger" style={{ gridColumn: '1 / -1' }}>
@@ -556,7 +859,7 @@ const VisitsPage = () => {
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
               <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
-                Edit
+                تعديل
               </button>
               <button
                 type="button"
@@ -564,7 +867,7 @@ const VisitsPage = () => {
                 onClick={() => deleteMutation.mutate(selected.id)}
                 disabled={deleteMutation.isPending}
               >
-                Delete
+                حذف
               </button>
               <button
                 type="button"
@@ -577,7 +880,7 @@ const VisitsPage = () => {
                   selected.status === 'cancelled'
                 }
               >
-                {startMutation.isPending ? 'Starting...' : 'Start with GPS'}
+                {startMutation.isPending ? '...جارٍ البدء' : 'بدء مع GPS'}
               </button>
               <button
                 type="button"
@@ -585,17 +888,17 @@ const VisitsPage = () => {
                 onClick={handleEndWithGps}
                 disabled={endMutation.isPending || selected.status === 'completed' || selected.status === 'cancelled'}
               >
-                {endMutation.isPending ? 'Ending...' : 'End visit'}
+                {endMutation.isPending ? '...جارٍ الإنهاء' : 'إنهاء الزيارة'}
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
-                Close
+                إغلاق
               </button>
             </div>
           </div>
         )}
       </DetailDrawer>
 
-      <DetailDrawer title={formMode === 'edit' ? 'Edit visit' : 'Add visit'} isOpen={Boolean(formMode)} onClose={closeForm}>
+      <DetailDrawer title={formMode === 'edit' ? 'تعديل زيارة' : 'إضافة زيارة'} isOpen={Boolean(formMode)} onClose={closeForm}>
         {formMode && (
           <VisitForm
             initialValues={formInitial}
@@ -613,5 +916,3 @@ const VisitsPage = () => {
 };
 
 export default VisitsPage;
-
-

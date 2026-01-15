@@ -29,12 +29,30 @@ def _parse_date(value: Optional[str]) -> Optional[date]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date format.") from exc
 
 
-def _visit_query(db: Session, date_from: Optional[date], date_to: Optional[date]):
+def _visit_query(
+    db: Session,
+    date_from: Optional[date],
+    date_to: Optional[date],
+    *,
+    rep_id: Optional[int] = None,
+    territory_id: Optional[int] = None,
+    account_type: Optional[str] = None,
+):
     query = db.query(Visit).filter(Visit.is_deleted.is_(False))
     if date_from:
         query = query.filter(Visit.visit_date >= date_from)
     if date_to:
         query = query.filter(Visit.visit_date <= date_to)
+    if rep_id:
+        query = query.filter(Visit.rep_id == rep_id)
+    if territory_id:
+        query = query.join(RepProfile, RepProfile.user_id == Visit.rep_id).filter(
+            RepProfile.territory_id == territory_id
+        )
+    if account_type == "doctor":
+        query = query.filter(Visit.doctor_id.isnot(None))
+    if account_type == "pharmacy":
+        query = query.filter(Visit.pharmacy_id.isnot(None))
     return query
 
 
@@ -42,12 +60,17 @@ def _visit_query(db: Session, date_from: Optional[date], date_to: Optional[date]
 def reports_overview(
     from_date: Optional[str] = Query(default=None, alias="from"),
     to_date: Optional[str] = Query(default=None, alias="to"),
+    rep_id: Optional[int] = None,
+    territory_id: Optional[int] = None,
+    account_type: Optional[str] = Query(default=None, pattern="^(doctor|pharmacy)?$"),
     db: Session = Depends(get_db),
 ) -> dict:
     date_from = _parse_date(from_date)
     date_to = _parse_date(to_date)
 
-    visit_query = _visit_query(db, date_from, date_to)
+    visit_query = _visit_query(
+        db, date_from, date_to, rep_id=rep_id, territory_id=territory_id, account_type=account_type
+    )
     total_visits = visit_query.count()
     successful_visits = visit_query.filter(Visit.status == "COMPLETED").count()
 
@@ -73,11 +96,16 @@ def reports_overview(
 def rep_performance(
     from_date: Optional[str] = Query(default=None, alias="from"),
     to_date: Optional[str] = Query(default=None, alias="to"),
+    rep_id: Optional[int] = None,
+    territory_id: Optional[int] = None,
+    account_type: Optional[str] = Query(default=None, pattern="^(doctor|pharmacy)?$"),
     db: Session = Depends(get_db),
 ) -> list[dict]:
     date_from = _parse_date(from_date)
     date_to = _parse_date(to_date)
-    visits = _visit_query(db, date_from, date_to).all()
+    visits = _visit_query(
+        db, date_from, date_to, rep_id=rep_id, territory_id=territory_id, account_type=account_type
+    ).all()
 
     reps = {rep.id: rep for rep in db.query(User).all()}
     profiles = {
@@ -150,9 +178,19 @@ def rep_performance(
 def rep_performance_export(
     from_date: Optional[str] = Query(default=None, alias="from"),
     to_date: Optional[str] = Query(default=None, alias="to"),
+    rep_id: Optional[int] = None,
+    territory_id: Optional[int] = None,
+    account_type: Optional[str] = Query(default=None, pattern="^(doctor|pharmacy)?$"),
     db: Session = Depends(get_db),
 ) -> Response:
-    rows = rep_performance(from_date=from_date, to_date=to_date, db=db)
+    rows = rep_performance(
+        from_date=from_date,
+        to_date=to_date,
+        rep_id=rep_id,
+        territory_id=territory_id,
+        account_type=account_type,
+        db=db,
+    )
     buffer = io.StringIO()
     writer = csv.DictWriter(
         buffer,
@@ -189,6 +227,7 @@ def rep_performance_export(
 def product_performance(
     from_date: Optional[str] = Query(default=None, alias="from"),
     to_date: Optional[str] = Query(default=None, alias="to"),
+    account_type: Optional[str] = Query(default=None, pattern="^(doctor|pharmacy)?$"),
     db: Session = Depends(get_db),
 ) -> list[dict]:
     date_from = _parse_date(from_date)
@@ -209,6 +248,10 @@ def product_performance(
         query = query.filter(Order.order_date >= date_from)
     if date_to:
         query = query.filter(Order.order_date <= date_to)
+    if account_type == "doctor":
+        query = query.filter(Order.doctor_id.isnot(None))
+    if account_type == "pharmacy":
+        query = query.filter(Order.pharmacy_id.isnot(None))
 
     query = query.group_by(Product.id, Product.name).order_by(Product.name.asc())
 
@@ -234,11 +277,15 @@ def product_performance(
 def territory_performance(
     from_date: Optional[str] = Query(default=None, alias="from"),
     to_date: Optional[str] = Query(default=None, alias="to"),
+    territory_id: Optional[int] = None,
+    account_type: Optional[str] = Query(default=None, pattern="^(doctor|pharmacy)?$"),
     db: Session = Depends(get_db),
 ) -> list[dict]:
     date_from = _parse_date(from_date)
     date_to = _parse_date(to_date)
-    visits = _visit_query(db, date_from, date_to).all()
+    visits = _visit_query(
+        db, date_from, date_to, territory_id=territory_id, account_type=account_type
+    ).all()
 
     profiles = {
         profile.user_id: profile
@@ -284,3 +331,65 @@ def territory_performance(
             }
         )
     return results
+
+
+@router.get("/product-performance/export")
+def product_performance_export(
+    from_date: Optional[str] = Query(default=None, alias="from"),
+    to_date: Optional[str] = Query(default=None, alias="to"),
+    account_type: Optional[str] = Query(default=None, pattern="^(doctor|pharmacy)?$"),
+    db: Session = Depends(get_db),
+) -> Response:
+    rows = product_performance(from_date=from_date, to_date=to_date, account_type=account_type, db=db)
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=[
+            "productName",
+            "visitsCount",
+            "totalQuantity",
+            "avgQuantityPerVisit",
+            "totalOrderValueJOD",
+        ],
+    )
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(row)
+    headers = {"Content-Disposition": 'attachment; filename="product-performance.csv"'}
+    return Response(content=buffer.getvalue(), media_type="text/csv", headers=headers)
+
+
+@router.get("/territory-performance/export")
+def territory_performance_export(
+    from_date: Optional[str] = Query(default=None, alias="from"),
+    to_date: Optional[str] = Query(default=None, alias="to"),
+    territory_id: Optional[int] = None,
+    account_type: Optional[str] = Query(default=None, pattern="^(doctor|pharmacy)?$"),
+    db: Session = Depends(get_db),
+) -> Response:
+    rows = territory_performance(
+        from_date=from_date,
+        to_date=to_date,
+        territory_id=territory_id,
+        account_type=account_type,
+        db=db,
+    )
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=[
+            "territoryId",
+            "territoryName",
+            "totalVisits",
+            "completedVisits",
+            "uniqueAccounts",
+            "totalOrderValueJOD",
+            "avgOrderValueJOD",
+            "avgRating",
+        ],
+    )
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(row)
+    headers = {"Content-Disposition": 'attachment; filename="territory-performance.csv"'}
+    return Response(content=buffer.getvalue(), media_type="text/csv", headers=headers)

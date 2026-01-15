@@ -45,25 +45,25 @@ const DoctorForm = ({ initialValues, onSubmit, onCancel, submitting, error }) =>
   return (
     <form className="form" onSubmit={handleSubmit}>
       <label className="form__label">
-        Name
+        الاسم
         <input type="text" value={form.name} onChange={e => updateField('name', e.target.value)} required />
       </label>
       <label className="form__label">
-        Specialty
+        التخصص
         <input type="text" value={form.specialty} onChange={e => updateField('specialty', e.target.value)} />
       </label>
       <label className="form__label">
-        City
+        المدينة
         <input type="text" value={form.city} onChange={e => updateField('city', e.target.value)} />
       </label>
       <label className="form__label">
-        Area
+        المنطقة
         <input type="text" value={form.area} onChange={e => updateField('area', e.target.value)} />
       </label>
       <label className="form__label">
-        Classification
+        التصنيف
         <select value={form.classification} onChange={e => updateField('classification', e.target.value)}>
-          <option value="">Select</option>
+          <option value="">اختر</option>
           {CLASSIFICATIONS.map(option => (
             <option key={option} value={option}>
               {option}
@@ -72,19 +72,19 @@ const DoctorForm = ({ initialValues, onSubmit, onCancel, submitting, error }) =>
         </select>
       </label>
       <label className="form__label">
-        Phone
+        الهاتف
         <input type="tel" value={form.phone} onChange={e => updateField('phone', e.target.value)} />
       </label>
       <label className="form__label">
-        Mobile
+        الجوال
         <input type="tel" value={form.mobile} onChange={e => updateField('mobile', e.target.value)} />
       </label>
       <label className="form__label">
-        Email
+        البريد الإلكتروني
         <input type="email" value={form.email} onChange={e => updateField('email', e.target.value)} />
       </label>
       <label className="form__label">
-        Notes
+        ملاحظات
         <textarea value={form.notes} onChange={e => updateField('notes', e.target.value)} rows={3} />
       </label>
 
@@ -96,10 +96,10 @@ const DoctorForm = ({ initialValues, onSubmit, onCancel, submitting, error }) =>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Save'}
+          {submitting ? '...جارٍ الحفظ' : 'حفظ'}
         </button>
         <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
+          إلغاء
         </button>
       </div>
     </form>
@@ -232,14 +232,14 @@ const DoctorsPage = () => {
     <div className="entity-page">
       <div className="entity-toolbar">
         <div>
-          <h1 className="page-heading">Doctors</h1>
-          <p className="page-subtitle">Browse, create, and update healthcare professionals.</p>
+          <h1 className="page-heading">الأطباء</h1>
+          <p className="page-subtitle">إدارة الأطباء والملفات الطبية الأساسية.</p>
         </div>
         <div className="entity-search">
           <input
             type="search"
             className="input"
-            placeholder="Search by name or clinic"
+            placeholder="ابحث بالاسم أو العيادة"
             value={search}
             onChange={event => {
               setSearch(event.target.value);
@@ -248,13 +248,13 @@ const DoctorsPage = () => {
           />
         </div>
         <button type="button" className="btn btn-primary" onClick={openCreate}>
-          Add doctor
+          إضافة طبيب
         </button>
       </div>
 
       <div className="entity-filters">
         <select className="input" value={cityFilter} onChange={event => setCityFilter(event.target.value)}>
-          <option value="">All cities</option>
+          <option value="">كل المدن</option>
           {distinctCities.map(city => (
             <option key={city} value={city}>
               {city}
@@ -262,7 +262,7 @@ const DoctorsPage = () => {
           ))}
         </select>
         <select className="input" value={areaFilter} onChange={event => setAreaFilter(event.target.value)}>
-          <option value="">All areas</option>
+          <option value="">كل المناطق</option>
           {distinctAreas.map(area => (
             <option key={area} value={area}>
               {area}
@@ -274,7 +274,7 @@ const DoctorsPage = () => {
           value={classificationFilter}
           onChange={event => setClassificationFilter(event.target.value)}
         >
-          <option value="">All classifications</option>
+          <option value="">كل التصنيفات</option>
           {CLASSIFICATIONS.map(option => (
             <option key={option} value={option}>
               {option}
@@ -282,30 +282,30 @@ const DoctorsPage = () => {
           ))}
         </select>
         <button type="button" className="btn btn-secondary" onClick={resetFilters}>
-          Clear filters
+          مسح الفلاتر
         </button>
       </div>
 
       <section className="table-card entity-table">
         {doctorsQuery.error && (
-          <div className="entity-empty">Unable to load doctors: {doctorsQuery.error.message}</div>
+          <div className="entity-empty">تعذر تحميل الأطباء: {doctorsQuery.error.message}</div>
         )}
         {!doctorsQuery.error && doctorsQuery.isLoading && (
-          <div className="entity-empty">Loading doctors...</div>
+          <div className="entity-empty">جارٍ تحميل الأطباء...</div>
         )}
         {!doctorsQuery.error && !doctorsQuery.isLoading && doctors.length === 0 && (
-          <div className="entity-empty">No doctors found for the selected filters.</div>
+          <div className="entity-empty">لا توجد نتائج مطابقة.</div>
         )}
         {!doctorsQuery.error && doctors.length > 0 && (
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Specialty</th>
-                <th>City</th>
-                <th>Area</th>
-                <th>Class</th>
-                <th>Phone</th>
+                <th>الاسم</th>
+                <th>التخصص</th>
+                <th>المدينة</th>
+                <th>المنطقة</th>
+                <th>التصنيف</th>
+                <th>الهاتف</th>
               </tr>
             </thead>
             <tbody>
@@ -325,10 +325,10 @@ const DoctorsPage = () => {
 
         <div className="entity-pagination">
           <span>
-            Page {page} of {totalPages}
+            صفحة {page} من {totalPages}
           </span>
           <div>
-            Rows
+            الصفوف
             <select
               value={pageSize}
               onChange={event => {
@@ -350,7 +350,7 @@ const DoctorsPage = () => {
               onClick={() => setPage(prev => Math.max(1, prev - 1))}
               disabled={page === 1}
             >
-              Prev
+              السابق
             </button>
             <button
               type="button"
@@ -358,7 +358,7 @@ const DoctorsPage = () => {
               onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
               disabled={page >= totalPages}
             >
-              Next
+              التالي
             </button>
           </div>
         </div>
@@ -368,34 +368,34 @@ const DoctorsPage = () => {
         {selected && (
           <div className="detail-grid">
             <p>
-              <strong>Specialty:</strong> {selected.specialty || '-'}
+              <strong>التخصص:</strong> {selected.specialty || '-'}
             </p>
             <p>
-              <strong>City:</strong> {selected.city || '-'}
+              <strong>المدينة:</strong> {selected.city || '-'}
             </p>
             <p>
-              <strong>Area:</strong> {selected.area || '-'}
+              <strong>المنطقة:</strong> {selected.area || '-'}
             </p>
             <p>
-              <strong>Class:</strong> {selected.classification || '-'}
+              <strong>التصنيف:</strong> {selected.classification || '-'}
             </p>
             <p>
-              <strong>Phone:</strong> {selected.phone || selected.mobile || '-'}
+              <strong>الهاتف:</strong> {selected.phone || selected.mobile || '-'}
             </p>
             <p>
-              <strong>Email:</strong> {selected.email || '-'}
+              <strong>البريد:</strong> {selected.email || '-'}
             </p>
             {selected.notes && (
               <p>
-                <strong>Notes:</strong> {selected.notes}
+                <strong>ملاحظات:</strong> {selected.notes}
               </p>
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
-                Edit
+                تعديل
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
-                Close
+                إغلاق
               </button>
             </div>
           </div>
@@ -403,7 +403,7 @@ const DoctorsPage = () => {
       </DetailDrawer>
 
       <DetailDrawer
-        title={formMode === 'edit' ? 'Edit doctor' : 'Add doctor'}
+        title={formMode === 'edit' ? 'تعديل طبيب' : 'إضافة طبيب'}
         isOpen={Boolean(formMode)}
         onClose={closeForm}
       >

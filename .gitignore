@@ -33,6 +33,7 @@ CRM/backend/data/
 .npm-cache/
 .npm-cache2/
 .npm-cache3/
+docs/_local/
 
 # Local archives
 ARCHIVE/

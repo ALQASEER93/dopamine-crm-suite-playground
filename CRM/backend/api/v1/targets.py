@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import csv
+import io
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
@@ -56,3 +59,44 @@ def create_target(payload: TargetCreate, db: Session = Depends(get_db)) -> Targe
     db.commit()
     db.refresh(target)
     return target
+
+
+@router.get("/export", dependencies=[Depends(require_roles("sales_manager", "admin"))])
+def export_targets(
+    rep_id: int | None = None,
+    period: str | None = None,
+    db: Session = Depends(get_db),
+) -> Response:
+    query = db.query(Target)
+    if rep_id:
+        query = query.filter(Target.rep_id == rep_id)
+    if period:
+        query = query.filter(Target.period == period)
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=[
+            "id",
+            "rep_id",
+            "period",
+            "product_id",
+            "target_amount",
+            "achieved_amount",
+        ],
+    )
+    writer.writeheader()
+    for target in query.order_by(Target.period.desc()).all():
+        writer.writerow(
+            {
+                "id": target.id,
+                "rep_id": target.rep_id,
+                "period": target.period,
+                "product_id": target.product_id or "",
+                "target_amount": target.target_amount,
+                "achieved_amount": target.achieved_amount or "",
+            }
+        )
+
+    headers = {"Content-Disposition": 'attachment; filename="targets.csv"'}
+    return Response(content=buffer.getvalue(), media_type="text/csv", headers=headers)

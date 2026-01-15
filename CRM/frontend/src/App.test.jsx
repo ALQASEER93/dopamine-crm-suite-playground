@@ -10,6 +10,8 @@ describe('App', () => {
     // نستخدم createElement بدل JSX لتفادي jsxDEV
     render(React.createElement(App));
 
-    expect(screen.getByText(/CRM Sign in/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /تسجيل الدخول/i })
+    ).toBeInTheDocument();
   });
 });

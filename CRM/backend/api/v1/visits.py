@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File, status
+from fastapi.responses import FileResponse
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload
 
@@ -571,6 +572,8 @@ def start_visit(
     visit.start_lat = payload.lat
     visit.start_lng = payload.lng
     visit.start_accuracy_m = payload.accuracy
+    if payload.device_info:
+        visit.start_device_info = payload.device_info
     visit.status = "IN_PROGRESS"
     if payload.override_reason:
         visit.override_reason = payload.override_reason.strip()
@@ -625,6 +628,8 @@ def end_visit(
     visit.end_lat = payload.lat
     visit.end_lng = payload.lng
     visit.end_accuracy_m = payload.accuracy
+    if payload.device_info:
+        visit.end_device_info = payload.device_info
     visit.status = "COMPLETED"
     if payload.notes is not None:
         visit.notes = payload.notes
@@ -677,6 +682,36 @@ def list_visit_attachments(
     if has_any_role(current_user, ["medical_rep"]) and visit.rep_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
     return list(visit.attachments or [])
+
+
+@router.get(
+    "/{visit_id:int}/attachments/{attachment_id}",
+    response_class=FileResponse,
+)
+def download_visit_attachment(
+    visit_id: int,
+    attachment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    visit = _get_visit(db, visit_id)
+    if has_any_role(current_user, ["medical_rep"]) and visit.rep_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
+    attachment = (
+        db.query(VisitAttachment)
+        .filter(VisitAttachment.visit_id == visit_id, VisitAttachment.id == attachment_id)
+        .first()
+    )
+    if not attachment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment not found.")
+    path = Path(attachment.file_path)
+    if not path.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment file missing.")
+    return FileResponse(
+        path,
+        media_type=attachment.content_type or "application/octet-stream",
+        filename=attachment.filename,
+    )
 
 
 @router.post(

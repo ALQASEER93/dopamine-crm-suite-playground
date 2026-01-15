@@ -19,7 +19,7 @@ const DEFAULT_FORM = {
 
 const normalizePharmacy = pharmacy => ({
   id: pharmacy?.id ?? pharmacy?._id ?? pharmacy?.pharmacyId ?? pharmacy?.name,
-  name: pharmacy?.name || 'Unnamed pharmacy',
+  name: pharmacy?.name || 'صيدلية بدون اسم',
   city: pharmacy?.city || '',
   area: pharmacy?.area || pharmacy?.areaTag || '',
   phone: pharmacy?.phone || '',
@@ -53,35 +53,35 @@ const PharmacyForm = ({ initialValues, onSubmit, onCancel, submitting, error }) 
   return (
     <form className="form" onSubmit={handleSubmit}>
       <label className="form__label">
-        Name
+        الاسم
         <input type="text" value={form.name} onChange={e => updateField('name', e.target.value)} required />
       </label>
       <label className="form__label">
-        City
+        المدينة
         <input type="text" value={form.city} onChange={e => updateField('city', e.target.value)} />
       </label>
       <label className="form__label">
-        Area
+        المنطقة
         <input type="text" value={form.area} onChange={e => updateField('area', e.target.value)} />
       </label>
       <label className="form__label">
-        Segment
+        الشريحة
         <input type="text" value={form.segment} onChange={e => updateField('segment', e.target.value)} />
       </label>
       <label className="form__label">
-        Tag
+        الوسم
         <input type="text" value={form.tag} onChange={e => updateField('tag', e.target.value)} />
       </label>
       <label className="form__label">
-        Phone
+        الهاتف
         <input type="tel" value={form.phone} onChange={e => updateField('phone', e.target.value)} />
       </label>
       <label className="form__label">
-        Email
+        البريد الإلكتروني
         <input type="email" value={form.email} onChange={e => updateField('email', e.target.value)} />
       </label>
       <label className="form__label">
-        Notes
+        ملاحظات
         <textarea value={form.notes} onChange={e => updateField('notes', e.target.value)} rows={3} />
       </label>
 
@@ -93,10 +93,10 @@ const PharmacyForm = ({ initialValues, onSubmit, onCancel, submitting, error }) 
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? 'Saving�' : 'Save'}
+          {submitting ? 'جارٍ الحفظ...' : 'حفظ'}
         </button>
         <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
+          إلغاء
         </button>
       </div>
     </form>
@@ -228,14 +228,14 @@ const PharmaciesPage = () => {
     <div className="entity-page">
       <div className="entity-toolbar">
         <div>
-          <h1 className="page-heading">Pharmacies</h1>
-          <p className="page-subtitle">Track retail accounts and coverage.</p>
+          <h1 className="page-heading">الصيدليات</h1>
+          <p className="page-subtitle">إدارة حسابات الصيدليات والتغطية.</p>
         </div>
         <div className="entity-search">
           <input
             type="search"
             className="input"
-            placeholder="Search by name or city"
+            placeholder="ابحث بالاسم أو المدينة"
             value={search}
             onChange={event => {
               setSearch(event.target.value);
@@ -244,13 +244,13 @@ const PharmaciesPage = () => {
           />
         </div>
         <button type="button" className="btn btn-primary" onClick={openCreate}>
-          Add pharmacy
+          إضافة صيدلية
         </button>
       </div>
 
       <div className="entity-filters">
         <select className="input" value={cityFilter} onChange={event => setCityFilter(event.target.value)}>
-          <option value="">All cities</option>
+          <option value="">كل المدن</option>
           {distinctCities.map(value => (
             <option key={value} value={value}>
               {value}
@@ -258,7 +258,7 @@ const PharmaciesPage = () => {
           ))}
         </select>
         <select className="input" value={areaFilter} onChange={event => setAreaFilter(event.target.value)}>
-          <option value="">All areas</option>
+          <option value="">كل المناطق</option>
           {distinctAreas.map(value => (
             <option key={value} value={value}>
               {value}
@@ -266,7 +266,7 @@ const PharmaciesPage = () => {
           ))}
         </select>
         <select className="input" value={segmentFilter} onChange={event => setSegmentFilter(event.target.value)}>
-          <option value="">All segments</option>
+          <option value="">كل الشرائح</option>
           {distinctSegments.map(value => (
             <option key={value} value={value}>
               {value}
@@ -274,39 +274,39 @@ const PharmaciesPage = () => {
           ))}
         </select>
         <button type="button" className="btn btn-secondary" onClick={resetFilters}>
-          Clear filters
+          مسح الفلاتر
         </button>
       </div>
 
       <section className="table-card entity-table">
         {pharmaciesQuery.error && (
-          <div className="entity-empty">Unable to load pharmacies: {pharmaciesQuery.error.message}</div>
+          <div className="entity-empty">تعذر تحميل الصيدليات: {pharmaciesQuery.error.message}</div>
         )}
         {!pharmaciesQuery.error && pharmaciesQuery.isLoading && (
-          <div className="entity-empty">Loading pharmacies...</div>
+          <div className="entity-empty">جارٍ تحميل الصيدليات...</div>
         )}
         {!pharmaciesQuery.error && !pharmaciesQuery.isLoading && items.length === 0 && (
-          <div className="entity-empty">No pharmacies found.</div>
+          <div className="entity-empty">لا توجد صيدليات.</div>
         )}
         {!pharmaciesQuery.error && items.length > 0 && (
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Segment</th>
-                <th>City</th>
-                <th>Area</th>
-                <th>Phone</th>
+                <th>الاسم</th>
+                <th>الشريحة</th>
+                <th>المدينة</th>
+                <th>المنطقة</th>
+                <th>الهاتف</th>
               </tr>
             </thead>
             <tbody>
               {items.map(item => (
                 <tr key={item.id} onClick={() => setSelected(item)}>
                   <td>{item.name}</td>
-                  <td>{item.segment || 'Pharmacy'}</td>
-                  <td>{item.city || '�'}</td>
-                  <td>{item.area || '�'}</td>
-                  <td>{item.phone || '�'}</td>
+                  <td>{item.segment || 'صيدلية'}</td>
+                  <td>{item.city || 'غير متوفر'}</td>
+                  <td>{item.area || 'غير متوفر'}</td>
+                  <td>{item.phone || 'غير متوفر'}</td>
                 </tr>
               ))}
             </tbody>
@@ -314,10 +314,10 @@ const PharmaciesPage = () => {
         )}
         <div className="entity-pagination">
           <span>
-            Page {page} of {totalPages}
+            صفحة {page} من {totalPages}
           </span>
           <div>
-            Rows
+            الصفوف
             <select
               value={pageSize}
               onChange={event => {
@@ -339,7 +339,7 @@ const PharmaciesPage = () => {
               onClick={() => setPage(prev => Math.max(1, prev - 1))}
               disabled={page === 1}
             >
-              Prev
+              السابق
             </button>
             <button
               type="button"
@@ -347,7 +347,7 @@ const PharmaciesPage = () => {
               onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
               disabled={page >= totalPages}
             >
-              Next
+              التالي
             </button>
           </div>
         </div>
@@ -357,31 +357,31 @@ const PharmaciesPage = () => {
         {selected && (
           <div className="detail-grid">
             <p>
-              <strong>City:</strong> {selected.city || '�'}
+              <strong>المدينة:</strong> {selected.city || 'غير متوفر'}
             </p>
             <p>
-              <strong>Area:</strong> {selected.area || '�'}
+              <strong>المنطقة:</strong> {selected.area || 'غير متوفر'}
             </p>
             <p>
-              <strong>Segment:</strong> {selected.segment || 'Pharmacy'}
+              <strong>الشريحة:</strong> {selected.segment || 'صيدلية'}
             </p>
             <p>
-              <strong>Phone:</strong> {selected.phone || '�'}
+              <strong>الهاتف:</strong> {selected.phone || 'غير متوفر'}
             </p>
             <p>
-              <strong>Email:</strong> {selected.email || '�'}
+              <strong>البريد الإلكتروني:</strong> {selected.email || 'غير متوفر'}
             </p>
             {selected.notes && (
               <p>
-                <strong>Notes:</strong> {selected.notes}
+                <strong>ملاحظات:</strong> {selected.notes}
               </p>
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
-                Edit
+                تعديل
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
-                Close
+                إغلاق
               </button>
             </div>
           </div>
@@ -389,7 +389,7 @@ const PharmaciesPage = () => {
       </DetailDrawer>
 
       <DetailDrawer
-        title={formMode === 'edit' ? 'Edit pharmacy' : 'Add pharmacy'}
+        title={formMode === 'edit' ? 'تعديل صيدلية' : 'إضافة صيدلية'}
         isOpen={Boolean(formMode)}
         onClose={closeForm}
       >

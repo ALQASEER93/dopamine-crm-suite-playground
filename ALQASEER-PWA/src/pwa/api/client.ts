@@ -1,4 +1,5 @@
 import { useAuthStore } from "../state/auth";
+import { configureNativeTelemetry, startNativeTelemetry } from "../native/telemetry";
 import {
   Customer,
   LoginResponse,
@@ -55,13 +56,24 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   if (res.status === 401) {
     clearSession();
-    window.location.replace("/login");
-    throw new Error("Unauthorized");
+    const isBrowser = typeof window !== "undefined";
+    const isLoginRequest = path.includes("auth/login");
+    const isLoginRoute = isBrowser && window.location.pathname === "/login";
+    if (isBrowser && !isLoginRequest && !isLoginRoute) {
+      window.location.replace("/login");
+    }
+    const err = new Error("Unauthorized") as Error & { status?: number };
+    err.status = res.status;
+    throw err;
   }
 
   if (!res.ok) {
     const message = await res.text();
-    throw new Error(message || `Request failed with status ${res.status}`);
+    const err = new Error(message || `Request failed with status ${res.status}`) as Error & {
+      status?: number;
+    };
+    err.status = res.status;
+    throw err;
   }
 
   return (await res.json()) as T;
@@ -77,6 +89,8 @@ export async function login(credentials: { email: string; password: string }) {
     throw new Error("Login succeeded but no token was returned.");
   }
   useAuthStore.getState().setSession(token, data.user);
+  await configureNativeTelemetry(token);
+  await startNativeTelemetry(token);
   return data;
 }
 
@@ -141,30 +155,65 @@ export async function createVisit(payload: VisitPayload) {
   });
 }
 
-export async function startVisit(visitId: string, payload: { lat: number; lng: number; accuracy?: number | null; startedAt?: string }) {
+export async function startVisit(
+  visitId: string,
+  payload: {
+    lat: number;
+    lng: number;
+    accuracy?: number | null;
+    override_reason?: string;
+    device_info?: string;
+    startedAt?: string;
+    timestamp?: string;
+  },
+) {
   return apiFetch<Visit>(`visits/${visitId}/start`, {
     method: "POST",
     body: JSON.stringify({
       lat: payload.lat,
       lng: payload.lng,
       accuracy: payload.accuracy ?? null,
-      started_at: payload.startedAt,
+      override_reason: payload.override_reason,
+      started_at: payload.startedAt ?? payload.timestamp,
+      device_info: payload.device_info,
     }),
   });
 }
 
-export async function endVisit(visitId: string, payload: { lat: number; lng: number; accuracy?: number | null; endedAt?: string }) {
+export async function endVisit(
+  visitId: string,
+  payload: {
+    lat: number;
+    lng: number;
+    accuracy?: number | null;
+    override_reason?: string;
+    device_info?: string;
+    endedAt?: string;
+    timestamp?: string;
+  },
+) {
   return apiFetch<Visit>(`visits/${visitId}/end`, {
     method: "POST",
     body: JSON.stringify({
       lat: payload.lat,
       lng: payload.lng,
       accuracy: payload.accuracy ?? null,
-      ended_at: payload.endedAt,
+      override_reason: payload.override_reason,
+      ended_at: payload.endedAt ?? payload.timestamp,
+      device_info: payload.device_info,
     }),
   });
 }
 
+export async function exportVisits() {
+  const res = await fetch(buildUrl("visits/export"), {
+    headers: { Authorization: `Bearer ${useAuthStore.getState().token || ""}` },
+  });
+  if (!res.ok) {
+    throw new Error("Export failed");
+  }
+  return res;
+}
 export async function getProducts() {
   return apiFetch<Product[]>("products");
 }

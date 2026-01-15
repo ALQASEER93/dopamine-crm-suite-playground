@@ -57,7 +57,7 @@ test("PWA login persists after refresh", async ({ page }) => {
   await page.locator("input#password").fill(adminPassword);
   await page.locator("button[type=\"submit\"]").click();
 
-  await expect(page).toHaveURL(/\/today-route$/);
+  await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByLabel("today-route-page")).toBeVisible();
 
   await page.goto("/visits", { waitUntil: "networkidle" });
@@ -106,7 +106,7 @@ test("PWA login persists after refresh", async ({ page }) => {
   expect(meResponse.status).toBe(200);
 
   await page.reload({ waitUntil: "networkidle" });
-  await expect(page).toHaveURL(/\/today-route$/);
+  await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByLabel("today-route-page")).toBeVisible();
 
   if (consoleMessages.length > 0) {

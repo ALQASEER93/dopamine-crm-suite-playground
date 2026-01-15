@@ -20,10 +20,10 @@ describe('LoginScreen', () => {
 
     renderWithAuth({ user: null, token: null, login: loginMock, logout: logoutMock });
 
-    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'user@example.com' } });
-    fireEvent.change(screen.getByLabelText(/Password/i), { target: { value: 'secret' } });
+    fireEvent.change(screen.getByLabelText(/البريد الإلكتروني/i), { target: { value: 'user@example.com' } });
+    fireEvent.change(screen.getByLabelText(/كلمة المرور/i), { target: { value: 'secret' } });
 
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fireEvent.click(screen.getByRole('button', { name: /تسجيل الدخول/i }));
 
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith({ email: 'user@example.com', password: 'secret' });

@@ -7,14 +7,13 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
 from core.security import get_current_user, has_any_role, require_roles
-from models.crm import Device, LocationEvent, Role, Route, RouteAccount, User, Visit
+from models.crm import Device, LocationEvent, Role, User, Visit
 from schemas.common import PaginatedResponse
-from schemas.crm import RouteCreate, RouteOut, RouteStopOut
 from schemas.user import RepCreate, RepUpdate, UserOut
 from services.auth import hash_password
 
@@ -292,111 +291,6 @@ def deactivate_rep(rep_id: int, db: Session = Depends(get_db)) -> Response:
     rep.is_active = False
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.get("/routes", response_model=PaginatedResponse[RouteOut])
-def list_routes(
-    page: int = Query(DEFAULT_PAGE, ge=1),
-    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500),
-    rep_id: int | None = None,
-    db: Session = Depends(get_db),
-) -> PaginatedResponse[RouteOut]:
-    query = db.query(Route)
-    if rep_id:
-        query = query.filter(Route.rep_id == rep_id)
-
-    page_size = clamp_page_size(page_size)
-    routes, total = paginate(query.order_by(Route.name.asc()), page, page_size)
-    total_pages = max(1, (total + page_size - 1) // page_size)
-    return PaginatedResponse(
-        data=routes,
-        pagination={"page": page, "page_size": page_size, "total": total, "total_pages": total_pages},
-    )
-
-
-@router.post(
-    "/routes",
-    response_model=RouteOut,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_roles("sales_manager", "admin"))],
-)
-def create_route(payload: RouteCreate, db: Session = Depends(get_db)) -> Route:
-    route = Route(
-        name=payload.name,
-        rep_id=payload.rep_id,
-        frequency=payload.frequency,
-        notes=payload.notes,
-    )
-    db.add(route)
-    db.flush()
-    for account in payload.accounts:
-        db.add(
-            RouteAccount(
-                route_id=route.id,
-                account_type=account.account_type,
-                doctor_id=account.doctor_id,
-                pharmacy_id=account.pharmacy_id,
-                visit_frequency=account.visit_frequency,
-            )
-        )
-    db.commit()
-    db.refresh(route)
-    return route
-
-
-@router.get("/routes/today", response_model=list[RouteStopOut])
-def get_today_route(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> list[RouteStopOut]:
-    query = (
-        db.query(Route)
-        .options(
-            joinedload(Route.accounts).joinedload(RouteAccount.doctor),
-            joinedload(Route.accounts).joinedload(RouteAccount.pharmacy),
-        )
-        .filter(Route.rep_id == current_user.id)
-        .order_by(Route.id.asc())
-    )
-    route = query.first()
-    if not route:
-        return []
-
-    stops: list[RouteStopOut] = []
-    for account in route.accounts:
-        if account.account_type == "doctor" and account.doctor:
-            customer = account.doctor
-            address = _format_address(customer.clinic, customer.area, customer.city)
-        elif account.account_type == "pharmacy" and account.pharmacy:
-            customer = account.pharmacy
-            address = _format_address(customer.area, customer.city)
-        else:
-            continue
-
-        stops.append(
-            RouteStopOut(
-                id=account.id,
-                customer_id=customer.id,
-                customer_name=customer.name,
-                customer_type=account.account_type,
-                address=address,
-                status="planned",
-                scheduled_for=None,
-                location=None,
-            )
-        )
-
-    return stops
-
-
-@router.get("/routes/{route_id}", response_model=RouteOut)
-def get_route(route_id: int, db: Session = Depends(get_db)) -> Route:
-    route = db.get(Route, route_id)
-    if not route:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
-    return route
-
-
 
 
 @router.get(

@@ -44,6 +44,6 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "دخول" }));
 
     await waitFor(() => expect(loginFn).toHaveBeenCalledWith({ email: "rep@test.com", password: "secret" }));
-    expect(navigateMock).toHaveBeenCalledWith("/today-route", { replace: true });
+    expect(navigateMock).toHaveBeenCalledWith("/today", { replace: true });
   });
 });

@@ -1,19 +1,89 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../api/client";
+import { EmptyState } from "../../components/system/EmptyState";
+import { ErrorBoundary } from "../../components/system/ErrorBoundary";
+import { ListItem } from "../../components/system/ListItem";
+import { PageHeader } from "../../components/system/PageHeader";
+import { Skeleton } from "../../components/system/Skeleton";
+import { stopNativeTelemetry } from "../../native/telemetry";
 import { getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../offline/queue";
 import { useAuthStore } from "../../state/auth";
-import { useNavigate } from "react-router-dom";
 
 export default function AccountPage() {
   const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
   const clearSession = useAuthStore((s) => s.clearSession);
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(user);
+  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error" | "unauthorized">("idle");
+  const [error, setError] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [queueCount, setQueueCount] = useState(0);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+  const debugEnabled = useMemo(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("debug") === "1" || localStorage.getItem("pwa.debug") === "1";
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const buildApiUrl = useCallback((path: string) => {
+    const base = API_BASE_URL.startsWith("http")
+      ? API_BASE_URL
+      : `${window.location.origin}${API_BASE_URL.startsWith("/") ? API_BASE_URL : `/${API_BASE_URL}`}`;
+    return `${base.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+  }, []);
+
+  const logError = useCallback(
+    (reason: string, detail?: unknown) => {
+      console.error("[account]", { reason, detail, online: isOnline, token: Boolean(token) });
+    },
+    [isOnline, token],
+  );
+
+  const loadProfile = useCallback(async () => {
+    if (!token) {
+      setStatus("unauthorized");
+      setError("انتهت الجلسة أو لم يتم تسجيل الدخول.");
+      return;
+    }
+    setStatus("loading");
+    setError(null);
+    try {
+      const res = await fetch(buildApiUrl("auth/me"), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        setStatus("unauthorized");
+        setError("انتهت صلاحية الجلسة. يرجى إعادة تسجيل الدخول.");
+        logError("unauthorized", { status: res.status });
+        return;
+      }
+      if (!res.ok) {
+        const message = await res.text();
+        setStatus("error");
+        setError(message || "تعذر تحميل بيانات الحساب.");
+        logError("fetch_failed", { status: res.status, message });
+        return;
+      }
+      const data = await res.json();
+      setProfile(data);
+      useAuthStore.getState().setSession(token, data);
+      setStatus("ready");
+    } catch (err) {
+      setStatus("error");
+      setError("تعذر الاتصال بالخادم. تحقق من الاتصال.");
+      logError("network_error", err);
+    }
+  }, [buildApiUrl, logError, token]);
 
   const logout = () => {
     clearSession();
+    void stopNativeTelemetry();
     navigate("/login", { replace: true });
   };
 
@@ -23,46 +93,150 @@ export default function AccountPage() {
     setLastSyncAt(meta.lastSyncAt ?? null);
   };
 
+  const syncNow = async () => {
+    const res = await replayQueuedMutations();
+    refreshQueue();
+    setSyncResult(`تمت محاولة مزامنة ${res.attempted}، المتبقي ${res.pending}`);
+  };
+
+  const handleReload = () => {
+    window.location.reload();
+  };
+
+  const errorFallback = (
+    <EmptyState
+      title="تعذر عرض بيانات الحساب"
+      description="حدث خطأ غير متوقع أثناء تحميل صفحة الحساب. جرّب تحديث الصفحة أو تسجيل الدخول من جديد."
+      action={
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-secondary" type="button" onClick={handleReload}>
+            تحديث الصفحة
+          </button>
+          <button className="btn btn-primary" type="button" onClick={logout}>
+            تسجيل الدخول من جديد
+          </button>
+        </div>
+      }
+    />
+  );
+
   useEffect(() => {
     refreshQueue();
   }, []);
 
-  const syncNow = async () => {
-    const res = await replayQueuedMutations();
-    refreshQueue();
-    setSyncResult(`\u062a\u0645\u062a \u0645\u062d\u0627\u0648\u0644\u0629 \u0645\u0632\u0627\u0645\u0646\u0629 ${res.attempted}\u060c \u0627\u0644\u0645\u062a\u0628\u0642\u064a ${res.pending}`);
-  };
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  const roleLabel =
+    typeof profile?.role === "string"
+      ? profile?.role
+      : profile?.role?.name || profile?.role?.slug || "مندوب";
 
   return (
-    <div className="page">
-      <div className="card">
-        <div className="section-title">\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u0633\u0627\u0628</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div>\u0627\u0644\u0627\u0633\u0645: {user?.name || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u0628\u0631\u064a\u062f: {user?.email || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u062f\u0648\u0631: {user?.role || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u062e\u0627\u062f\u0645: {API_BASE_URL}</div>
-        </div>
-      </div>
+    <ErrorBoundary fallback={errorFallback}>
+      <div className="page">
+        <PageHeader title="الملف الشخصي" subtitle="إدارة الحساب والتفضيلات." />
+        {!isOnline ? (
+          <div className="card" style={{ borderColor: "rgba(251, 191, 36, 0.4)" }}>
+            <div className="section-title">وضع عدم الاتصال</div>
+            <div className="muted">لن يتم تحديث بيانات الحساب حتى يعود الاتصال.</div>
+          </div>
+        ) : null}
 
-      <div className="card">
-        <div className="section-title">\u0627\u0644\u0645\u0632\u0627\u0645\u0646\u0629 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644</div>
-        <div className="muted">\u0627\u0644\u0639\u0645\u0644\u064a\u0627\u062a \u0627\u0644\u0645\u0639\u0644\u0642\u0629: {queueCount}</div>
-        <div className="muted">
-          \u0622\u062e\u0631 \u0645\u0632\u0627\u0645\u0646\u0629: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "\u0644\u0645 \u062a\u062a\u0645 \u0628\u0639\u062f"}
-        </div>
-        <button type="button" onClick={syncNow}>
-          \u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0622\u0646
-        </button>
-        {syncResult ? <div className="muted">{syncResult}</div> : null}
-      </div>
+        {status === "loading" ? (
+          <div className="card">
+            <div className="skeleton-stack">
+              <Skeleton height={16} width="40%" />
+              <Skeleton height={16} width="55%" />
+              <Skeleton height={16} width="35%" />
+              <Skeleton height={16} width="60%" />
+            </div>
+          </div>
+        ) : null}
 
-      <div className="card">
-        <div className="section-title">\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c</div>
-        <button type="button" onClick={logout}>
-          \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c
-        </button>
+        {status === "unauthorized" ? (
+          <EmptyState
+            title="الجلسة غير صالحة"
+            description={error || "يرجى إعادة تسجيل الدخول للوصول إلى الحساب."}
+            action={
+              <button className="btn btn-primary" type="button" onClick={logout}>
+                إعادة تسجيل الدخول
+              </button>
+            }
+          />
+        ) : null}
+
+        {status === "error" ? (
+          <EmptyState
+            title="تعذر تحميل الحساب"
+            description={error || "حدث خلل غير متوقع أثناء تحميل البيانات."}
+            action={
+              <button className="btn btn-secondary" type="button" onClick={loadProfile}>
+                إعادة المحاولة
+              </button>
+            }
+          />
+        ) : null}
+
+        {status === "ready" || status === "idle" ? (
+          <div className="card">
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div>الاسم: {profile?.name || "—"}</div>
+              <div>البريد: {profile?.email || "—"}</div>
+              <div>الدور: {roleLabel}</div>
+              <div>الخادم: {API_BASE_URL}</div>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="card">
+          <div className="section-title">الاختصارات</div>
+          <div className="list" style={{ marginTop: 12 }}>
+            <ListItem title="الإعدادات" onClick={() => navigate("/settings")} />
+            <ListItem title="المزامنة" onClick={() => navigate("/sync")} />
+            <ListItem title="الإشعارات" onClick={() => navigate("/notifications")} />
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="section-title">المزامنة دون اتصال</div>
+          <div className="muted">العمليات المعلقة: {queueCount}</div>
+          <div className="muted">
+            آخر مزامنة: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "لم تتم بعد"}
+          </div>
+          <button className="btn btn-secondary" type="button" onClick={syncNow} disabled={!queueCount}>
+            مزامنة الآن
+          </button>
+          {syncResult ? <div className="muted">{syncResult}</div> : null}
+        </div>
+
+        <div className="card">
+          <div className="section-title">جلسة العمل</div>
+          <button className="btn btn-secondary" type="button" onClick={logout}>
+            تسجيل الخروج
+          </button>
+        </div>
+
+        {debugEnabled ? (
+          <div className="card">
+            <div className="section-title">Debug</div>
+            <pre style={{ fontSize: 12, whiteSpace: "pre-wrap" }}>
+              {JSON.stringify(
+                {
+                  status,
+                  error,
+                  online: isOnline,
+                  token: Boolean(token),
+                  profile,
+                },
+                null,
+                2,
+              )}
+            </pre>
+          </div>
+        ) : null}
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

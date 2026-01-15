@@ -1,19 +1,17 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import TodayRoutePage from "@/routes/today-route/TodayRoutePage";
-
-vi.mock("@/components/map/GoogleMap", () => ({
-  GoogleMapWidget: ({ markers }: any) => <div data-testid="map" data-count={markers?.length || 0} />,
-}));
+import TodayPage from "@/routes/today/TodayPage";
 
 const todayRouteMock = vi.fn();
 
+const visitsMock = vi.fn();
 vi.mock("@/api/client", () => ({
   getTodayRoute: (...args: any[]) => todayRouteMock(...args),
+  getVisits: (...args: any[]) => visitsMock(...args),
 }));
 
-describe("TodayRoutePage", () => {
+describe("TodayPage", () => {
   it("renders stops from the API", async () => {
     todayRouteMock.mockResolvedValueOnce([
       {
@@ -33,19 +31,17 @@ describe("TodayRoutePage", () => {
         location: { lat: 31.96, lng: 35.91 },
       },
     ]);
+    visitsMock.mockResolvedValueOnce([]);
 
     render(
       <MemoryRouter>
-        <TodayRoutePage />
+        <TodayPage />
       </MemoryRouter>,
     );
 
     await waitFor(() => {
       expect(screen.getByText("صيدلية الروضة")).toBeInTheDocument();
-      expect(screen.getByText("د. لينا")).toBeInTheDocument();
     });
 
-    const map = screen.getByTestId("map");
-    expect(map.getAttribute("data-count")).toBe("2");
   });
 });

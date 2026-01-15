@@ -98,6 +98,7 @@ class ProductBase(BaseModel):
     cost: Optional[Decimal] = None
     selling_price: Optional[Decimal] = None
     bonus_rules: Optional[str] = None
+    is_active: Optional[bool] = True
 
 
 class ProductCreate(ProductBase):
@@ -112,6 +113,7 @@ class ProductUpdate(BaseModel):
     cost: Optional[Decimal] = None
     selling_price: Optional[Decimal] = None
     bonus_rules: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 class ProductOut(ProductBase):
@@ -204,9 +206,11 @@ class VisitOut(VisitBase):
     start_lat: Optional[float] = None
     start_lng: Optional[float] = None
     start_accuracy_m: Optional[float] = None
+    start_device_info: Optional[str] = None
     end_lat: Optional[float] = None
     end_lng: Optional[float] = None
     end_accuracy_m: Optional[float] = None
+    end_device_info: Optional[str] = None
     duration_seconds: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
@@ -227,6 +231,7 @@ class VisitStart(BaseModel):
     lat: float = Field(..., description="Start latitude (required).")
     lng: float = Field(..., description="Start longitude (required).")
     accuracy: float = Field(..., description="GPS accuracy in meters (<= 50 required unless override_reason).")
+    device_info: Optional[str] = Field(None, description="Device metadata snapshot.")
     override_reason: Optional[str] = Field(
         None,
         description="Provide to bypass GPS accuracy<=50 requirement when needed.",
@@ -245,6 +250,7 @@ class VisitEnd(BaseModel):
     did_brochure: Optional[bool] = None
     did_collection: Optional[bool] = None
     did_order: Optional[bool] = None
+    device_info: Optional[str] = Field(None, description="Device metadata snapshot.")
     override_reason: Optional[str] = Field(
         None,
         description="Provide to bypass GPS accuracy<=50 and geofence<=150 requirements when needed.",
@@ -293,6 +299,13 @@ class RouteBase(BaseModel):
 class RouteCreate(RouteBase):
     accounts: List[RouteAccountCreate] = []
 
+
+class RouteUpdate(BaseModel):
+    name: Optional[str] = None
+    rep_id: Optional[int] = None
+    frequency: Optional[str] = None
+    notes: Optional[str] = None
+    accounts: Optional[List[RouteAccountCreate]] = None
 
 class RouteOut(RouteBase):
     id: int
@@ -364,6 +377,27 @@ class OrderBase(BaseModel):
 
 class OrderCreate(OrderBase):
     ...
+
+
+class OrderUpdate(BaseModel):
+    order_date: Optional[date] = None
+    status: Optional[str] = None
+    payment_status: Optional[str] = None
+    doctor_id: Optional[int] = None
+    pharmacy_id: Optional[int] = None
+    aljazeera_ref: Optional[str] = None
+    lines: Optional[List[OrderLineCreate]] = None
+
+    @field_validator("pharmacy_id")
+    @classmethod
+    def validate_customer(cls, v, info):  # noqa: D401
+        """Ensure exactly one customer is provided when both are set."""
+        data = info.data
+        doctor_id = data.get("doctor_id")
+        pharmacy_id = v
+        if doctor_id and pharmacy_id:
+            raise ValueError("Provide only one of doctor_id or pharmacy_id.")
+        return v
 
 
 class OrderOut(OrderBase):

@@ -96,7 +96,11 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=settings.app_name, openapi_tags=tags_metadata, lifespan=lifespan)
 
-allowed_origins = [
+def _split_origins(value: str) -> list[str]:
+    return [origin.strip() for origin in value.split(",") if origin.strip()]
+
+
+default_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:4174",
@@ -106,6 +110,19 @@ allowed_origins = [
     "https://crm-dopamine.web.app",
     "https://dopamine-crm-suite-playground.onrender.com",
 ]
+lan_ip = os.getenv("DPM_LAN_IP")
+if lan_ip:
+    default_origins.append(f"http://{lan_ip}:5173")
+
+env_origins = _split_origins(os.getenv("DPM_CORS_ORIGINS", ""))
+extra_origins = _split_origins(os.getenv("DPM_EXTRA_CORS_ORIGINS", ""))
+if env_origins:
+    allowed_origins = env_origins + extra_origins
+else:
+    allowed_origins = default_origins + extra_origins
+    if settings.app_env.lower() == "production":
+        logger.warning("DPM_CORS_ORIGINS not set; using default dev allowlist.")
+allowed_origins = list(dict.fromkeys(allowed_origins))
 
 # Single CORS middleware to allow the SPA to call all API routes, including preflight.
 app.add_middleware(

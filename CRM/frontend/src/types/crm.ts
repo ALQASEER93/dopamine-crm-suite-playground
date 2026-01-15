@@ -70,3 +70,111 @@ export interface Visit {
   pharmacy?: Pick<Pharmacy, 'id' | 'name' | 'city' | 'area'> | null;
   rep?: Pick<Rep, 'id' | 'name' | 'email'> | null;
 }
+
+export interface Product {
+  id: number | string;
+  code: string;
+  name: string;
+  line?: string | null;
+  pack?: string | null;
+  cost?: number | string | null;
+  selling_price?: number | string | null;
+  bonus_rules?: string | null;
+  is_active?: boolean;
+}
+
+export interface OrderLine {
+  id?: number | string;
+  product_id: number | string;
+  quantity: number;
+  price: number | string;
+  discount?: number | null;
+  bonus?: number | null;
+  product?: Pick<Product, 'id' | 'name' | 'code'> | null;
+}
+
+export interface Order {
+  id: number | string;
+  order_date: string;
+  status: string;
+  payment_status: string;
+  total_amount: number | string;
+  aljazeera_ref?: string | null;
+  doctor_id?: number | string | null;
+  pharmacy_id?: number | string | null;
+  doctor?: Pick<Doctor, 'id' | 'name'> | null;
+  pharmacy?: Pick<Pharmacy, 'id' | 'name'> | null;
+  lines?: OrderLine[];
+}
+
+export interface StockLocation {
+  id: number | string;
+  name: string;
+  location_type: 'warehouse' | 'rep_car' | string;
+  rep_id?: number | string | null;
+}
+
+export interface StockMovement {
+  id: number | string;
+  movement_date: string;
+  product_id: number | string;
+  quantity: number;
+  reason: string;
+  location_from_id?: number | string | null;
+  location_to_id?: number | string | null;
+  notes?: string | null;
+  product?: Pick<Product, 'id' | 'name' | 'code'> | null;
+}
+
+export interface Target {
+  id: number | string;
+  rep_id: number | string;
+  period: string;
+  product_id?: number | string | null;
+  target_amount: number | string;
+  achieved_amount?: number | string | null;
+}
+
+export interface VisitTarget {
+  id: number | string;
+  rep_id: number | string;
+  period: string;
+  daily_target_visits: number;
+  monthly_target_visits: number;
+}
+
+export interface Collection {
+  id: number | string;
+  collection_date: string;
+  amount: number | string;
+  method: string;
+  reference?: string | null;
+  doctor_id?: number | string | null;
+  pharmacy_id?: number | string | null;
+  notes?: string | null;
+  doctor?: Pick<Doctor, 'id' | 'name'> | null;
+  pharmacy?: Pick<Pharmacy, 'id' | 'name'> | null;
+}
+
+export interface Territory {
+  id: number | string;
+  name: string;
+  code?: string | null;
+}
+
+export interface RouteAccount {
+  id?: number | string;
+  account_type: 'doctor' | 'pharmacy';
+  doctor_id?: number | string | null;
+  pharmacy_id?: number | string | null;
+  visit_frequency?: string | null;
+}
+
+export interface Route {
+  id: number | string;
+  name: string;
+  rep_id: number | string;
+  frequency?: string | null;
+  notes?: string | null;
+  accounts?: RouteAccount[];
+}

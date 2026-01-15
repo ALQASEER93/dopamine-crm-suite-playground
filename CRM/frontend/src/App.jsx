@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx';
 import LoginScreen from './auth/LoginScreen.jsx';
 import RequireRole from './auth/RequireRole.jsx';
+import { ROLE_ACCESS } from './auth/roleAccess.js';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+import ToastProvider from './components/ToastProvider.jsx';
 import MainLayout from './layout/MainLayout.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import VisitsPage from './pages/VisitsPage.jsx';
@@ -14,6 +17,8 @@ import StockPage from './pages/StockPage.jsx';
 import TargetsPage from './pages/TargetsPage.jsx';
 import CollectionsPage from './pages/CollectionsPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
+import RepLiveMapPage from './pages/RepLiveMapPage.jsx';
+import VisitCompliancePage from './pages/VisitCompliancePage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import RepsPage from './pages/RepsPage.jsx';
@@ -37,28 +42,79 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/visits" element={<VisitsPage />} />
         <Route path="/routes" element={<RoutesPage />} />
-        <Route path="/reps" element={<RepsPage />} />
+        <Route
+          path="/reps"
+          element={
+            <RequireRole roles={ROLE_ACCESS.reps}>
+              <RepsPage />
+            </RequireRole>
+          }
+        />
         <Route path="/doctors" element={<DoctorsPage />} />
         <Route path="/hcps" element={<Navigate to="/doctors" replace />} />
         <Route path="/pharmacies" element={<PharmaciesPage />} />
-        <Route path="/products" element={<ProductsPage />} />
+        <Route
+          path="/products"
+          element={
+            <RequireRole roles={ROLE_ACCESS.products}>
+              <ProductsPage />
+            </RequireRole>
+          }
+        />
         <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/stock" element={<StockPage />} />
-        <Route path="/targets" element={<TargetsPage />} />
+        <Route
+          path="/stock"
+          element={
+            <RequireRole roles={ROLE_ACCESS.stock}>
+              <StockPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/targets"
+          element={
+            <RequireRole roles={ROLE_ACCESS.targets}>
+              <TargetsPage />
+            </RequireRole>
+          }
+        />
         <Route path="/collections" element={<CollectionsPage />} />
         <Route
           path="/reports"
           element={
-            <RequireRole roles={['admin', 'sales_manager']}>
+            <RequireRole roles={ROLE_ACCESS.reports}>
               <ReportsPage />
             </RequireRole>
           }
         />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route
+          path="/rep-live-map"
+          element={
+            <RequireRole roles={ROLE_ACCESS.repLiveMap}>
+              <RepLiveMapPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/visit-compliance"
+          element={
+            <RequireRole roles={ROLE_ACCESS.visitCompliance}>
+              <VisitCompliancePage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireRole roles={ROLE_ACCESS.settings}>
+              <SettingsPage />
+            </RequireRole>
+          }
+        />
         <Route
           path="/settings/users"
           element={
-            <RequireRole roles={['admin', 'sales_manager']}>
+            <RequireRole roles={ROLE_ACCESS.adminUsers}>
               <AdminUsersPage />
             </RequireRole>
           }
@@ -72,10 +128,14 @@ const AppRoutes = () => {
 
 const App = () => (
   <AuthProvider>
-    {/* TODO: Enable React Router v7 future flags (startTransition, relativeSplatPath) during the next router upgrade. */}
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <ToastProvider>
+      {/* TODO: Enable React Router v7 future flags (startTransition, relativeSplatPath) during the next router upgrade. */}
+      <BrowserRouter>
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
+      </BrowserRouter>
+    </ToastProvider>
   </AuthProvider>
 );
 

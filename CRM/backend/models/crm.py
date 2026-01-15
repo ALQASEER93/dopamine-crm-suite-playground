@@ -140,6 +140,7 @@ class Product(Base):
     cost = Column(Numeric(12, 2), nullable=True)
     selling_price = Column(Numeric(12, 2), nullable=True)
     bonus_rules = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
@@ -221,9 +222,11 @@ class Visit(Base):
     start_lat = Column(Float, nullable=True)
     start_lng = Column(Float, nullable=True)
     start_accuracy_m = Column("start_accuracy", Float, nullable=True)
+    start_device_info = Column(Text, nullable=True)
     end_lat = Column(Float, nullable=True)
     end_lng = Column(Float, nullable=True)
     end_accuracy_m = Column("end_accuracy", Float, nullable=True)
+    end_device_info = Column(Text, nullable=True)
     duration_seconds = Column(Integer, nullable=True)
     override_reason = Column(Text, nullable=True)
     did_samples = Column(Boolean, nullable=False, default=False, server_default="0")
@@ -426,6 +429,24 @@ class LocationEvent(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     device = relationship(Device, back_populates="location_events")
+
+
+class TelemetryLocation(Base):
+    __tablename__ = "telemetry_locations"
+
+    id = Column(Integer, primary_key=True)
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    accuracy_m = Column(Float, nullable=True)
+    speed_mps = Column(Float, nullable=True)
+    bearing_deg = Column(Float, nullable=True)
+    ts = Column(DateTime(timezone=True), nullable=False)
+    device_info = Column(Text, nullable=True)
+    source = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    rep = relationship(User)
 
 
 class Collection(Base):

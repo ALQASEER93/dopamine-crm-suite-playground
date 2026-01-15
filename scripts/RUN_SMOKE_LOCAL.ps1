@@ -36,20 +36,26 @@ Invoke-Step "Backend pytest" {
 
 Invoke-Step "CRM frontend install + build" {
   Set-Location (Join-Path $RepoRoot "CRM\\frontend")
-  if (Test-Path "package-lock.json") {
-    npm ci
-  } else {
-    npm install --no-package-lock
+  $viteBin = "node_modules\\.bin\\vite.cmd"
+  if (-not (Test-Path $viteBin)) {
+    if (Test-Path "package-lock.json") {
+      npm ci
+    } else {
+      npm install --no-package-lock
+    }
   }
   npm run build
 }
 
 Invoke-Step "PWA install + build" {
   Set-Location (Join-Path $RepoRoot "ALQASEER-PWA")
-  if (Test-Path "package-lock.json") {
-    npm ci
-  } else {
-    npm install --no-package-lock
+  $viteBin = "node_modules\\.bin\\vite.cmd"
+  if (-not (Test-Path $viteBin)) {
+    if (Test-Path "package-lock.json") {
+      npm ci
+    } else {
+      npm install --no-package-lock
+    }
   }
   npm run build
 }

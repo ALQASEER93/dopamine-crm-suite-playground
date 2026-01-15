@@ -1,7 +1,6 @@
 import { apiFetch } from "../api/client";
 
-type MutationType = "visit" | "visit-start" | "visit-end" | "order" | "location";
-
+type MutationType = "visit" | "order" | "location" | "visit-start" | "visit-end";
 export type QueuedMutation = {
   id: string;
   type: MutationType;
@@ -9,6 +8,8 @@ export type QueuedMutation = {
   method: "POST" | "PUT";
   payload: unknown;
   createdAt: string;
+  signature?: string;
+  conflict?: boolean;
 };
 
 const STORAGE_KEY = "dpm-offline-queue";
@@ -38,11 +39,19 @@ function writeQueue(queue: QueuedMutation[]) {
 
 export function enqueueMutation(input: Omit<QueuedMutation, "id" | "createdAt">) {
   const queue = readQueue();
-  const uid = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  const signature = `${input.method}:${input.endpoint}:${JSON.stringify(input.payload)}`;
+  if (queue.some((item) => item.signature === signature)) {
+    return;
+  }
+  const uid =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`;
   queue.push({
     ...input,
     id: uid,
     createdAt: new Date().toISOString(),
+    signature,
   });
   writeQueue(queue);
 }
@@ -68,6 +77,12 @@ function setQueueMeta(meta: QueueMeta) {
   }
 }
 
+export function resolveConflict(id: string) {
+  const queue = readQueue();
+  const next = queue.filter((item) => item.id !== id);
+  writeQueue(next);
+}
+
 export async function replayQueuedMutations() {
   const queue = readQueue();
   const now = new Date().toISOString();
@@ -85,8 +100,13 @@ export async function replayQueuedMutations() {
         body: JSON.stringify(mutation.payload),
       });
     } catch (error) {
-      console.warn("failed to replay mutation", mutation.type, error);
-      remaining.push(mutation);
+      const status = (error as Error & { status?: number }).status;
+      if (status === 409) {
+        remaining.push({ ...mutation, conflict: true });
+      } else {
+        console.warn("failed to replay mutation", mutation.type, error);
+        remaining.push(mutation);
+      }
     }
   }
 

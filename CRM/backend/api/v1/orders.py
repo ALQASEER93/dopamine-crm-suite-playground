@@ -3,7 +3,10 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import csv
+import io
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
@@ -11,7 +14,7 @@ from core.db import get_db
 from core.security import get_current_user, require_roles
 from models.crm import Doctor, Order, OrderLine, Pharmacy, Product
 from schemas.common import PaginatedResponse
-from schemas.crm import OrderCreate, OrderLineOut, OrderOut
+from schemas.crm import OrderCreate, OrderLineOut, OrderOut, OrderUpdate
 
 router = APIRouter(
     prefix="/orders",
@@ -109,7 +112,61 @@ def create_order(payload: OrderCreate, db: Session = Depends(get_db)) -> Order:
     return order
 
 
-@router.get("/{order_id}", response_model=OrderOut)
+@router.put(
+    "/{order_id:int}",
+    response_model=OrderOut,
+    dependencies=[Depends(require_roles("sales_manager", "medical_rep", "admin"))],
+)
+def update_order(order_id: int, payload: OrderUpdate, db: Session = Depends(get_db)) -> Order:
+    order = db.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
+
+    updates = payload.model_dump(exclude_unset=True)
+    if "doctor_id" in updates and updates["doctor_id"]:
+        if not db.get(Doctor, updates["doctor_id"]):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Doctor not found.")
+    if "pharmacy_id" in updates and updates["pharmacy_id"]:
+        if not db.get(Pharmacy, updates["pharmacy_id"]):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Pharmacy not found.")
+
+    lines_payload = updates.pop("lines", None)
+    for key, value in updates.items():
+        setattr(order, key, value)
+
+    if lines_payload is not None:
+        order.lines.clear()
+        lines: list[OrderLine] = []
+        for line in lines_payload:
+            line_data = line if isinstance(line, dict) else line.model_dump()
+            product_id = line_data.get("product_id")
+            product = db.get(Product, product_id)
+            if not product:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Product {product_id} not found.",
+                )
+            order_line = OrderLine(
+                order_id=order.id,
+                product_id=product_id,
+                quantity=line_data.get("quantity"),
+                price=line_data.get("price"),
+                discount=line_data.get("discount", 0),
+                bonus=line_data.get("bonus"),
+            )
+            db.add(order_line)
+            lines.append(order_line)
+        db.flush()
+        order.total_amount = _calculate_total(lines)
+    else:
+        order.total_amount = _calculate_total(order.lines)
+
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+@router.get("/{order_id:int}", response_model=OrderOut)
 def get_order(order_id: int, db: Session = Depends(get_db)) -> Order:
     order = db.get(Order, order_id)
     if not order:
@@ -117,9 +174,86 @@ def get_order(order_id: int, db: Session = Depends(get_db)) -> Order:
     return order
 
 
-@router.get("/{order_id}/lines", response_model=list[OrderLineOut])
+@router.get("/{order_id:int}/lines", response_model=list[OrderLineOut])
 def list_order_lines(order_id: int, db: Session = Depends(get_db)) -> list[OrderLine]:
     order = db.get(Order, order_id)
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
     return order.lines
+
+
+@router.delete(
+    "/{order_id:int}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    dependencies=[Depends(require_roles("sales_manager", "admin"))],
+)
+def delete_order(order_id: int, db: Session = Depends(get_db)) -> Response:
+    order = db.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
+    db.delete(order)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/export", dependencies=[Depends(require_roles("sales_manager", "admin"))])
+def export_orders(
+    status_filter: str | None = None,
+    payment_status: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    db: Session = Depends(get_db),
+) -> Response:
+    query = db.query(Order)
+    if status_filter:
+        query = query.filter(Order.status == status_filter)
+    if payment_status:
+        query = query.filter(Order.payment_status == payment_status)
+    if date_from:
+        query = query.filter(Order.order_date >= date_from)
+    if date_to:
+        query = query.filter(Order.order_date <= date_to)
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=[
+            "id",
+            "order_date",
+            "status",
+            "payment_status",
+            "total_amount",
+            "aljazeera_ref",
+            "customer_type",
+            "customer_name",
+            "lines_count",
+        ],
+    )
+    writer.writeheader()
+    for order in query.order_by(Order.order_date.desc()).all():
+        if order.doctor:
+            customer_type = "doctor"
+            customer_name = order.doctor.name
+        elif order.pharmacy:
+            customer_type = "pharmacy"
+            customer_name = order.pharmacy.name
+        else:
+            customer_type = ""
+            customer_name = ""
+        writer.writerow(
+            {
+                "id": order.id,
+                "order_date": order.order_date.isoformat(),
+                "status": order.status,
+                "payment_status": order.payment_status,
+                "total_amount": order.total_amount,
+                "aljazeera_ref": order.aljazeera_ref or "",
+                "customer_type": customer_type,
+                "customer_name": customer_name,
+                "lines_count": len(order.lines or []),
+            }
+        )
+
+    headers = {"Content-Disposition": 'attachment; filename="orders.csv"'}
+    return Response(content=buffer.getvalue(), media_type="text/csv", headers=headers)

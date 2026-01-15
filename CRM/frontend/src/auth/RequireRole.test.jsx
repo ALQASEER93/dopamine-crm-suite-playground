@@ -42,7 +42,7 @@ describe('RequireRole', () => {
       { roleSlug: 'medical_rep' },
     );
 
-    expect(screen.getByText(/Not authorized/i)).toBeInTheDocument();
+    expect(screen.getByText(/غير مصرح/i)).toBeInTheDocument();
     expect(screen.queryByText('Reports Area')).not.toBeInTheDocument();
   });
 });

@@ -5,13 +5,13 @@ import { useAuth } from '../auth/AuthContext';
 import { apiClient } from '../api/client';
 
 const USER_TYPES = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'medical_rep', label: 'Medical rep' },
-  { value: 'sales_rep', label: 'Sales rep' },
+  { value: 'admin', label: 'مدير النظام' },
+  { value: 'manager', label: 'مدير' },
+  { value: 'medical_rep', label: 'مندوب طبي' },
+  { value: 'sales_rep', label: 'مندوب مبيعات' },
 ];
 
-const statusLabel = isActive => (isActive ? 'Active' : 'Inactive');
+const statusLabel = isActive => (isActive ? 'نشط' : 'غير نشط');
 
 const AdminUsersPage = () => {
   const { user } = useAuth();
@@ -65,7 +65,7 @@ const AdminUsersPage = () => {
       openCreate();
     },
     onError: error => {
-      const apiMessage = (error?.payload && error.payload.message) || error?.message || 'Failed to save user.';
+      const apiMessage = (error?.payload && error.payload.message) || error?.message || 'تعذر حفظ المستخدم.';
       const details =
         Array.isArray(error?.payload?.errors) && error.payload.errors.length
           ? ` (${error.payload.errors[0]})`
@@ -79,7 +79,7 @@ const AdminUsersPage = () => {
       await apiClient.patch(`/admin/users/${userRow.id}`, { body: { isActive: !userRow.isActive } });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
-    onError: error => setFormError(error.message || 'Unable to toggle user status.'),
+    onError: error => setFormError(error.message || 'تعذر تحديث حالة المستخدم.'),
   });
 
   const openCreate = () => {
@@ -137,13 +137,13 @@ const AdminUsersPage = () => {
   };
 
   const userRoleLabel = userRow => {
-    if (userRow.salesRep?.repType === 'medical_rep') return 'Medical rep';
-    if (userRow.role?.slug === 'sales_manager') return 'Manager';
-    if (userRow.role?.slug === 'sales_rep') return 'Sales rep';
-    return 'User';
+    if (userRow.salesRep?.repType === 'medical_rep') return 'مندوب طبي';
+    if (userRow.role?.slug === 'sales_manager') return 'مدير';
+    if (userRow.role?.slug === 'sales_rep') return 'مندوب مبيعات';
+    return 'مستخدم';
   };
 
-  const formTitle = formMode === 'create' ? 'Create user' : 'Edit user';
+  const formTitle = formMode === 'create' ? 'إضافة مستخدم' : 'تعديل مستخدم';
   const isLoading = usersQuery.isLoading || territoriesQuery.isLoading;
   const users = usersQuery.data || [];
   const territories = territoriesQuery.data || [];
@@ -156,11 +156,11 @@ const AdminUsersPage = () => {
     <div style={{ padding: '24px' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>Admin users</h1>
-          <p style={{ margin: '4px 0 0', color: '#52606d' }}>Manage users, roles, and territories.</p>
+          <h1 style={{ margin: 0, fontSize: '24px' }}>إدارة المستخدمين</h1>
+          <p style={{ margin: '4px 0 0', color: '#52606d' }}>إدارة المستخدمين والأدوار والمناطق.</p>
         </div>
         <button type="button" className="btn btn-primary" onClick={openCreate}>
-          New user
+          مستخدم جديد
         </button>
       </header>
 
@@ -174,17 +174,17 @@ const AdminUsersPage = () => {
         <div className="card">
           <div className="card__body">
             {isLoading ? (
-              <p>Loading users...</p>
+              <p>جارٍ تحميل المستخدمين...</p>
             ) : (
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Territory</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>الاسم</th>
+                    <th>البريد</th>
+                    <th>الدور</th>
+                    <th>المنطقة</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -197,7 +197,7 @@ const AdminUsersPage = () => {
                       <td>{statusLabel(u.isActive)}</td>
                       <td style={{ display: 'flex', gap: '8px' }}>
                         <button type="button" className="btn btn-secondary" onClick={() => openEdit(u)}>
-                          Edit
+                          تعديل
                         </button>
                         <button
                           type="button"
@@ -205,7 +205,7 @@ const AdminUsersPage = () => {
                           onClick={() => toggleActiveMutation.mutate(u)}
                           disabled={toggleActiveMutation.isPending}
                         >
-                          {u.isActive ? 'Deactivate' : 'Activate'}
+                          {u.isActive ? 'تعطيل' : 'تفعيل'}
                         </button>
                       </td>
                     </tr>
@@ -213,7 +213,7 @@ const AdminUsersPage = () => {
                   {users.length === 0 && (
                     <tr>
                       <td colSpan={6} style={{ textAlign: 'center', color: '#52606d' }}>
-                        No users found.
+                        لا توجد بيانات مستخدمين.
                       </td>
                     </tr>
                   )}
@@ -233,7 +233,7 @@ const AdminUsersPage = () => {
             )}
             <form onSubmit={handleSubmit} className="form">
               <label className="form__label">
-                Name
+                الاسم
                 <input
                   type="text"
                   value={form.name}
@@ -242,7 +242,7 @@ const AdminUsersPage = () => {
                 />
               </label>
               <label className="form__label">
-                Email
+                البريد الإلكتروني
                 <input
                   type="email"
                   value={form.email}
@@ -251,7 +251,7 @@ const AdminUsersPage = () => {
                 />
               </label>
               <label className="form__label">
-                Password {formMode === 'edit' ? '(leave blank to keep current)' : ''}
+                كلمة المرور {formMode === 'edit' ? '(اتركه فارغاً للاحتفاظ بالحالي)' : ''}
                 <input
                   type="password"
                   value={form.password}
@@ -261,7 +261,7 @@ const AdminUsersPage = () => {
                 />
               </label>
               <label className="form__label">
-                User type
+                نوع المستخدم
                 <select value={form.userType} onChange={e => setForm(prev => ({ ...prev, userType: e.target.value }))}>
                   {USER_TYPES.map(type => (
                     <option key={type.value} value={type.value}>
@@ -273,12 +273,12 @@ const AdminUsersPage = () => {
 
               {(form.userType === 'medical_rep' || form.userType === 'sales_rep') && (
                 <label className="form__label">
-                  Territory
+                  المنطقة
                   <select
                     value={form.territoryId}
                     onChange={e => setForm(prev => ({ ...prev, territoryId: e.target.value }))}
                   >
-                    <option value="">(optional)</option>
+                    <option value="">(اختياري)</option>
                     {territories.map(t => (
                       <option key={t.id} value={t.id}>
                         {t.name}
@@ -290,24 +290,24 @@ const AdminUsersPage = () => {
 
               {formMode === 'edit' && (
                 <label className="form__label">
-                  Status
+                الحالة
                   <select
                     value={form.isActive ? 'active' : 'inactive'}
                     onChange={e => setForm(prev => ({ ...prev, isActive: e.target.value === 'active' }))}
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">نشط</option>
+                    <option value="inactive">غير نشط</option>
                   </select>
                 </label>
               )}
 
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <button type="submit" className="btn btn-primary" disabled={saveUserMutation.isPending}>
-                  {saveUserMutation.isPending ? 'Saving...' : 'Save'}
+                  {saveUserMutation.isPending ? '...جارٍ الحفظ' : 'حفظ'}
                 </button>
                 {formMode === 'edit' && (
                   <button type="button" className="btn btn-secondary" onClick={openCreate}>
-                    Cancel
+                    إلغاء
                   </button>
                 )}
               </div>

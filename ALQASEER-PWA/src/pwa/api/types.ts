@@ -2,7 +2,7 @@ export type User = {
   id: string;
   name: string;
   email?: string;
-  role?: string;
+  role?: string | { name?: string; slug?: string };
 };
 
 export type RouteStopStatus = "planned" | "in-progress" | "done" | "skipped";
@@ -36,12 +36,14 @@ export type Customer = {
   };
 };
 
+export type VisitStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELED" | "NO_SHOW";
+
 export type VisitPayload = {
   customerId: string;
   customerName: string;
   customerType: "doctor" | "pharmacy";
   visitType: "follow-up" | "new" | "reminder";
-  status: "success" | "refused" | "no-show";
+  status: VisitStatus;
   notes?: string;
   coordinates?: {
     lat: number;
@@ -53,8 +55,9 @@ export type VisitPayload = {
 export type Visit = VisitPayload & {
   id: string;
   repId?: string;
-  startedAt?: string;
-  endedAt?: string;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  durationSeconds?: number | null;
   serverStatus?: string;
 };
 

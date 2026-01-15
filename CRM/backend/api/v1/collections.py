@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import csv
+import io
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
@@ -58,3 +61,57 @@ def create_collection(payload: CollectionCreate, db: Session = Depends(get_db)) 
     db.commit()
     db.refresh(collection)
     return collection
+
+
+@router.get("/export", dependencies=[Depends(require_roles("sales_manager", "admin", "accountant"))])
+def export_collections(
+    date_from: date | None = None,
+    date_to: date | None = None,
+    db: Session = Depends(get_db),
+) -> Response:
+    query = db.query(Collection)
+    if date_from:
+        query = query.filter(Collection.collection_date >= date_from)
+    if date_to:
+        query = query.filter(Collection.collection_date <= date_to)
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=[
+            "id",
+            "collection_date",
+            "amount",
+            "method",
+            "reference",
+            "customer_type",
+            "customer_name",
+            "notes",
+        ],
+    )
+    writer.writeheader()
+    for item in query.order_by(Collection.collection_date.desc()).all():
+        if item.doctor:
+            customer_type = "doctor"
+            customer_name = item.doctor.name
+        elif item.pharmacy:
+            customer_type = "pharmacy"
+            customer_name = item.pharmacy.name
+        else:
+            customer_type = ""
+            customer_name = ""
+        writer.writerow(
+            {
+                "id": item.id,
+                "collection_date": item.collection_date.isoformat(),
+                "amount": item.amount,
+                "method": item.method,
+                "reference": item.reference or "",
+                "customer_type": customer_type,
+                "customer_name": customer_name,
+                "notes": item.notes or "",
+            }
+        )
+
+    headers = {"Content-Disposition": 'attachment; filename="collections.csv"'}
+    return Response(content=buffer.getvalue(), media_type="text/csv", headers=headers)

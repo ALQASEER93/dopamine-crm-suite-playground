@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import csv
+import io
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
@@ -71,3 +74,36 @@ def upsert_visit_target(payload: VisitTargetCreate, db: Session = Depends(get_db
     db.commit()
     db.refresh(target)
     return target
+
+
+@router.get("/export", dependencies=[Depends(require_roles("sales_manager", "admin"))])
+def export_visit_targets(
+    rep_id: int | None = None,
+    period: str | None = None,
+    db: Session = Depends(get_db),
+) -> Response:
+    query = db.query(VisitTarget)
+    if rep_id:
+        query = query.filter(VisitTarget.rep_id == rep_id)
+    if period:
+        query = query.filter(VisitTarget.period == period)
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=["id", "rep_id", "period", "daily_target_visits", "monthly_target_visits"],
+    )
+    writer.writeheader()
+    for target in query.order_by(VisitTarget.period.desc()).all():
+        writer.writerow(
+            {
+                "id": target.id,
+                "rep_id": target.rep_id,
+                "period": target.period,
+                "daily_target_visits": target.daily_target_visits,
+                "monthly_target_visits": target.monthly_target_visits,
+            }
+        )
+
+    headers = {"Content-Disposition": 'attachment; filename="visit_targets.csv"'}
+    return Response(content=buffer.getvalue(), media_type="text/csv", headers=headers)

@@ -1,6 +1,7 @@
 .layout {
   min-height: 100vh;
   display: flex;
+  flex-direction: row-reverse;
   background-color: var(--color-bg);
 }
 
@@ -39,6 +40,7 @@
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.8);
   font-weight: 500;
+  text-align: right;
 }
 
 .layout__nav-link:hover,
@@ -71,7 +73,7 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  margin-right: 1rem;
+  margin-inline-end: 1rem;
 }
 
 .layout__header-info {
@@ -126,7 +128,7 @@
 }
 
 .layout__signout {
-  margin-left: 1rem;
+  margin-inline-start: 1rem;
 }
 
 .layout__main {
@@ -137,8 +139,8 @@
 @media (max-width: 960px) {
   .layout__sidebar {
     position: fixed;
-    inset: 0 auto 0 0;
-    transform: translateX(-100%);
+    inset: 0 0 0 auto;
+    transform: translateX(100%);
     z-index: 10;
   }
 
