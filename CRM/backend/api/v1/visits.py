@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 import csv
 import io
 from pathlib import Path
+import re
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File, status
@@ -40,6 +41,9 @@ VISIT_STATUS_ALIASES = {
     "no_show": "NO_SHOW",
     "no-show": "NO_SHOW",
 }
+
+SAFE_STORAGE_NAME = re.compile(r"^[0-9a-f]{32}\.bin$")
+LEGACY_STORAGE_NAME = re.compile(r"^[0-9a-f]{32}-[A-Za-z0-9._-]{1,120}$")
 
 
 def _calculate_duration_seconds(started_at: datetime | None, ended_at: datetime | None) -> int | None:
@@ -706,10 +710,12 @@ def download_visit_attachment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment not found.")
     storage_root = Path("CRM/backend/data/visit_attachments")
     stored_name = Path(attachment.file_path).name
-    path = storage_root / stored_name
-    if not path.exists():
-        legacy_path = storage_root / str(visit_id) / stored_name
-        path = legacy_path
+    if SAFE_STORAGE_NAME.match(stored_name):
+        path = storage_root / stored_name
+    elif LEGACY_STORAGE_NAME.match(stored_name):
+        path = storage_root / str(visit_id) / stored_name
+    else:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid attachment path.")
     if not path.exists():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment file missing.")
     return FileResponse(
