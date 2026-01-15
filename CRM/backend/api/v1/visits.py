@@ -4,8 +4,7 @@ from datetime import date, datetime, timezone
 import csv
 import io
 from pathlib import Path
-import re
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File, status
 from fastapi.responses import FileResponse
@@ -41,9 +40,6 @@ VISIT_STATUS_ALIASES = {
     "no_show": "NO_SHOW",
     "no-show": "NO_SHOW",
 }
-
-SAFE_STORAGE_NAME = re.compile(r"^[0-9a-f]{32}\.bin$")
-LEGACY_STORAGE_NAME = re.compile(r"^[0-9a-f]{32}-[A-Za-z0-9._-]{1,120}$")
 
 
 def _calculate_duration_seconds(started_at: datetime | None, ended_at: datetime | None) -> int | None:
@@ -709,13 +705,11 @@ def download_visit_attachment(
     if not attachment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment not found.")
     storage_root = Path("CRM/backend/data/visit_attachments")
-    stored_name = Path(attachment.file_path).name
-    if SAFE_STORAGE_NAME.match(stored_name):
-        path = storage_root / stored_name
-    elif LEGACY_STORAGE_NAME.match(stored_name):
-        path = storage_root / str(visit_id) / stored_name
-    else:
+    try:
+        storage_id = UUID(attachment.file_path)
+    except (TypeError, ValueError):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid attachment path.")
+    path = storage_root / f"{storage_id.hex}.bin"
     if not path.exists():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment file missing.")
     return FileResponse(
@@ -745,8 +739,7 @@ async def upload_visit_attachment(
     attachment_id = uuid4().hex
     storage_root = Path("CRM/backend/data/visit_attachments")
     storage_root.mkdir(parents=True, exist_ok=True)
-    final_name = f"{attachment_id}.bin"
-    destination = storage_root / final_name
+    destination = storage_root / f"{attachment_id}.bin"
 
     payload = await file.read()
     destination.write_bytes(payload)
@@ -755,7 +748,7 @@ async def upload_visit_attachment(
         visit_id=visit_id,
         filename=safe_name,
         content_type=file.content_type,
-        file_path=final_name,
+        file_path=attachment_id,
         size_bytes=len(payload),
     )
     db.add(attachment)
