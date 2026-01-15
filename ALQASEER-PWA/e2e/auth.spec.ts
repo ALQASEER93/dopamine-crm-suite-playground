@@ -72,8 +72,15 @@ test("PWA login persists after refresh", async ({ page }) => {
   await page.locator("form button[type=\"submit\"]").click();
   await expect(page.locator(".list .list-item").first()).toBeVisible();
 
-  await page.context().setOffline(true);
   await page.locator(".list .list-item").first().locator("button").first().click();
+  await expect(page).toHaveURL(/\/visits\/.+\/start/);
+  await page.getByRole("button", { name: "طلب الموقع" }).click();
+  await expect(page.getByText("بيانات الالتقاط")).toBeVisible();
+  await page.context().setOffline(true);
+  const confirmButton = page.getByRole("button", { name: "تأكيد بدء الزيارة" });
+  await expect(confirmButton).toBeEnabled();
+  await confirmButton.click();
+  await expect(page).toHaveURL(/\/sync/);
   const queuedCount = await page.evaluate(() => {
     const raw = localStorage.getItem("dpm-offline-queue");
     return raw ? JSON.parse(raw).length : 0;
