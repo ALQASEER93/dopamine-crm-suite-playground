@@ -5,12 +5,14 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import android.util.Log;
 
 import org.json.JSONObject;
 
 import java.util.concurrent.TimeUnit;
 
 public class TelemetryUploader {
+    private static final String TAG = "TelemetryUploader";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     private final OkHttpClient client;
 
@@ -23,6 +25,7 @@ public class TelemetryUploader {
 
     public boolean upload(String endpointUrl, String authToken, JSONObject payload) {
         if (endpointUrl == null || endpointUrl.trim().isEmpty()) {
+            Log.w(TAG, "Missing telemetry endpoint URL.");
             return false;
         }
         try {
@@ -35,9 +38,12 @@ public class TelemetryUploader {
             }
             Request request = builder.build();
             try (Response response = client.newCall(request).execute()) {
-                return response.isSuccessful();
+                boolean ok = response.isSuccessful();
+                Log.d(TAG, "POST " + endpointUrl + " -> " + response.code());
+                return ok;
             }
-        } catch (Exception ignored) {
+        } catch (Exception ex) {
+            Log.w(TAG, "Upload failed", ex);
             return false;
         }
     }

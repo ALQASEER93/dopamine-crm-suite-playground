@@ -15,8 +15,8 @@ Local verify_pack (runs backend + frontend + PWA checks and writes `docs/_runs/v
 - `pwsh -NoProfile -File scripts/verify_pack.ps1`
 
 Local Android emulator smoke (builds debug APK, runs emulator, injects geo, verifies telemetry, writes `docs/_runs/android_smoke_*.md`):
-- Prereqs: Android SDK/AVD, JDK 17, Node.js, and backend running on `http://127.0.0.1:8000`.
-- Emulator API base URL: set `DPM_ANDROID_API_BASE_URL=http://10.0.2.2:8000/api/v1`.
+- Prereqs: Android SDK/AVD, JDK 17, Node.js. The script starts the backend if port 8000 is not already running.
+- Emulator API base URL: set `DPM_ANDROID_API_BASE_URL=http://10.0.2.2:8000/api/v1` (default).
 - SDK/AVD helper (Windows): `pwsh -NoProfile -File scripts/setup_android_sdk_avd.ps1 -StartEmulator`
 - Run: `pwsh -NoProfile -File scripts/smoke_android_location.ps1`
 

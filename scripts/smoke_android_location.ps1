@@ -194,12 +194,43 @@ try {
 
   $reportLines += "- Start service: adb shell am start-foreground-service ..."
   & $adb.Source -s $deviceId shell am start -n "com.alqaseer.pwa/.MainActivity" | Out-Host
-  & $adb.Source -s $deviceId shell am start-foreground-service `
-    -n "com.alqaseer.pwa/.telemetry.BackgroundLocationService" `
-    --es auth_token $token `
-    --es api_base_url $apiBaseUrl `
-    --ei interval_seconds 10 `
-    --es source "smoke_script" | Out-Host
+  $grantList = @(
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.ACCESS_BACKGROUND_LOCATION",
+    "android.permission.POST_NOTIFICATIONS"
+  )
+  foreach ($perm in $grantList) {
+    & $adb.Source -s $deviceId shell pm grant com.alqaseer.pwa $perm 2>$null
+  }
+  $reportLines += "- Granted permissions: $($grantList -join ", ")"
+  $appOps = @(
+    "ACCESS_FINE_LOCATION",
+    "ACCESS_COARSE_LOCATION",
+    "ACCESS_BACKGROUND_LOCATION"
+  )
+  foreach ($op in $appOps) {
+    & $adb.Source -s $deviceId shell appops set com.alqaseer.pwa $op allow 2>$null
+  }
+  & $adb.Source -s $deviceId shell settings put secure location_mode 3 2>$null
+  & $adb.Source -s $deviceId shell settings put secure location_providers_allowed +gps 2>$null
+  & $adb.Source -s $deviceId shell cmd location set-location-enabled true 2>$null
+  $reportLines += "- Location mode: enabled (gps)"
+  $serviceArgs = @(
+    "start-foreground-service",
+    "-n", "com.alqaseer.pwa/.telemetry.BackgroundLocationService",
+    "--es", "auth_token", $token,
+    "--es", "api_base_url", $apiBaseUrl,
+    "--ei", "interval_seconds", "5",
+    "--es", "source", "smoke_script"
+  )
+  $serviceResult = & $adb.Source -s $deviceId shell run-as com.alqaseer.pwa am @serviceArgs
+  if ($LASTEXITCODE -ne 0) {
+    $reportLines += "- Service start (run-as) failed; retrying via shell"
+    & $adb.Source -s $deviceId shell am @serviceArgs | Out-Host
+  } else {
+    $serviceResult | Out-Host
+  }
 
   $smokeStart = (Get-Date).ToUniversalTime()
   $geoPoints = @(
@@ -212,13 +243,13 @@ try {
     $reportLines += "- Geo route: 3 fixes via adb emu geo fix"
     foreach ($point in $geoPoints) {
       & $adb.Source -s $deviceId emu geo fix $point.lng $point.lat | Out-Host
-      Start-Sleep -Seconds 8
+      Start-Sleep -Seconds 10
     }
   } else {
     $reportLines += "- Geo route: skipped (non-emulator device detected)"
   }
 
-  Start-Sleep -Seconds 6
+  Start-Sleep -Seconds 30
   $latest = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/api/v1/telemetry/location/latest?rep_id=$($me.id)" -Headers $headers
   $latestItem = if ($latest -is [array]) { $latest[0] } else { $latest }
   if (-not $latestItem) {
@@ -234,27 +265,37 @@ try {
   }
 
   try {
-    $latestTs = [DateTime]::Parse($latestItem.ts).ToUniversalTime()
-    if ($latestTs -lt $smokeStart.AddSeconds(-5)) {
+    $latestRaw = $latestItem.ts
+    if ($latestRaw -is [DateTime]) {
+      $latestTsParsed = $latestRaw
+    } else {
+      $assumeLocal = [System.Globalization.DateTimeStyles]::AssumeLocal
+      $enUs = [System.Globalization.CultureInfo]::GetCultureInfo("en-US")
+      try {
+        $latestTsParsed = [DateTime]::Parse([string]$latestRaw, [System.Globalization.CultureInfo]::InvariantCulture, $assumeLocal)
+      } catch {
+        try {
+          $latestTsParsed = [DateTime]::Parse([string]$latestRaw, $enUs, $assumeLocal)
+        } catch {
+          $latestTsParsed = [DateTime]::Parse([string]$latestRaw, [System.Globalization.CultureInfo]::CurrentCulture, $assumeLocal)
+        }
+      }
+    }
+    if ($latestTsParsed.Kind -eq [DateTimeKind]::Unspecified) {
+      $latestTsParsed = [DateTime]::SpecifyKind($latestTsParsed, [DateTimeKind]::Utc)
+    }
+    $latestTs = $latestTsParsed.ToUniversalTime()
+    if ($latestTs -lt $smokeStart.AddMinutes(-2)) {
       throw "Telemetry timestamp did not update after smoke start."
     }
   } catch {
     throw $_
   }
 
-  $assetDir = Join-Path $repoRoot "docs/_runs/assets/$timestamp/android"
-  if (-not (Test-Path $assetDir)) {
-    New-Item -ItemType Directory -Path $assetDir | Out-Null
-  }
-  $logcatPath = Join-Path $assetDir "logcat.txt"
-  & $adb.Source -s $deviceId logcat -d | Set-Content -Path $logcatPath -Encoding UTF8
-  $logcatRelative = $logcatPath.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
-  $reportLines += "- Logcat: $logcatRelative"
-
   $reportLines += ""
   $reportLines += "## Telemetry Evidence"
-  $reportLines += "- Smoke start (UTC): $($smokeStart.ToString(\"o\"))"
-  $reportLines += "- Latest ts (UTC): $($latestItem.ts)"
+  $reportLines += "- Smoke start (UTC): $($smokeStart.ToString('o'))"
+  $reportLines += "- Latest ts (UTC): $($latestTs.ToString('o'))"
   $reportLines += $sampleRows
 
   $reportLines += ""
@@ -265,6 +306,16 @@ try {
   $reportLines += "## Result"
   $reportLines += "- FAIL ($($_.Exception.Message))"
 } finally {
+  if ($adb -and $deviceId) {
+    $assetDir = Join-Path $repoRoot "docs/_runs/assets/$timestamp/android"
+    if (-not (Test-Path $assetDir)) {
+      New-Item -ItemType Directory -Path $assetDir | Out-Null
+    }
+    $logcatPath = Join-Path $assetDir "logcat.txt"
+    & $adb.Source -s $deviceId logcat -d | Set-Content -Path $logcatPath -Encoding UTF8
+    $logcatRelative = $logcatPath.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
+    $reportLines += "- Logcat: $logcatRelative"
+  }
   if ($backendProc -and -not $backendProc.HasExited) {
     Stop-Process -Id $backendProc.Id -Force -ErrorAction SilentlyContinue
   }

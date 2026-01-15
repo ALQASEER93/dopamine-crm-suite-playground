@@ -71,29 +71,17 @@ $packages = @(
   $SystemImage
 )
 
-$yesFile = Join-Path $env:TEMP "sdkmanager_yes.txt"
-Set-Content -Path $yesFile -Value (("y`n") * 200) -Encoding ASCII
-$installLog = Join-Path $env:TEMP "sdkmanager_install.log"
-$installErr = Join-Path $env:TEMP "sdkmanager_install.err.log"
-
 function Invoke-SdkManager {
   param([string[]]$SdkArgs)
   $argLine = ($SdkArgs | ForEach-Object {
     if ($_ -match ";") { "`"$_`"" } else { $_ }
   }) -join " "
   Write-Step ("sdkmanager args: " + $argLine)
-  $proc = Start-Process -FilePath $sdkManager -ArgumentList $argLine `
-    -RedirectStandardInput $yesFile -RedirectStandardOutput $installLog -RedirectStandardError $installErr `
-    -NoNewWindow -PassThru
-  $completed = $proc.WaitForExit(900000)
-  if (-not $completed) {
-    try { $proc.Kill() } catch { }
-    throw "sdkmanager timed out. See $installLog and $installErr"
-  }
-  if (Test-Path $installLog) { Get-Content $installLog | Out-Host }
-  if (Test-Path $installErr) { Get-Content $installErr | Out-Host }
-  if ($proc.ExitCode -ne 0) {
-    throw "sdkmanager failed with exit code $($proc.ExitCode). See $installLog and $installErr"
+  $cmdLine = "echo y | `"$sdkManager`" $argLine"
+  $output = & cmd.exe /c $cmdLine 2>&1
+  if ($output) { $output | Out-Host }
+  if ($LASTEXITCODE -ne 0) {
+    throw "sdkmanager failed with exit code $LASTEXITCODE"
   }
 }
 

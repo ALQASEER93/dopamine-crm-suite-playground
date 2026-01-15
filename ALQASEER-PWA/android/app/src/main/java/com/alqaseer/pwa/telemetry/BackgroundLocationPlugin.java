@@ -7,12 +7,12 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 
-import com.getcapacitor.CapacitorPlugin;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
@@ -97,7 +97,8 @@ public class BackgroundLocationPlugin extends Plugin {
         start(call);
     }
 
-    private boolean hasRequiredPermissions() {
+    @Override
+    public boolean hasRequiredPermissions() {
         boolean hasLocation = getPermissionState("location") == PermissionState.GRANTED;
         if (!hasLocation) {
             return false;

@@ -11,6 +11,7 @@ import android.location.Location;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -30,8 +31,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class BackgroundLocationService extends Service {
+    private static final String TAG = "BackgroundLocationSvc";
     private static final String CHANNEL_ID = "telemetry_location_channel";
     private static final int NOTIFICATION_ID = 2001;
     private static final String PREFS_NAME = BackgroundLocationPlugin.getPrefsName();
@@ -51,6 +55,7 @@ public class BackgroundLocationService extends Service {
     private TelemetryQueueStore queueStore;
     private TelemetryUploader uploader;
     private SharedPreferences prefs;
+    private ExecutorService executor;
 
     public static void start(Context context, int intervalSeconds, String authToken, String apiBaseUrl, String source) {
         Intent intent = new Intent(context, BackgroundLocationService.class);
@@ -87,6 +92,7 @@ public class BackgroundLocationService extends Service {
         queueStore = new TelemetryQueueStore(this);
         uploader = new TelemetryUploader();
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        executor = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -95,7 +101,9 @@ public class BackgroundLocationService extends Service {
         startForeground(NOTIFICATION_ID, buildNotification());
         startLocationUpdates();
         running = true;
-        flushQueue();
+        if (executor != null) {
+            executor.execute(this::flushQueue);
+        }
         return START_STICKY;
     }
 
@@ -103,6 +111,9 @@ public class BackgroundLocationService extends Service {
     public void onDestroy() {
         if (fusedClient != null && locationCallback != null) {
             fusedClient.removeLocationUpdates(locationCallback);
+        }
+        if (executor != null) {
+            executor.shutdownNow();
         }
         running = false;
         super.onDestroy();
@@ -172,8 +183,14 @@ public class BackgroundLocationService extends Service {
             payload.put("device_info", DeviceInfoHelper.buildDeviceInfo(this));
             payload.put("source", prefs.getString(KEY_SOURCE, "native_capacitor"));
 
-            if (!sendPayload(payload)) {
-                queueStore.enqueue(payload);
+            if (executor != null) {
+                executor.execute(() -> {
+                    boolean sent = sendPayload(payload);
+                    Log.d(TAG, "Location " + location.getLatitude() + "," + location.getLongitude() + " sent=" + sent);
+                    if (!sent) {
+                        queueStore.enqueue(payload);
+                    }
+                });
             }
         } catch (Exception ignored) {
             // Best-effort location handling.
