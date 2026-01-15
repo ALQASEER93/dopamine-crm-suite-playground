@@ -268,8 +268,41 @@ try {
   Start-Sleep -Seconds 30
   $visitLatest = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/api/v1/visits/latest?pageSize=1" -Headers $headers
   $visitEntry = if ($visitLatest -and $visitLatest.data) { $visitLatest.data | Select-Object -First 1 } else { $null }
-  $latest = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/api/v1/telemetry/location/latest?rep_id=$($me.id)" -Headers $headers
-  $latestItem = if ($latest -is [array]) { $latest[0] } else { $latest }
+  $latestItem = $null
+  $latestTs = $null
+  $telemetryWaitSeconds = 180
+  $telemetryElapsed = 0
+  while ($telemetryElapsed -lt $telemetryWaitSeconds) {
+    $latest = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/api/v1/telemetry/location/latest?rep_id=$($me.id)" -Headers $headers
+    $latestItem = if ($latest -is [array]) { $latest[0] } else { $latest }
+    if ($latestItem) {
+      $latestRaw = $latestItem.ts
+      if ($latestRaw -is [DateTime]) {
+        $latestTsParsed = $latestRaw
+      } else {
+        $assumeLocal = [System.Globalization.DateTimeStyles]::AssumeLocal
+        $enUs = [System.Globalization.CultureInfo]::GetCultureInfo("en-US")
+        try {
+          $latestTsParsed = [DateTime]::Parse([string]$latestRaw, [System.Globalization.CultureInfo]::InvariantCulture, $assumeLocal)
+        } catch {
+          try {
+            $latestTsParsed = [DateTime]::Parse([string]$latestRaw, $enUs, $assumeLocal)
+          } catch {
+            $latestTsParsed = [DateTime]::Parse([string]$latestRaw, [System.Globalization.CultureInfo]::CurrentCulture, $assumeLocal)
+          }
+        }
+      }
+      if ($latestTsParsed.Kind -eq [DateTimeKind]::Unspecified) {
+        $latestTsParsed = [DateTime]::SpecifyKind($latestTsParsed, [DateTimeKind]::Utc)
+      }
+      $latestTs = $latestTsParsed.ToUniversalTime()
+      if ($latestTs -ge $smokeStart.AddMinutes(-2)) {
+        break
+      }
+    }
+    Start-Sleep -Seconds 10
+    $telemetryElapsed += 10
+  }
   if (-not $latestItem) {
     throw "No telemetry data received."
   }
@@ -282,32 +315,8 @@ try {
     $sampleRows += "- (no trail rows returned)"
   }
 
-  try {
-    $latestRaw = $latestItem.ts
-    if ($latestRaw -is [DateTime]) {
-      $latestTsParsed = $latestRaw
-    } else {
-      $assumeLocal = [System.Globalization.DateTimeStyles]::AssumeLocal
-      $enUs = [System.Globalization.CultureInfo]::GetCultureInfo("en-US")
-      try {
-        $latestTsParsed = [DateTime]::Parse([string]$latestRaw, [System.Globalization.CultureInfo]::InvariantCulture, $assumeLocal)
-      } catch {
-        try {
-          $latestTsParsed = [DateTime]::Parse([string]$latestRaw, $enUs, $assumeLocal)
-        } catch {
-          $latestTsParsed = [DateTime]::Parse([string]$latestRaw, [System.Globalization.CultureInfo]::CurrentCulture, $assumeLocal)
-        }
-      }
-    }
-    if ($latestTsParsed.Kind -eq [DateTimeKind]::Unspecified) {
-      $latestTsParsed = [DateTime]::SpecifyKind($latestTsParsed, [DateTimeKind]::Utc)
-    }
-    $latestTs = $latestTsParsed.ToUniversalTime()
-    if ($latestTs -lt $smokeStart.AddMinutes(-2)) {
-      throw "Telemetry timestamp did not update after smoke start."
-    }
-  } catch {
-    throw $_
+  if ($latestTs -and $latestTs -lt $smokeStart.AddMinutes(-2)) {
+    throw "Telemetry timestamp did not update after smoke start."
   }
 
   $reportLines += ""
