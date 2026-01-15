@@ -96,7 +96,8 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -no-audio -no-snapshot -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect
           script: pwsh -NoProfile -File scripts/smoke_android_location.ps1
       - name: Upload android smoke report
         if: always()

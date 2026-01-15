@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $reportPath = Join-Path $repoRoot "docs/_runs/android_smoke_$timestamp.md"
+$assetDir = Join-Path $repoRoot "docs/_runs/assets/$timestamp/android"
 $apiBaseUrl = if ($env:DPM_ANDROID_API_BASE_URL) { $env:DPM_ANDROID_API_BASE_URL } else { "http://10.0.2.2:8000/api/v1" }
 $email = if ($env:DPM_SMOKE_EMAIL) { $env:DPM_SMOKE_EMAIL } else { "rep1@example.com" }
 $password = if ($env:DPM_SMOKE_PASSWORD) { $env:DPM_SMOKE_PASSWORD } else { "Rep12345!" }
@@ -96,8 +97,13 @@ $reportLines = @(
   "## Commands"
 )
 
+$adb = $null
+$deviceId = $null
 $backendProc = $null
 try {
+  if (-not (Test-Path $assetDir)) {
+    New-Item -ItemType Directory -Path $assetDir -Force | Out-Null
+  }
   if (-not (Test-PortOpen -Port 8000)) {
     $python = Resolve-Python
     $backendArgs = @()
@@ -216,6 +222,16 @@ try {
   & $adb.Source -s $deviceId shell settings put secure location_providers_allowed +gps 2>$null
   & $adb.Source -s $deviceId shell cmd location set-location-enabled true 2>$null
   $reportLines += "- Location mode: enabled (gps)"
+  $startShotDevice = "/sdcard/visit_start.png"
+  $startShotLocal = Join-Path $assetDir "visit_start.png"
+  try {
+    & $adb.Source -s $deviceId shell screencap -p $startShotDevice | Out-Host
+    & $adb.Source -s $deviceId pull $startShotDevice $startShotLocal | Out-Host
+    $startShotRelative = $startShotLocal.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
+    $reportLines += "- Visit start screenshot: $startShotRelative"
+  } catch {
+    $reportLines += "- Visit start screenshot: failed ($($_.Exception.Message))"
+  }
   $serviceArgs = @(
     "start-foreground-service",
     "-n", "com.alqaseer.pwa/.telemetry.BackgroundLocationService",
@@ -250,6 +266,8 @@ try {
   }
 
   Start-Sleep -Seconds 30
+  $visitLatest = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/api/v1/visits/latest?pageSize=1" -Headers $headers
+  $visitEntry = if ($visitLatest -and $visitLatest.data) { $visitLatest.data | Select-Object -First 1 } else { $null }
   $latest = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/api/v1/telemetry/location/latest?rep_id=$($me.id)" -Headers $headers
   $latestItem = if ($latest -is [array]) { $latest[0] } else { $latest }
   if (-not $latestItem) {
@@ -297,6 +315,52 @@ try {
   $reportLines += "- Smoke start (UTC): $($smokeStart.ToString('o'))"
   $reportLines += "- Latest ts (UTC): $($latestTs.ToString('o'))"
   $reportLines += $sampleRows
+  $reportLines += ""
+  $reportLines += "## Backend Payload Proof"
+  $visitRepId = $null
+  if ($visitEntry) {
+    if ($visitEntry.rep -and $visitEntry.rep.id) {
+      $visitRepId = $visitEntry.rep.id
+    }
+    $reportLines += "- Visit: id=$($visitEntry.id) rep_id=$visitRepId startedAt=$($visitEntry.startedAt) endedAt=$($visitEntry.endedAt)"
+  } else {
+    $reportLines += "- Visit: none returned for rep"
+  }
+  $reportLines += "- Latest telemetry: ts=$($latestItem.ts) lat=$($latestItem.lat) lng=$($latestItem.lng) acc=$($latestItem.accuracy_m) source=$($latestItem.source)"
+  $backendPayloadPath = Join-Path $assetDir "backend_payload.json"
+  $backendPayload = [ordered]@{
+    visit = if ($visitEntry) {
+      [ordered]@{
+        id = $visitEntry.id
+        rep_id = $visitRepId
+        started_at = $visitEntry.startedAt
+        ended_at = $visitEntry.endedAt
+      }
+    } else {
+      $null
+    }
+    latest_telemetry = [ordered]@{
+      ts = $latestItem.ts
+      lat = $latestItem.lat
+      lng = $latestItem.lng
+      accuracy_m = $latestItem.accuracy_m
+      source = $latestItem.source
+    }
+  }
+  $backendPayload | ConvertTo-Json -Depth 5 | Set-Content -Path $backendPayloadPath -Encoding UTF8
+  $backendPayloadRelative = $backendPayloadPath.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
+  $reportLines += "- Backend payload: $backendPayloadRelative"
+
+  $endShotDevice = "/sdcard/visit_end.png"
+  $endShotLocal = Join-Path $assetDir "visit_end.png"
+  try {
+    & $adb.Source -s $deviceId shell screencap -p $endShotDevice | Out-Host
+    & $adb.Source -s $deviceId pull $endShotDevice $endShotLocal | Out-Host
+    $endShotRelative = $endShotLocal.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
+    $reportLines += "- Visit end screenshot: $endShotRelative"
+  } catch {
+    $reportLines += "- Visit end screenshot: failed ($($_.Exception.Message))"
+  }
 
   $reportLines += ""
   $reportLines += "## Result"
@@ -307,14 +371,31 @@ try {
   $reportLines += "- FAIL ($($_.Exception.Message))"
 } finally {
   if ($adb -and $deviceId) {
-    $assetDir = Join-Path $repoRoot "docs/_runs/assets/$timestamp/android"
     if (-not (Test-Path $assetDir)) {
-      New-Item -ItemType Directory -Path $assetDir | Out-Null
+      New-Item -ItemType Directory -Path $assetDir -Force | Out-Null
     }
+    $adbInfoPath = Join-Path $assetDir "adb.txt"
+    $adbInfo = @()
+    $adbInfo += "adb_version: $(& $adb.Source version | Select-Object -First 1)"
+    $adbInfo += "devices:"
+    $adbInfo += (& $adb.Source devices -l)
+    $adbInfo | Set-Content -Path $adbInfoPath -Encoding UTF8
+
+    $emulatorInfoPath = Join-Path $assetDir "emulator.txt"
+    $emuInfo = @()
+    $emuInfo += "avd_name: $(& $adb.Source -s $deviceId emu avd name)"
+    $emuInfo += "boot_props:"
+    $emuInfo += (& $adb.Source -s $deviceId shell getprop | Select-Object -First 80)
+    $emuInfo | Set-Content -Path $emulatorInfoPath -Encoding UTF8
+
     $logcatPath = Join-Path $assetDir "logcat.txt"
     & $adb.Source -s $deviceId logcat -d | Set-Content -Path $logcatPath -Encoding UTF8
     $logcatRelative = $logcatPath.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
     $reportLines += "- Logcat: $logcatRelative"
+    $adbRelative = $adbInfoPath.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
+    $emuRelative = $emulatorInfoPath.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
+    $reportLines += "- ADB log: $adbRelative"
+    $reportLines += "- Emulator log: $emuRelative"
   }
   if ($backendProc -and -not $backendProc.HasExited) {
     Stop-Process -Id $backendProc.Id -Force -ErrorAction SilentlyContinue
