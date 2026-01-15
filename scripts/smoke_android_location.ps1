@@ -7,6 +7,8 @@ $apiBaseUrl = if ($env:DPM_ANDROID_API_BASE_URL) { $env:DPM_ANDROID_API_BASE_URL
 $email = if ($env:DPM_SMOKE_EMAIL) { $env:DPM_SMOKE_EMAIL } else { "rep1@example.com" }
 $password = if ($env:DPM_SMOKE_PASSWORD) { $env:DPM_SMOKE_PASSWORD } else { "Rep12345!" }
 $strictMode = ($env:CI -eq "true") -or ($env:ANDROID_SMOKE_STRICT -eq "1")
+$avdName = if ($env:DPM_ANDROID_AVD) { $env:DPM_ANDROID_AVD } else { "dpm_smoke" }
+$systemImage = if ($env:DPM_ANDROID_SYSTEM_IMAGE) { $env:DPM_ANDROID_SYSTEM_IMAGE } else { "system-images;android-33;google_apis;x86_64" }
 
 function Test-PortOpen {
   param([int]$Port)
@@ -46,6 +48,48 @@ function Resolve-Python {
   return [pscustomobject]@{ Exe = "python"; Args = @() }
 }
 
+function Resolve-Adb {
+  $adb = Get-Command adb -ErrorAction SilentlyContinue
+  if ($adb) { return [pscustomobject]@{ Source = $adb.Source } }
+  $sdkRoot = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { $env:ANDROID_HOME }
+  if (-not $sdkRoot) { return $null }
+  $adbCandidate = Join-Path $sdkRoot "platform-tools/adb"
+  if ($IsWindows) { $adbCandidate = "$adbCandidate.exe" }
+  if (Test-Path $adbCandidate) {
+    return [pscustomobject]@{ Source = $adbCandidate }
+  }
+  return $null
+}
+
+function Resolve-Emulator {
+  $emulator = Get-Command emulator -ErrorAction SilentlyContinue
+  if ($emulator) { return [pscustomobject]@{ Source = $emulator.Source } }
+  $sdkRoot = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { $env:ANDROID_HOME }
+  if (-not $sdkRoot) { return $null }
+  $emulatorCandidate = Join-Path $sdkRoot "emulator/emulator"
+  if ($IsWindows) { $emulatorCandidate = "$emulatorCandidate.exe" }
+  if (Test-Path $emulatorCandidate) {
+    return [pscustomobject]@{ Source = $emulatorCandidate }
+  }
+  return $null
+}
+
+function Wait-ForEmulator {
+  param(
+    [pscustomobject]$Adb,
+    [string]$DeviceId,
+    [int]$TimeoutSeconds = 120
+  )
+  $elapsed = 0
+  while ($elapsed -lt $TimeoutSeconds) {
+    $boot = & $Adb.Source -s $DeviceId shell getprop sys.boot_completed 2>$null
+    if ($boot -match "1") { return $true }
+    Start-Sleep -Seconds 5
+    $elapsed += 5
+  }
+  return $false
+}
+
 $reportLines = @(
   "# Android Location Smoke ($timestamp)",
   "",
@@ -69,17 +113,7 @@ try {
   $reportLines += "- Build APK: `"$buildScript`""
   & $buildScript | Out-Host
 
-  $adb = Get-Command adb -ErrorAction SilentlyContinue
-  if (-not $adb) {
-    $sdkRoot = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { $env:ANDROID_HOME }
-    if ($sdkRoot) {
-      $adbCandidate = Join-Path $sdkRoot "platform-tools/adb"
-      if ($IsWindows) { $adbCandidate = "$adbCandidate.exe" }
-      if (Test-Path $adbCandidate) {
-        $adb = [pscustomobject]@{ Source = $adbCandidate }
-      }
-    }
-  }
+  $adb = Resolve-Adb
   if (-not $adb) {
     if ($strictMode) {
       throw "adb not found; Android SDK/Platform Tools missing."
@@ -98,29 +132,35 @@ try {
   $devices = & $adb.Source devices
   $deviceId = $devices | Where-Object { $_ -match "\sdevice$" } | ForEach-Object { ($_ -split "\s+")[0] } | Select-Object -First 1
   if (-not $deviceId) {
-    $emulator = Get-Command emulator -ErrorAction SilentlyContinue
-    if (-not $emulator) {
-      $sdkRoot = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { $env:ANDROID_HOME }
-      if ($sdkRoot) {
-        $emulatorCandidate = Join-Path $sdkRoot "emulator/emulator"
-        if ($IsWindows) { $emulatorCandidate = "$emulatorCandidate.exe" }
-        if (Test-Path $emulatorCandidate) {
-          $emulator = [pscustomobject]@{ Source = $emulatorCandidate }
-        }
-      }
+    $setupScript = Join-Path $repoRoot "scripts/setup_android_sdk_avd.ps1"
+    if (Test-Path $setupScript) {
+      $reportLines += "- Setup AVD: `"$setupScript`" (AVD=$avdName)"
+      & $setupScript -AvdName $avdName -SystemImage $systemImage -StartEmulator | Out-Host
+      $devices = & $adb.Source devices
+      $deviceId = $devices | Where-Object { $_ -match "\sdevice$" } | ForEach-Object { ($_ -split "\s+")[0] } | Select-Object -First 1
     }
+  }
+
+  if (-not $deviceId) {
+    $emulator = Resolve-Emulator
     if ($emulator) {
       $avds = & $emulator.Source -list-avds
       if ($avds) {
-        $avd = $avds[0]
-        Start-Process -FilePath $emulator.Source -ArgumentList @("-avd", $avd, "-netdelay", "none", "-netspeed", "full") | Out-Null
+        $avd = if ($avds -contains $avdName) { $avdName } else { $avds[0] }
+        Start-Process -FilePath $emulator.Source -ArgumentList @(
+          "-avd", $avd, "-netdelay", "none", "-netspeed", "full",
+          "-no-window", "-no-audio", "-no-snapshot", "-gpu", "swiftshader_indirect"
+        ) | Out-Null
         $reportLines += "- Started emulator: $avd"
         $waited = 0
-        while ($waited -lt 60 -and -not $deviceId) {
+        while ($waited -lt 90 -and -not $deviceId) {
           Start-Sleep -Seconds 5
           $waited += 5
           $devices = & $adb.Source devices
           $deviceId = $devices | Where-Object { $_ -match "\sdevice$" } | ForEach-Object { ($_ -split "\s+")[0] } | Select-Object -First 1
+        }
+        if ($deviceId) {
+          [void](Wait-ForEmulator -Adb $adb -DeviceId $deviceId -TimeoutSeconds 180)
         }
       }
     }
@@ -161,13 +201,45 @@ try {
     --ei interval_seconds 10 `
     --es source "smoke_script" | Out-Host
 
-  & $adb.Source -s $deviceId emu geo fix 31.2357 30.0444 | Out-Host
-  Start-Sleep -Seconds 12
+  $smokeStart = (Get-Date).ToUniversalTime()
+  $geoPoints = @(
+    @{ lat = 30.0444; lng = 31.2357 },
+    @{ lat = 30.0461; lng = 31.2391 },
+    @{ lat = 30.0479; lng = 31.2425 }
+  )
 
+  if ($deviceId -like "emulator-*") {
+    $reportLines += "- Geo route: 3 fixes via adb emu geo fix"
+    foreach ($point in $geoPoints) {
+      & $adb.Source -s $deviceId emu geo fix $point.lng $point.lat | Out-Host
+      Start-Sleep -Seconds 8
+    }
+  } else {
+    $reportLines += "- Geo route: skipped (non-emulator device detected)"
+  }
+
+  Start-Sleep -Seconds 6
   $latest = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/api/v1/telemetry/location/latest?rep_id=$($me.id)" -Headers $headers
   $latestItem = if ($latest -is [array]) { $latest[0] } else { $latest }
   if (-not $latestItem) {
     throw "No telemetry data received."
+  }
+  $trail = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/api/v1/telemetry/location/trail?rep_id=$($me.id)&limit=5" -Headers $headers
+  $sampleRows = @()
+  foreach ($row in ($trail | Select-Object -First 3)) {
+    $sampleRows += ("- ts={0} lat={1} lng={2} acc={3} source={4}" -f $row.ts, $row.lat, $row.lng, $row.accuracy_m, $row.source)
+  }
+  if ($sampleRows.Count -eq 0) {
+    $sampleRows += "- (no trail rows returned)"
+  }
+
+  try {
+    $latestTs = [DateTime]::Parse($latestItem.ts).ToUniversalTime()
+    if ($latestTs -lt $smokeStart.AddSeconds(-5)) {
+      throw "Telemetry timestamp did not update after smoke start."
+    }
+  } catch {
+    throw $_
   }
 
   $assetDir = Join-Path $repoRoot "docs/_runs/assets/$timestamp/android"
@@ -178,6 +250,12 @@ try {
   & $adb.Source -s $deviceId logcat -d | Set-Content -Path $logcatPath -Encoding UTF8
   $logcatRelative = $logcatPath.Replace("$repoRoot\", "").Replace("$repoRoot/", "")
   $reportLines += "- Logcat: $logcatRelative"
+
+  $reportLines += ""
+  $reportLines += "## Telemetry Evidence"
+  $reportLines += "- Smoke start (UTC): $($smokeStart.ToString(\"o\"))"
+  $reportLines += "- Latest ts (UTC): $($latestItem.ts)"
+  $reportLines += $sampleRows
 
   $reportLines += ""
   $reportLines += "## Result"
