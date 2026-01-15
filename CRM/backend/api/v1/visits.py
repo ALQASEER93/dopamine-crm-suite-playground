@@ -68,6 +68,14 @@ def _normalize_status_filters(status_filters: list[str] | None) -> list[str]:
     return list(dict.fromkeys(normalized))
 
 
+def _resolve_under_root(path: Path, root: Path) -> Path:
+    resolved_root = root.resolve()
+    resolved_path = path.resolve()
+    if resolved_path != resolved_root and resolved_root not in resolved_path.parents:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid attachment path.")
+    return resolved_path
+
+
 def _sync_duration(visit: Visit) -> None:
     duration = _calculate_duration_seconds(visit.started_at, visit.ended_at)
     if duration is not None:
@@ -704,7 +712,8 @@ def download_visit_attachment(
     )
     if not attachment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment not found.")
-    path = Path(attachment.file_path)
+    storage_root = Path("CRM/backend/data/visit_attachments")
+    path = _resolve_under_root(Path(attachment.file_path), storage_root)
     if not path.exists():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment file missing.")
     return FileResponse(
@@ -732,10 +741,11 @@ async def upload_visit_attachment(
 
     safe_name = Path(file.filename or "attachment").name
     attachment_id = uuid4().hex
-    storage_dir = Path("CRM/backend/data/visit_attachments") / str(visit_id)
+    storage_root = Path("CRM/backend/data/visit_attachments")
+    storage_dir = _resolve_under_root(storage_root / str(visit_id), storage_root)
     storage_dir.mkdir(parents=True, exist_ok=True)
     final_name = f"{attachment_id}-{safe_name}"
-    destination = storage_dir / final_name
+    destination = _resolve_under_root(storage_dir / final_name, storage_root)
 
     payload = await file.read()
     destination.write_bytes(payload)

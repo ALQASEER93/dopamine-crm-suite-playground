@@ -20,6 +20,25 @@ type QueueMeta = {
   lastAttemptAt?: string;
 };
 
+let fallbackCounter = 0;
+
+function generateId() {
+  if (typeof crypto !== "undefined") {
+    if ("randomUUID" in crypto) {
+      return crypto.randomUUID();
+    }
+    if ("getRandomValues" in crypto) {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes)
+        .map((value) => value.toString(16).padStart(2, "0"))
+        .join("");
+    }
+  }
+  fallbackCounter += 1;
+  return `${Date.now()}-${fallbackCounter}`;
+}
+
 function readQueue(): QueuedMutation[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -43,10 +62,7 @@ export function enqueueMutation(input: Omit<QueuedMutation, "id" | "createdAt">)
   if (queue.some((item) => item.signature === signature)) {
     return;
   }
-  const uid =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random()}`;
+  const uid = generateId();
   queue.push({
     ...input,
     id: uid,
