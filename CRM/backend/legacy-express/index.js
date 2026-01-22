@@ -13,7 +13,8 @@ const stateChangingMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 app.use(
   cors({
     origin: allowedOrigin,
-    credentials: true,
+    credentials: false,
+    allowedHeaders: ['Authorization', 'X-Auth-Token', 'Content-Type'],
     exposedHeaders: ['X-Auth-Token'],
   }),
 );

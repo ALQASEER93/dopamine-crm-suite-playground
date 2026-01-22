@@ -42,6 +42,11 @@ The legacy Express server (deprecated) lives at `legacy-express/index.js`.
 - `GET /api/visits/summary` â€“ Aggregates visit counts, unique entity totals, and duration statistics for summary cards.
 - `GET /api/visits/export` â€“ Streams the filtered visits list as a CSV file.
 
+### Legacy Express Security Notes
+
+- Legacy Express uses token-based auth via `Authorization: Bearer <token>` or `X-Auth-Token`.
+- Cookies/sessions are not used for authentication; CSRF mitigations rely on token-only auth plus strict CORS/origin checks for state-changing requests.
+
 ### Visits Query Parameters
 
 All three visits endpoints support the same filtering contract:

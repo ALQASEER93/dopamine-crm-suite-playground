@@ -1,0 +1,4 @@
+exclude_dirs:
+  - CRM/backend/tests
+  - CRM/backend/scripts
+  - CRM/backend/legacy-express/scripts

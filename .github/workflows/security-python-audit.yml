@@ -30,7 +30,7 @@ jobs:
         run: ruff check CRM/backend --output-format json > docs/_runs/ruff_ci.json
 
       - name: Bandit (JSON)
-        run: bandit -r CRM/backend -f json -o docs/_runs/bandit_ci.json
+        run: bandit -r CRM/backend -c CRM/backend/bandit.yaml -f json -o docs/_runs/bandit_ci.json
 
       - name: Pip Audit (JSON)
         run: pip-audit -r CRM/backend/requirements.txt -f json -o docs/_runs/pip_audit_ci.json
