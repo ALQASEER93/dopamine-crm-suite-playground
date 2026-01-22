@@ -18,6 +18,7 @@ from api.v1 import (
     visits,
     admin_users,
     pwa,
+    telemetry,
 )
 
 router = APIRouter(prefix="/v1")
@@ -39,3 +40,4 @@ router.include_router(reports.router)
 router.include_router(territories.router)
 router.include_router(admin_users.router)
 router.include_router(pwa.router)
+router.include_router(telemetry.router)

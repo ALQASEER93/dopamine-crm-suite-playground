@@ -79,6 +79,9 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
   - `/api/admin/dpm-ledger/...` ?+' Pharmacy/area ledger summaries & statements
   - `/api/admin/ai/...` ?+' AI insights, tasks, drafts, collection plans
   - `/api/dev/token` ?+' Dev-only JWT for local testing (requires `APP_ENV=development`, `ALLOW_DEV_TOKEN=1`, and `DEV_TOKEN_PASSWORD`)
+  - `/api/v1/telemetry/session/start` ?+' Start telemetry session (JWT required)
+  - `/api/v1/telemetry/session/stop` ?+' Stop telemetry session (JWT required)
+  - `/api/v1/telemetry/location` ?+' Location ping (JWT required)
 - Docs: `/docs` (Swagger) and `/redoc`
 
 ## Frontend / PWA Integration

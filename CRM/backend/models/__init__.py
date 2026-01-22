@@ -20,6 +20,8 @@ from models.crm import (  # noqa: F401
     StockMovement,
     Target,
     Territory,
+    TelemetryLocation,
+    TelemetrySession,
     User,
     RepProfile,
     Visit,

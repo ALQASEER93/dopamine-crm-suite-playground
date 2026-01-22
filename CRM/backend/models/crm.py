@@ -373,3 +373,35 @@ class Collection(Base):
 
     doctor = relationship(Doctor, back_populates="collections")
     pharmacy = relationship(Pharmacy, back_populates="collections")
+
+
+class TelemetrySession(Base):
+    __tablename__ = "telemetry_sessions"
+
+    id = Column(Integer, primary_key=True)
+    session_id = Column(String(64), nullable=False, unique=True, index=True)
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    stopped_at = Column(DateTime(timezone=True), nullable=True)
+    device_id = Column(String(128), nullable=True)
+    app_version = Column(String(32), nullable=True)
+    platform = Column(String(32), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    rep = relationship(User)
+
+
+class TelemetryLocation(Base):
+    __tablename__ = "telemetry_locations"
+
+    id = Column(Integer, primary_key=True)
+    session_id = Column(String(64), nullable=False, index=True)
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    accuracy_m = Column(Float, nullable=True)
+    recorded_at = Column(DateTime(timezone=True), nullable=False)
+    received_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    device_id = Column(String(128), nullable=True)
+
+    rep = relationship(User)
