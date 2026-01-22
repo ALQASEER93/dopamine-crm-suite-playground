@@ -11,6 +11,7 @@ from sqlalchemy.exc import OperationalError
 from api import api_router
 from core.config import settings
 from core.db import Base, SessionLocal, build_fallback_engine, engine, swap_engine
+from middleware.rate_limit import RateLimitMiddleware
 from services.seed_data import seed_reference_data
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware)
 
 
 @app.get("/", tags=["default"])
