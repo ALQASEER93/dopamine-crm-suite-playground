@@ -8,6 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const stateChangingMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 app.use(
   cors({
@@ -17,6 +18,21 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use((req, res, next) => {
+  if (!stateChangingMethods.has(req.method)) {
+    return next();
+  }
+
+  if (allowedOrigin === '*' || !req.headers.origin) {
+    return next();
+  }
+
+  if (req.headers.origin !== allowedOrigin) {
+    return res.status(403).json({ message: 'Origin not allowed for state changes.' });
+  }
+
+  return next();
+});
 
 const buildAuthResponse = (user) => ({
   user,

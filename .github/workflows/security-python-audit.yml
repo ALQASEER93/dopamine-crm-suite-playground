@@ -41,11 +41,13 @@ jobs:
       - name: Backend Pytest
         run: |
           cd CRM/backend
-          python -m pytest -q
+          python -m pytest -q --junitxml ../../docs/_runs/pytest_ci.xml
 
       - name: Upload security reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: python-security-reports
-          path: docs/_runs/*_ci.json
+          path: |
+            docs/_runs/*_ci.json
+            docs/_runs/pytest_ci.xml

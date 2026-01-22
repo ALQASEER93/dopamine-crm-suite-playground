@@ -1,6 +1,6 @@
-const path = require('path');
 const { Pharmacy } = require('../models');
 const { loadWorkbookRows } = require('./excel');
+const { resolveImportPath } = require('./pathGuard');
 
 const normalizeString = value => {
   if (value === null || value === undefined) {
@@ -84,7 +84,9 @@ const loadPharmaciesFromWorkbook = async (filePath, sheetName) => {
 };
 
 const importPharmaciesFromFile = async (filePath, { sheetName } = {}) => {
-  const absolutePath = path.resolve(filePath);
+  const absolutePath = resolveImportPath(filePath, {
+    allowAbsolute: process.env.ALLOW_ABSOLUTE_IMPORT_PATH === '1',
+  });
   const rows = await loadPharmaciesFromWorkbook(absolutePath, sheetName);
   return importPharmacies(rows);
 };

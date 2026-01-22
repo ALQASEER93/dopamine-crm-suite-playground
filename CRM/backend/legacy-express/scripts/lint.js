@@ -13,6 +13,9 @@ const collectFiles = (dir) => {
     }
 
     const resolved = path.join(dir, entry.name);
+    if (!resolved.startsWith(`${rootDir}${path.sep}`)) {
+      continue;
+    }
 
     if (entry.isDirectory()) {
       collectFiles(resolved);

@@ -22,8 +22,11 @@ const resolveStoragePath = storage => {
     return storage;
   }
 
-  // Keep behavior consistent but avoid relative path surprises.
-  const resolved = path.isAbsolute(storage) ? storage : path.resolve(storage);
+  const baseDir = path.join(__dirname, '..', '..', 'data');
+  const resolved = path.isAbsolute(storage) ? storage : path.resolve(baseDir, storage);
+  if (!resolved.startsWith(`${path.resolve(baseDir)}${path.sep}`)) {
+    throw new Error('SQLite storage path escapes the data directory.');
+  }
   ensureDirectory(resolved);
   return resolved;
 };

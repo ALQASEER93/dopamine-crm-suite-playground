@@ -21,11 +21,13 @@ jobs:
       - name: Install deps
         run: npm ci
         working-directory: AI-Orchestrator
+      - name: Prepare report folder
+        run: mkdir -p docs/_runs
       - name: Build
         run: npm run build --if-present
         working-directory: AI-Orchestrator
       - name: Test
-        run: npm test --if-present
+        run: npm test --if-present | tee ../docs/_runs/ai_orchestrator_test_ci.log
         working-directory: AI-Orchestrator
 
   backend:
@@ -64,6 +66,11 @@ jobs:
       - name: Install deps
         run: npm ci
         working-directory: CRM/frontend
+      - name: Prepare report folder
+        run: mkdir -p docs/_runs
+      - name: Test
+        run: npm test --if-present | tee ../../docs/_runs/crm_frontend_test_ci.log
+        working-directory: CRM/frontend
       - name: Build
         run: npm run build
         working-directory: CRM/frontend
@@ -81,8 +88,13 @@ jobs:
       - name: Install deps
         run: npm ci
         working-directory: ALQASEER-PWA
+      - name: Prepare report folder
+        run: mkdir -p docs/_runs
       - name: Lint
         run: npm run lint
+        working-directory: ALQASEER-PWA
+      - name: Test
+        run: npm test --if-present | tee ../docs/_runs/pwa_test_ci.log
         working-directory: ALQASEER-PWA
       - name: Build
         run: npm run build
