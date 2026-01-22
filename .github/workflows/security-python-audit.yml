@@ -23,14 +23,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r CRM/backend/requirements.txt -r CRM/backend/requirements-dev.txt
 
-      - name: Ruff
-        run: ruff check CRM/backend
+      - name: Prepare report folder
+        run: mkdir -p docs/_runs
 
-      - name: Bandit
-        run: bandit -r CRM/backend
+      - name: Ruff (JSON)
+        run: ruff check CRM/backend --output-format json > docs/_runs/ruff_ci.json
 
-      - name: Pip Audit
-        run: pip-audit -r CRM/backend/requirements.txt
+      - name: Bandit (JSON)
+        run: bandit -r CRM/backend -f json -o docs/_runs/bandit_ci.json
 
-      - name: Semgrep
-        run: semgrep --config=auto CRM/backend
+      - name: Pip Audit (JSON)
+        run: pip-audit -r CRM/backend/requirements.txt -f json -o docs/_runs/pip_audit_ci.json
+
+      - name: Semgrep (JSON)
+        run: semgrep --config=auto CRM/backend --json -o docs/_runs/semgrep_ci.json
+
+      - name: Backend Pytest
+        run: |
+          cd CRM/backend
+          python -m pytest -q
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-security-reports
+          path: docs/_runs/*_ci.json

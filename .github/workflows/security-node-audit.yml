@@ -1,0 +1,53 @@
+name: Security - Node Audit
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  node-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Prepare report folder
+        run: mkdir -p docs/_runs
+
+      - name: CRM frontend audit
+        run: |
+          cd CRM/frontend
+          npm ci
+          npm audit --audit-level=high --json > ../../docs/_runs/npm_audit_CRM_frontend_ci.json
+
+      - name: ALQASEER-PWA audit
+        run: |
+          cd ALQASEER-PWA
+          npm ci
+          npm audit --audit-level=high --json > ../docs/_runs/npm_audit_ALQASEER-PWA_ci.json
+
+      - name: CRM backend audit
+        run: |
+          cd CRM/backend
+          npm ci
+          npm audit --audit-level=high --json > ../../docs/_runs/npm_audit_CRM_backend_ci.json
+
+      - name: AI-Orchestrator audit
+        run: |
+          cd AI-Orchestrator
+          npm ci
+          npm audit --audit-level=high --json > ../docs/_runs/npm_audit_AI-Orchestrator_ci.json
+
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-audit-reports
+          path: docs/_runs/*_ci.json
