@@ -1,7 +1,7 @@
 // backend/scripts/importAccountsFromExcel.js
 const path = require('path');
 const fs = require('fs');
-const xlsx = require('xlsx');
+const { loadWorkbookRowsWithFallback } = require('../services/excel');
 const { ValidationError, UniqueConstraintError } = require('sequelize');
 const { initDb, sequelize } = require('../db');
 const { Hcp, Pharmacy } = require('../models');
@@ -105,20 +105,16 @@ const loadFromJson = () => {
   };
 };
 
-const loadFromExcel = () => {
+const loadFromExcel = async () => {
   const excelPath = fs.existsSync(ACCOUNTS_XLSX) ? ACCOUNTS_XLSX : fs.existsSync(HCPS_XLSX) ? HCPS_XLSX : null;
   if (!excelPath) {
     return null;
   }
 
-  const workbook = xlsx.readFile(excelPath);
-  const sheet = workbook.Sheets['Name'] || workbook.Sheets['HCPs'] || workbook.Sheets[workbook.SheetNames[0]];
-
-  if (!sheet) {
+  const rows = await loadWorkbookRowsWithFallback(excelPath, ['Name', 'HCPs']);
+  if (!rows.length) {
     throw new Error(`No worksheet found in ${path.basename(excelPath)}`);
   }
-
-  const rows = xlsx.utils.sheet_to_json(sheet, { defval: null });
   const hcps = [];
   const pharmacies = [];
 
@@ -139,7 +135,7 @@ const loadFromExcel = () => {
   return { hcps, pharmacies, source: excelPath };
 };
 
-const loadAccounts = () => {
+const loadAccounts = async () => {
   const fromJson = loadFromJson();
   if (fromJson) {
     return fromJson;
@@ -149,7 +145,7 @@ const loadAccounts = () => {
 
 async function main() {
   try {
-    const payload = loadAccounts();
+    const payload = await loadAccounts();
     if (!payload) {
       console.error('No accounts file found. Expected:', JSON_PATH, 'or', ACCOUNTS_XLSX);
       process.exitCode = 1;

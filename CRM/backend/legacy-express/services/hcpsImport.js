@@ -1,6 +1,6 @@
 const path = require('path');
-const XLSX = require('xlsx');
 const { Hcp } = require('../models');
+const { loadWorkbookRows } = require('./excel');
 
 const normalizeString = value => {
   if (value === null || value === undefined) {
@@ -103,19 +103,13 @@ const importHcps = async rows => {
   return summary;
 };
 
-const loadHcpRowsFromWorkbook = (filePath, sheetName) => {
-  const workbook = XLSX.readFile(filePath);
-  const sheet = sheetName ? workbook.Sheets[sheetName] : workbook.Sheets[workbook.SheetNames[0]];
-  if (!sheet) {
-    return [];
-  }
-
-  return XLSX.utils.sheet_to_json(sheet, { defval: null });
+const loadHcpRowsFromWorkbook = async (filePath, sheetName) => {
+  return loadWorkbookRows(filePath, sheetName);
 };
 
 const importHcpsFromFile = async (filePath, { sheetName } = {}) => {
   const absolutePath = path.resolve(filePath);
-  const rows = loadHcpRowsFromWorkbook(absolutePath, sheetName);
+  const rows = await loadHcpRowsFromWorkbook(absolutePath, sheetName);
   return importHcps(rows);
 };
 

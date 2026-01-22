@@ -1,6 +1,6 @@
 const path = require('path');
-const XLSX = require('xlsx');
 const { Pharmacy } = require('../models');
+const { loadWorkbookRows } = require('./excel');
 
 const normalizeString = value => {
   if (value === null || value === undefined) {
@@ -79,19 +79,13 @@ const importPharmacies = async rows => {
   return summary;
 };
 
-const loadPharmaciesFromWorkbook = (filePath, sheetName) => {
-  const workbook = XLSX.readFile(filePath);
-  const sheet = sheetName ? workbook.Sheets[sheetName] : workbook.Sheets[workbook.SheetNames[0]];
-  if (!sheet) {
-    return [];
-  }
-
-  return XLSX.utils.sheet_to_json(sheet, { defval: null });
+const loadPharmaciesFromWorkbook = async (filePath, sheetName) => {
+  return loadWorkbookRows(filePath, sheetName);
 };
 
 const importPharmaciesFromFile = async (filePath, { sheetName } = {}) => {
   const absolutePath = path.resolve(filePath);
-  const rows = loadPharmaciesFromWorkbook(absolutePath, sheetName);
+  const rows = await loadPharmaciesFromWorkbook(absolutePath, sheetName);
   return importPharmacies(rows);
 };
 

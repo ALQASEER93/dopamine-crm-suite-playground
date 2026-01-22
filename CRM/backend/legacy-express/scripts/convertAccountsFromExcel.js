@@ -1,7 +1,7 @@
 // backend/scripts/convertAccountsFromExcel.js
 const path = require('path');
 const fs = require('fs');
-const xlsx = require('xlsx');
+const { loadWorkbookRows } = require('../services/excel');
 
 function normalizeString(value) {
   if (value === undefined || value === null) return null;
@@ -25,15 +25,12 @@ async function main() {
       return;
     }
 
-    const workbook = xlsx.readFile(workbookPath);
-    const sheet = workbook.Sheets['Name'];
-    if (!sheet) {
+    const rows = await loadWorkbookRows(workbookPath, 'Name');
+    if (!rows.length) {
       console.error('Sheet "Name" not found in accounts.xlsx');
       process.exitCode = 1;
       return;
     }
-
-    const rows = xlsx.utils.sheet_to_json(sheet, { defval: null });
 
     const hcps = [];
     const pharmacies = [];
