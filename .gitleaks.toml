@@ -1,0 +1,11 @@
+title = "DPM Gitleaks Config"
+
+[[rules]]
+id = "env-secret-keys"
+description = "Detect common secret keys in .env files"
+regex = '''(?im)^[^#\n]*\b(api_key|apikey|secret|token|password|passwd|access_key|private_key|client_secret|jwt_secret)\b\s*[:=]\s*["']?([A-Za-z0-9_\-\./=+]{12,})["']?'''
+secretGroup = 2
+path = '''(?i)\.env(\..*)?$'''
+
+[rules.allowlist]
+paths = ['''(?i)\.env(\..*)?\.example$''']
