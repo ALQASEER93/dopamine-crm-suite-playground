@@ -18,6 +18,7 @@ __pycache__/
 .env.*
 .env.local
 .env.*.local
+**/.env.local
 *.env
 !.env.example
 !.env.*.example
@@ -26,6 +27,14 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+
+# Android
+ALQASEER-PWA/android/build/
+ALQASEER-PWA/android/**/build/
+ALQASEER-PWA/android/.idea/
+local.properties
+*.keystore
+*.jks
 
 # Logs & tmp
 *.log
