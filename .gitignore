@@ -3,9 +3,11 @@ node_modules/
 dist/
 build/
 .next/
+.gradle/
 
 # Python
 .venv/
+.venv-wsl/
 venv/
 __pycache__/
 .mypy_cache/
