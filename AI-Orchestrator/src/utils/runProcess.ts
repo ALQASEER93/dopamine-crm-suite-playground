@@ -22,10 +22,9 @@ export function runProcess(command: string, args: string[], cwd: string): Proces
     };
   }
 
-  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
   // Justification: Command is validated against ALLOWED_COMMANDS allowlist above.
   try {
-    const result = spawnSync(command, args, {
+    const result = spawnSync(command, args, { // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
       cwd,
       encoding: "utf-8",
       shell: false,

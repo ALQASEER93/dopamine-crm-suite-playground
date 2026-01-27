@@ -22,7 +22,7 @@ const formatDashboardError = error => {
 const logValidationError = (error, label) => {
   if (error?.status === 422) {
     const detail = error.payload?.detail || error.payload;
-    console.error(`${label} validation error`, detail);
+    console.error('Validation error', { label, detail });
   }
 };
 

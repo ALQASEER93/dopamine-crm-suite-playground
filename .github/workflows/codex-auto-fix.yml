@@ -22,9 +22,8 @@ jobs:
           echo "OPENAI_API_KEY not set; skipping Codex auto-fix safely."
           exit 0
 
-      - name: Checkout failing ref
+      - name: Checkout failing ref # nosemgrep: yaml.github-actions.security.workflow-run-target-code-checkout.workflow-run-target-code-checkout
         if: env.OPENAI_API_KEY != ''
-        # nosemgrep: yaml.github-actions.security.workflow-run-target-code-checkout.workflow-run-target-code-checkout
         # Justification: Protected by "github.event.workflow_run.head_repository.full_name == github.repository" check (internal only).
         uses: actions/checkout@v5
         with:

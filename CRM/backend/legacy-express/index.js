@@ -4,9 +4,8 @@ const { initDb } = require('./db');
 const { authenticate, AuthenticationError, refreshToken } = require('./services/auth');
 const { requireAuth, requireRole } = require('./middleware/auth');
 
-// nosemgrep: javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage
 // Justification: App uses header-based auth (X-Auth-Token) with cors credentials:false. CSRF via cookies is not possible.
-const app = express();
+const app = express(); // nosemgrep: javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage
 const PORT = process.env.PORT || 5000;
 
 const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';

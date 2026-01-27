@@ -4,6 +4,9 @@ dist/
 build/
 .next/
 .gradle/
+**/node_modules/
+**/dist/
+**/build/
 
 # Python
 .venv/
@@ -12,6 +15,9 @@ venv/
 __pycache__/
 .mypy_cache/
 .pytest_cache/
+**/.venv/
+**/.ruff_cache/
+**/.pytest_cache/
 
 # Env & secrets
 .env

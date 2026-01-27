@@ -1,0 +1,5 @@
+[tool.pip-audit]
+# Justification: CVE-2026-0994 affects google.protobuf.json_format.ParseDict on deeply nested Any messages.
+# This repo does not call ParseDict on untrusted input (confirmed by search). No upstream fix is available yet.
+# Advisory: https://github.com/advisories/GHSA-7gcm-g887-7qv7
+ignore-vulns = ["CVE-2026-0994"]
