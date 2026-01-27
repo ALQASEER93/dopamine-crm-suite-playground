@@ -23,6 +23,7 @@ const resolveStoragePath = storage => {
   }
 
   const baseDir = path.join(__dirname, '..', '..', 'data');
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
   const resolved = path.isAbsolute(storage) ? storage : path.resolve(baseDir, storage);
   if (!resolved.startsWith(`${path.resolve(baseDir)}${path.sep}`)) {
     throw new Error('SQLite storage path escapes the data directory.');

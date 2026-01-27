@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Tuple
+from typing import Tuple
 
 from sqlalchemy.orm import Query
 

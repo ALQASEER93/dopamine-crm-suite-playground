@@ -47,6 +47,14 @@ async function appendLog(logPath: string, content: string) {
   await fs.promises.appendFile(logPath, content);
 }
 
+function resolveProjectPath(projectPath: string) {
+  const resolved = path.isAbsolute(projectPath)
+    ? path.resolve(projectPath) // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+    : path.resolve(baseDir, projectPath); // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+  const base = path.resolve(baseDir) + path.sep;
+  return { resolved, isSafe: resolved.startsWith(base) };
+}
+
 async function readPackageJson(pkgPath: string) {
   const raw = await fs.promises.readFile(pkgPath, 'utf8');
   return JSON.parse(raw) as { scripts?: Record<string, string> };
@@ -88,6 +96,7 @@ async function processProject(projectName: string, projectPath: string): Promise
     notes: [],
   };
 
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
   const logPath = path.join(logDir, `${projectName}.log`);
   await appendLog(logPath, `=== ${projectName.toUpperCase()} | ${dateStr} ===\n`);
   await appendLog(logPath, `Path: ${projectPath || 'not set'}\n`);
@@ -102,18 +111,31 @@ async function processProject(projectName: string, projectPath: string): Promise
     return summary;
   }
 
-  if (!fs.existsSync(projectPath)) {
+  const resolvedPath = resolveProjectPath(projectPath);
+  if (!resolvedPath.isSafe) {
+    summary.notes.push('Path rejected: outside repo root.');
+    summary.tasks.push(
+      { name: 'test', status: 'skipped', detail: 'Path outside repo root.' },
+      { name: 'lint', status: 'skipped', detail: 'Path outside repo root.' },
+      { name: 'build', status: 'skipped', detail: 'Path outside repo root.' },
+    );
+    await appendLog(logPath, `Rejected path outside repo root: ${projectPath}\n\n`);
+    return summary;
+  }
+
+  if (!fs.existsSync(resolvedPath.resolved)) {
     summary.notes.push('Path does not exist.');
     summary.tasks.push(
       { name: 'test', status: 'skipped', detail: 'Path not found.' },
       { name: 'lint', status: 'skipped', detail: 'Path not found.' },
       { name: 'build', status: 'skipped', detail: 'Path not found.' },
     );
-    await appendLog(logPath, `Path not found: ${projectPath}\n\n`);
+    await appendLog(logPath, `Path not found: ${resolvedPath.resolved}\n\n`);
     return summary;
   }
 
-  const pkgJsonPath = path.join(projectPath, 'package.json');
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+  const pkgJsonPath = path.join(resolvedPath.resolved, 'package.json');
   let scripts: Record<string, string> = {};
 
   try {
@@ -147,7 +169,7 @@ async function processProject(projectName: string, projectPath: string): Promise
           ? 'npm test'
           : `npm run ${task}`;
     await appendLog(logPath, `-- ${task.toUpperCase()}: running "${command}"\n`);
-    const result = await runCommand(command, projectPath);
+    const result = await runCommand(command, resolvedPath.resolved);
 
     const stdout = result.stdout ?? '';
     const stderr = result.stderr ?? '';

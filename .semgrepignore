@@ -1,0 +1,7 @@
+# Semgrep Ignore File
+
+# Android Main Activity must be exported to be launchable
+mobile/field-tracker/app/src/main/AndroidManifest.xml
+
+# Ignore legacy scripts that are dev-only and internal
+CRM/backend/legacy-express/scripts/lint.js

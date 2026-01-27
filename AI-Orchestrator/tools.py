@@ -1,6 +1,4 @@
-﻿import os
-from pathlib import Path
-from typing import Optional
+﻿from pathlib import Path
 
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool  # Ø§Ù†ØªØ¨Ù‡: crewai.tools ÙˆÙ„ÙŠØ³ crewai_tools

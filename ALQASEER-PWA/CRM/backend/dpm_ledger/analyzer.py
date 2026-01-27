@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import MetaData, Table, create_engine, func, inspect, select
 
 from dpm_ledger.config import DEFAULT_DB_DIR
 
@@ -12,8 +12,10 @@ REPORT_PATH = Path(__file__).resolve().parents[1] / "docs" / "dpm_ledger_schema_
 
 def _approx_row_count(engine, table_name: str) -> int:
     try:
+        table = Table(table_name, MetaData(), autoload_with=engine)
+        stmt = select(func.count()).select_from(table)
         with engine.connect() as conn:
-            result = conn.execute(text(f"SELECT COUNT(*) FROM \"{table_name}\""))
+            result = conn.execute(stmt)
             return int(result.scalar() or 0)
     except Exception:
         return -1

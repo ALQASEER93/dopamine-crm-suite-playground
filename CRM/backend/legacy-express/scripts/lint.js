@@ -12,6 +12,7 @@ const collectFiles = (dir) => {
       continue;
     }
 
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
     const resolved = path.join(dir, entry.name);
     if (!resolved.startsWith(`${rootDir}${path.sep}`)) {
       continue;

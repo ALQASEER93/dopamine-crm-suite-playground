@@ -25,6 +25,6 @@ if (!globalWithMongo._mongoClientPromise) {
   globalWithMongo._mongoClientPromise = client.connect();
 }
 
-clientPromise = globalWithMongo._mongoClientPromise;
+clientPromise = globalWithMongo._mongoClientPromise!;
 
 export default clientPromise;

@@ -6,7 +6,7 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
-from schemas.user import RoleOut, UserOut
+from schemas.user import UserOut
 
 
 class DoctorBase(BaseModel):

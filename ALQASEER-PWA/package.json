@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test:vitest": "cross-env NODE_ENV=test node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false",
     "lint": "eslint .",
-    "e2e": "npx playwright test --config=playwright.config.ts"
+    "e2e": "cross-env VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run build && npx playwright test --config=playwright.config.ts"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",

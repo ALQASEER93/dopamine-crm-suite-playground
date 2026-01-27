@@ -13,6 +13,11 @@ from sqlalchemy.exc import OperationalError
 tmp_dir = Path(tempfile.gettempdir())
 test_db_path = tmp_dir / "crm_backend_pytest.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{test_db_path.as_posix()}"
+os.environ.setdefault("APP_ENV", "development")
+os.environ.setdefault("ALLOW_DEV_TOKEN", "1")
+os.environ.setdefault("DEV_TOKEN_PASSWORD", "Dev12345!")
+os.environ.setdefault("RATE_LIMIT_PER_MINUTE", "0")
+os.environ.setdefault("RATE_LIMIT_BURST", "0")
 test_db_path.parent.mkdir(parents=True, exist_ok=True)
 for suffix in ("", "-journal"):
     candidate = Path(f"{test_db_path}{suffix}")
@@ -23,12 +28,15 @@ for suffix in ("", "-journal"):
             pass
 
 from main import app, init_database  # noqa: E402
+from middleware.rate_limit import configure_rate_limits, reset_rate_limit_state  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_database() -> None:
     """Ensure test database schema exists."""
     init_database()
+    configure_rate_limits(0, 0)
+    reset_rate_limit_state()
     from core.db import SessionLocal, swap_engine, build_fallback_engine, Base  # noqa: WPS433
 
     try:

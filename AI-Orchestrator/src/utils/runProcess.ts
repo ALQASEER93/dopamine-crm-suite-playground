@@ -6,12 +6,29 @@ export interface ProcessResult {
   stderr: string;
 }
 
+const ALLOWED_COMMANDS = new Set(["git", "npm", "node", "python", "py"]);
+
+function normalizeCommand(command: string): string {
+  return command.split(/[\\/]/).pop() ?? command;
+}
+
 export function runProcess(command: string, args: string[], cwd: string): ProcessResult {
+  const normalized = normalizeCommand(command);
+  if (!ALLOWED_COMMANDS.has(normalized)) {
+    return {
+      exitCode: -1,
+      stdout: "",
+      stderr: `Blocked command "${command}". Not in allowlist.`,
+    };
+  }
+
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
+  // Justification: Command is validated against ALLOWED_COMMANDS allowlist above.
   try {
     const result = spawnSync(command, args, {
       cwd,
       encoding: "utf-8",
-      shell: process.platform === "win32", // let Windows resolve npm
+      shell: false,
     });
 
     if (result.error) {

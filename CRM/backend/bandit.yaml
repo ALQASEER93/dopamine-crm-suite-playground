@@ -2,3 +2,9 @@ exclude_dirs:
   - CRM/backend/tests
   - CRM/backend/scripts
   - CRM/backend/legacy-express/scripts
+  - .venv
+  - node_modules
+  - docs/_runs
+  - .npm-cache
+  - .npm-cache2
+  - .npm-cache3

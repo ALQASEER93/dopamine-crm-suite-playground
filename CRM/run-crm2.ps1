@@ -4,7 +4,7 @@ param(
 )
 
 $projectRoot = "D:\projects 2\crm2"
-$backendDir  = Join-Path $projectRoot "backend"
+$backendDir = Join-Path $projectRoot "backend"
 $frontendDir = Join-Path $projectRoot "frontend"
 
 if (-not $BackendOnly) {
@@ -19,7 +19,7 @@ if (-not $FrontendOnly) {
   Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "cd `"$backendDir`"; npm run dev"
+    "cd `"$backendDir`"; ./run-backend-dev.ps1"
   )
 }
 

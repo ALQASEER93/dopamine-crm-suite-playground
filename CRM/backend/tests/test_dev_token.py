@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 
 
 def test_dev_token_disabled_by_default(client, monkeypatch):

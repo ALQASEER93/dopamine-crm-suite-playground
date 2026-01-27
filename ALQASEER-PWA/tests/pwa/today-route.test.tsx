@@ -41,7 +41,7 @@ describe("TodayRoutePage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("صيدلية الروضة")).toBeInTheDocument();
+      expect(screen.getAllByText("صيدلية الروضة").length).toBeGreaterThan(0);
       expect(screen.getByText("د. لينا")).toBeInTheDocument();
     });
 

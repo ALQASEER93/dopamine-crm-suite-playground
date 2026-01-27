@@ -5,7 +5,6 @@ from typing import Dict, Iterable, Optional
 
 from sqlalchemy import MetaData, Table, inspect
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.automap import automap_base
 
 PHARMACY_TABLE_CANDIDATES = [
     "pharmacies",

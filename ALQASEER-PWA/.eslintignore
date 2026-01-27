@@ -2,3 +2,8 @@ node_modules
 dist
 playwright-report
 coverage
+test-results
+android
+android/app/build
+android/.gradle
+android/build

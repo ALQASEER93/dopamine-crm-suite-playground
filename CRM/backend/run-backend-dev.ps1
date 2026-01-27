@@ -1,4 +1,4 @@
-﻿cd "C:\\Users\\M\ S\ I\\ALQASEER_CRM_SUITE_FINAL\CRM\backend"
+﻿Set-Location $PSScriptRoot
 
 # Install or update dependencies for the FastAPI backend.
 python -m pip install --upgrade pip

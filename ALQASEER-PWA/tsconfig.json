@@ -6,6 +6,8 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
+    "allowJs": true,
+    "checkJs": false,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -16,14 +18,15 @@
     "paths": {
       "@/*": ["./src/pwa/*"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client", "vite-plugin-pwa/client", "vitest/globals"]
   },
   "include": [
     "src/pwa/**/*.ts",
     "src/pwa/**/*.tsx",
     "tests/**/*.ts",
     "tests/**/*.tsx",
-    "vite.config.ts"
+    "vite.config.ts",
+    "types/**/*.d.ts"
   ],
   "exclude": ["node_modules", "dist", ".next", "src/app/**", "src/components/**", "src/lib/**", "pages/**", "app/**"]
 }

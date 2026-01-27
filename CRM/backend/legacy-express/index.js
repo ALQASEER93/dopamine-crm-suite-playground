@@ -4,6 +4,8 @@ const { initDb } = require('./db');
 const { authenticate, AuthenticationError, refreshToken } = require('./services/auth');
 const { requireAuth, requireRole } = require('./middleware/auth');
 
+// nosemgrep: javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage
+// Justification: App uses header-based auth (X-Auth-Token) with cors credentials:false. CSRF via cookies is not possible.
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -42,10 +44,10 @@ const buildAuthResponse = (user) => ({
   name: user.name,
   role: user.role
     ? {
-        id: user.role.id,
-        name: user.role.name,
-        slug: user.role.slug,
-      }
+      id: user.role.id,
+      name: user.role.name,
+      slug: user.role.slug,
+    }
     : null,
 });
 

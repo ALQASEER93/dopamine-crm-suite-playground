@@ -1,4 +1,4 @@
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, useJsApiLoader, type Libraries } from "@react-google-maps/api";
 import React from "react";
 import { buildGoogleMapsUrl, buildOpenStreetMapUrl, formatCoords } from "../../utils/mapLinks";
 
@@ -21,7 +21,7 @@ type Props = {
 };
 
 const defaultCenter = { lat: 31.9539, lng: 35.9106 }; // Amman
-const MAP_LIBRARIES = ["places"] as const;
+const MAP_LIBRARIES: Libraries = ["places"];
 
 const formatTimestamp = (value?: string | null) =>
   value ? new Date(value).toLocaleString() : "Not captured";
