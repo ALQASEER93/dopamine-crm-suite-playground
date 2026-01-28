@@ -27,6 +27,14 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
 VITE_MAP_MODE=links
 ```
 
+## Mobile packaging (Capacitor)
+
+- Initial setup already scaffolded under `android/` and `ios/`.
+- Common commands:
+  - `npm run cap:smoke` (web build + cap sync)
+  - `npm run cap:android:debug` (Android debug build)
+  - `npm run cap:ios:build` (iOS simulator build; macOS only)
+
 
 هذا المشروع هو نسخة **PWA تجريبية أساسية** لمشروعك الكبير:
 تتبع المندوبين، تسجيل الزيارات مع GPS، ولوحة تحكم حديثة تعمل كتطبيق يمكن تثبيته على الموبايل (Android / iOS via browser).
