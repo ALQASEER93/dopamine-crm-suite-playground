@@ -34,4 +34,4 @@ jobs:
         run: npx cap sync ios
 
       - name: Build iOS (simulator, no codesign)
-        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination "platform=iOS Simulator,name=iPhone 15" build CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination "generic/platform=iOS Simulator" build CODE_SIGNING_ALLOWED=NO
