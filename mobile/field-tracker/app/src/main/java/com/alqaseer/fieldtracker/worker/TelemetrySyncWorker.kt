@@ -8,7 +8,12 @@ import com.alqaseer.fieldtracker.data.TelemetryRepository
 import com.alqaseer.fieldtracker.network.TelemetryApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.os.Build
 import java.time.Instant
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import org.json.JSONObject
 
 class TelemetrySyncWorker(
@@ -42,7 +47,7 @@ class TelemetrySyncWorker(
 
                 val pendingLocations = repository.pendingLocationBatch(50)
                 val locationPayloads = pendingLocations.map { location ->
-                    val recordedAtIso = Instant.ofEpochMilli(location.recordedAt).toString()
+                    val recordedAtIso = formatRecordedAt(location.recordedAt)
                     JSONObject()
                         .put("sessionId", location.sessionId)
                         .put("lat", location.lat)
@@ -58,6 +63,16 @@ class TelemetrySyncWorker(
             } catch (_error: Exception) {
                 Result.retry()
             }
+        }
+    }
+
+    private fun formatRecordedAt(epochMillis: Long): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Instant.ofEpochMilli(epochMillis).toString()
+        } else {
+            val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+            formatter.timeZone = TimeZone.getTimeZone("UTC")
+            formatter.format(Date(epochMillis))
         }
     }
 }
