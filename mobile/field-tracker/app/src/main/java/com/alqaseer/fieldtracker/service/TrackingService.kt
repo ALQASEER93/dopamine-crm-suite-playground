@@ -4,12 +4,15 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.pm.PackageManager
 import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
+import android.Manifest
+import androidx.core.content.ContextCompat
 import com.alqaseer.fieldtracker.R
 import com.alqaseer.fieldtracker.data.AppPreferences
 import com.alqaseer.fieldtracker.data.TelemetryRepository
@@ -65,10 +68,17 @@ class TrackingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun startLocationUpdates() {
+        if (!hasLocationPermission()) {
+            return
+        }
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 15_000L)
             .setMinUpdateIntervalMillis(5_000L)
             .build()
-        fusedClient.requestLocationUpdates(request, locationCallback, mainLooper)
+        try {
+            fusedClient.requestLocationUpdates(request, locationCallback, mainLooper)
+        } catch (_: SecurityException) {
+            // Permission revoked at runtime; ignore and wait for the next start.
+        }
     }
 
     private fun stopLocationUpdates() {
@@ -110,6 +120,18 @@ class TrackingService : Service() {
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setOngoing(true)
             .build()
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        val fineGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarseGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        return fineGranted || coarseGranted
     }
 
     companion object {
