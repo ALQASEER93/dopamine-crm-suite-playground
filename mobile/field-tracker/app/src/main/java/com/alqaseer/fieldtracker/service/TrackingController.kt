@@ -2,6 +2,7 @@ package com.alqaseer.fieldtracker.service
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import com.alqaseer.fieldtracker.BuildConfig
@@ -12,7 +13,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.text.SimpleDateFormat
 import java.time.Instant
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
 
 object TrackingController {
@@ -27,7 +32,7 @@ object TrackingController {
         val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         val payload = JSONObject()
             .put("sessionId", sessionId)
-            .put("startedAt", Instant.now().toString())
+            .put("startedAt", nowIso())
             .put("deviceId", deviceId)
             .put("appVersion", BuildConfig.VERSION_NAME)
             .put("platform", "android")
@@ -48,7 +53,7 @@ object TrackingController {
         if (sessionId.isNotBlank()) {
             val payload = JSONObject()
                 .put("sessionId", sessionId)
-                .put("stoppedAt", Instant.now().toString())
+                .put("stoppedAt", nowIso())
 
             val repository = TelemetryRepository(context)
             CoroutineScope(Dispatchers.IO).launch {
@@ -60,5 +65,15 @@ object TrackingController {
         prefs.clearSession()
         val intent = Intent(context, TrackingService::class.java).setAction(ACTION_STOP)
         context.startService(intent)
+    }
+
+    private fun nowIso(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Instant.now().toString()
+        } else {
+            val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+            formatter.timeZone = TimeZone.getTimeZone("UTC")
+            formatter.format(Date())
+        }
     }
 }
