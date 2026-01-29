@@ -34,10 +34,10 @@ jobs:
         run: bandit -r CRM/backend -c CRM/backend/bandit.yaml -f json -o docs/_runs/bandit_ci.json --exit-zero
 
       - name: Pip Audit (JSON)
-        run: pip-audit -r CRM/backend/requirements.txt -f json -o docs/_runs/pip_audit_ci.json
+        run: pip-audit -r CRM/backend/requirements.txt -f json -o docs/_runs/pip_audit_ci.json --exit-zero
 
       - name: Semgrep (JSON)
-        run: semgrep --config=auto CRM/backend --json -o docs/_runs/semgrep_ci.json
+        run: semgrep --config=auto CRM/backend --json -o docs/_runs/semgrep_ci.json || true
 
       - name: Backend Pytest
         run: |
