@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
 import android.Manifest
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.alqaseer.fieldtracker.R
 import com.alqaseer.fieldtracker.data.AppPreferences
@@ -114,7 +115,7 @@ class TrackingService : Service() {
             manager.createNotificationChannel(channel)
         }
 
-        return Notification.Builder(this, channelId)
+        return NotificationCompat.Builder(this, channelId)
             .setContentTitle("Tracking active")
             .setContentText("Background GPS reporting is running.")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
