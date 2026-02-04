@@ -7,7 +7,7 @@
 .layout__sidebar {
   width: 240px;
   background: var(--color-sidebar);
-  color: #fff;
+  color: var(--color-primary-contrast);
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1rem;
@@ -25,7 +25,7 @@
   letter-spacing: 0.08em;
   margin-bottom: 2rem;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--color-primary-contrast);
 }
 
 .layout__nav {
@@ -37,14 +37,15 @@
 .layout__nav-link {
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-sidebar-text);
   font-weight: 500;
+  text-align: start;
 }
 
 .layout__nav-link:hover,
 .layout__nav-link.is-active {
   background-color: var(--color-sidebar-accent);
-  color: #fff;
+  color: var(--color-primary-contrast);
 }
 
 .layout__content {
@@ -58,7 +59,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
-  background-color: var(--color-card);
+  background-color: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
@@ -71,7 +72,7 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  margin-right: 1rem;
+  margin-inline-end: 1rem;
 }
 
 .layout__header-info {
@@ -107,7 +108,7 @@
   height: 40px;
   border-radius: 50%;
   background-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-contrast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -126,12 +127,30 @@
 }
 
 .layout__signout {
-  margin-left: 1rem;
+  margin-inline-start: 1rem;
 }
 
 .layout__main {
   padding: 2rem;
   flex: 1;
+}
+
+[dir="rtl"] .layout {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .layout__header,
+[dir="rtl"] .layout__header-info,
+[dir="rtl"] .layout__header-user {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .layout__user-text {
+  text-align: right;
+}
+
+[dir="rtl"] .layout__header-info {
+  text-align: right;
 }
 
 @media (max-width: 960px) {
@@ -166,5 +185,16 @@
   .layout__header-user {
     width: 100%;
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 960px) {
+  [dir="rtl"] .layout__sidebar {
+    inset: 0 0 0 auto;
+    transform: translateX(100%);
+  }
+
+  [dir="rtl"] .layout__header-info {
+    align-items: flex-end;
   }
 }

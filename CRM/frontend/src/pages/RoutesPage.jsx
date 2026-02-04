@@ -3,7 +3,7 @@ const RoutesPage = () => {
     <div className="page-stack">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">Routes</h1>
+          <h1 className="page-heading">المسارات</h1>
           <p className="page-subtitle">خطط الزيارات اليومية ومتابعة التنفيذ.</p>
         </div>
       </div>

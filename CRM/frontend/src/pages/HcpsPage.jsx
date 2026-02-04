@@ -67,14 +67,14 @@ const HcpsPage = () => {
     <div className="entity-page">
       <div className="entity-toolbar">
         <div>
-          <h1 className="page-heading">Healthcare professionals</h1>
-          <p className="page-subtitle">Manage key contacts and territories.</p>
+          <h1 className="page-heading">مقدمو الرعاية الصحية</h1>
+          <p className="page-subtitle">إدارة جهات الاتصال والأقاليم.</p>
         </div>
         <div className="entity-search">
           <input
             type="search"
             className="input"
-            placeholder="Search by name or specialty"
+            placeholder="ابحث بالاسم أو التخصص"
             value={search}
             onChange={event => {
               setSearch(event.target.value);
@@ -86,7 +86,7 @@ const HcpsPage = () => {
 
       <div className="entity-filters">
         <select className="input" value={areaTagFilter} onChange={event => setAreaTagFilter(event.target.value)}>
-          <option value="">All area tags</option>
+          <option value="">كل وسوم المناطق</option>
           {distinctAreaTags.map(value => (
             <option key={value} value={value}>
               {value}
@@ -94,7 +94,7 @@ const HcpsPage = () => {
           ))}
         </select>
         <select className="input" value={specialtyFilter} onChange={event => setSpecialtyFilter(event.target.value)}>
-          <option value="">All specialties</option>
+          <option value="">كل التخصصات</option>
           {distinctSpecialties.map(value => (
             <option key={value} value={value}>
               {value}
@@ -102,7 +102,7 @@ const HcpsPage = () => {
           ))}
         </select>
         <select className="input" value={segmentFilter} onChange={event => setSegmentFilter(event.target.value)}>
-          <option value="">All segments</option>
+          <option value="">كل الشرائح</option>
           {distinctSegments.map(value => (
             <option key={value} value={value}>
               {value}
@@ -112,22 +112,22 @@ const HcpsPage = () => {
       </div>
 
       <section className="table-card entity-table">
-        {hcpsQuery.error && <div className="entity-empty">Unable to load HCPs: {hcpsQuery.error.message}</div>}
-        {!hcpsQuery.error && hcpsQuery.isLoading && <div className="entity-empty">Loading HCPs...</div>}
+        {hcpsQuery.error && <div className="entity-empty">تعذر تحميل الجهات: {hcpsQuery.error.message}</div>}
+        {!hcpsQuery.error && hcpsQuery.isLoading && <div className="entity-empty">جاري تحميل الجهات...</div>}
         {!hcpsQuery.error && !hcpsQuery.isLoading && items.length === 0 && (
-          <div className="entity-empty">No HCPs found.</div>
+          <div className="entity-empty">لا توجد جهات.</div>
         )}
         {!hcpsQuery.error && items.length > 0 && (
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Specialty</th>
-                <th>Area Tag</th>
-                <th>Segment</th>
-                <th>City</th>
-                <th>Phone</th>
-                <th>Email</th>
+                <th>الاسم</th>
+                <th>التخصص</th>
+                <th>وسم المنطقة</th>
+                <th>الشريحة</th>
+                <th>المدينة</th>
+                <th>الهاتف</th>
+                <th>البريد الإلكتروني</th>
               </tr>
             </thead>
             <tbody>
@@ -147,10 +147,10 @@ const HcpsPage = () => {
         )}
         <div className="entity-pagination">
           <span>
-            Page {page} of {totalPages}
+            صفحة {page} من {totalPages}
           </span>
           <div>
-            Rows
+            الصفوف
             <select
               value={pageSize}
               onChange={event => {
@@ -172,7 +172,7 @@ const HcpsPage = () => {
               onClick={() => setPage(prev => Math.max(1, prev - 1))}
               disabled={page === 1}
             >
-              Prev
+              السابق
             </button>
             <button
               type="button"
@@ -180,7 +180,7 @@ const HcpsPage = () => {
               onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
               disabled={page >= totalPages}
             >
-              Next
+              التالي
             </button>
           </div>
         </div>
@@ -190,28 +190,28 @@ const HcpsPage = () => {
         {selected && (
           <div className="detail-grid">
             <p>
-              <strong>Specialty:</strong> {selected.specialty || '-'}
+              <strong>التخصص:</strong> {selected.specialty || '-'}
             </p>
             <p>
-              <strong>Area Tag:</strong> {selected.areaTag || '-'}
+              <strong>وسم المنطقة:</strong> {selected.areaTag || '-'}
             </p>
             <p>
-              <strong>Segment:</strong> {selected.segment || '-'}
+              <strong>الشريحة:</strong> {selected.segment || '-'}
             </p>
             <p>
-              <strong>City:</strong> {selected.city || '-'}
+              <strong>المدينة:</strong> {selected.city || '-'}
             </p>
             <p>
-              <strong>Area:</strong> {selected.area || '-'}
+              <strong>المنطقة:</strong> {selected.area || '-'}
             </p>
             <p>
-              <strong>Phone:</strong> {selected.phone || '-'}
+              <strong>الهاتف:</strong> {selected.phone || '-'}
             </p>
             <p>
-              <strong>Mobile:</strong> {selected.mobile || '-'}
+              <strong>الجوال:</strong> {selected.mobile || '-'}
             </p>
             <p>
-              <strong>Email:</strong> {selected.email || '-'}
+              <strong>البريد الإلكتروني:</strong> {selected.email || '-'}
             </p>
           </div>
         )}

@@ -21,3 +21,7 @@
   color: var(--color-text-muted);
   text-align: center;
 }
+
+.table-card__meta {
+  text-align: start;
+}

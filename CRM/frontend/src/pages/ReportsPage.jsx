@@ -55,14 +55,12 @@ const ReportsPage = () => {
     <div className="page-stack">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">Reports</h1>
-          <p className="page-subtitle">
-            Analytics for visits, representatives, products and territories.
-          </p>
+          <h1 className="page-heading">التقارير</h1>
+          <p className="page-subtitle">تحليلات الزيارات والمندوبين والمنتجات والأقاليم.</p>
         </div>
         <form className="page-filters" onSubmit={handleApplyRange}>
           <label>
-            <span>From</span>
+            <span>من</span>
             <input
               type="date"
               className="input"
@@ -71,7 +69,7 @@ const ReportsPage = () => {
             />
           </label>
           <label>
-            <span>To</span>
+            <span>إلى</span>
             <input
               type="date"
               className="input"
@@ -80,7 +78,7 @@ const ReportsPage = () => {
             />
           </label>
           <button type="submit" className="btn btn-secondary">
-            Apply
+            تطبيق
           </button>
         </form>
       </div>
@@ -91,21 +89,21 @@ const ReportsPage = () => {
           className="btn btn-secondary"
           onClick={() => handlePreset('week')}
         >
-          This week
+          هذا الأسبوع
         </button>
         <button
           type="button"
           className="btn btn-secondary"
           onClick={() => handlePreset('month')}
         >
-          This month
+          هذا الشهر
         </button>
         <button
           type="button"
           className="btn btn-secondary"
           onClick={() => handlePreset('quarter')}
         >
-          This quarter
+          هذا الربع
         </button>
       </div>
 

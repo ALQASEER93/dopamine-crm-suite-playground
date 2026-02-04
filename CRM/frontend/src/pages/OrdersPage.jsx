@@ -3,17 +3,17 @@ const OrdersPage = () => {
     <div className="page-stack">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">Orders</h1>
-          <p className="page-subtitle">Track orders, customers, and totals across DPM.</p>
+          <h1 className="page-heading">الطلبات</h1>
+          <p className="page-subtitle">متابعة الطلبات والعملاء والإجماليات عبر DPM.</p>
         </div>
         <button type="button" className="btn btn-primary" disabled>
-          New order (coming soon)
+          طلب جديد (قريبًا)
         </button>
       </div>
 
       <div className="page-card">
         <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>
-          Orders list, details, and creation flow will be connected to backend endpoints in the upcoming iteration.
+          سيتم ربط قائمة الطلبات وتفاصيلها ومسار الإنشاء مع واجهات الخلفية في الإصدار القادم.
         </p>
       </div>
     </div>
