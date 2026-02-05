@@ -178,7 +178,7 @@ if ($fetchOk -and $changedFiles -and $changedFiles[0]) {
     if (Test-Path $filePath) {
       $size = (Get-Item $filePath).Length
       $totalSize += $size
-      $sizeLines += "- $filePath: $size"
+      $sizeLines += "- ${filePath}: $size"
     } else {
       $sizeLines += "- $filePath: غير مذكور (file missing)"
     }
