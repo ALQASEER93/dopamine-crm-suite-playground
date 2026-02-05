@@ -72,8 +72,6 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
         $jobId = $Matches[1]
         $jobName = $null
         $steps = @()
-        $currentStepWorkingDir = $null
-        $inStep = $false
 
         for ($k = $j + 1; $k -lt $lines.Count; $k++) {
           $lineK = $lines[$k]
@@ -90,37 +88,51 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
           }
 
           if ($lineK -match '^\s*-\s+') {
-            $currentStepWorkingDir = $null
-            $inStep = $true
-            if ($lineK -match '^\s*-\s*run:\s*(.+)$') {
-              $runLine = $Matches[1]
-              $steps += [ordered]@{ working_directory = $currentStepWorkingDir; run = $runLine }
-              $inStep = $false
-            }
-            continue
-          }
-
-          if ($inStep -and $lineK -match '^\s*working-directory:\s*(.+)$') {
-            $currentStepWorkingDir = $Matches[1].Trim()
-            continue
-          }
-
-          if ($inStep -and $lineK -match '^\s*run:\s*(.+)$') {
-            $runValue = $Matches[1].Trim()
-            if ($runValue -eq '|' -or $runValue -eq '>') {
-              $runIndent = Get-Indent $lineK
-              $block = @()
-              for ($m = $k + 1; $m -lt $lines.Count; $m++) {
-                $blockLine = $lines[$m]
-                $blockIndent = Get-Indent $blockLine
-                if ($blockIndent -le $runIndent) { break }
-                $block += ($blockLine.TrimEnd())
-                $k = $m
+            $stepIndent = Get-Indent $lineK
+            $stepLines = @($lineK)
+            $endIndex = $k
+            for ($m = $k + 1; $m -lt $lines.Count; $m++) {
+              $nextLine = $lines[$m]
+              if ($nextLine -match '^\s*$' -or $nextLine.Trim().StartsWith('#')) {
+                $stepLines += $nextLine
+                continue
               }
-              $runValue = ($block -join "`n").Trim()
+              $indentM = Get-Indent $nextLine
+              if ($indentM -le $stepIndent) { break }
+              $stepLines += $nextLine
+              $endIndex = $m
             }
-            $steps += [ordered]@{ working_directory = $currentStepWorkingDir; run = $runValue }
-            $inStep = $false
+
+            $stepWorkingDir = $null
+            $stepRun = $null
+            for ($s = 0; $s -lt $stepLines.Count; $s++) {
+              $stepLine = $stepLines[$s]
+              if ($stepLine -match '^\s*working-directory:\s*(.+)$') {
+                $stepWorkingDir = $Matches[1].Trim()
+                continue
+              }
+              if ($stepLine -match '^\s*run:\s*(.+)$' -or $stepLine -match '^\s*-\s*run:\s*(.+)$') {
+                $runValue = $Matches[1].Trim()
+                if ($runValue -eq '|' -or $runValue -eq '>') {
+                  $runIndent = Get-Indent $stepLine
+                  $block = @()
+                  for ($t = $s + 1; $t -lt $stepLines.Count; $t++) {
+                    $blockLine = $stepLines[$t]
+                    if (Get-Indent $blockLine -le $runIndent) { break }
+                    $block += ($blockLine.TrimEnd())
+                  }
+                  $runValue = ($block -join "`n").Trim()
+                }
+                $stepRun = $runValue
+              }
+            }
+
+            if ($stepRun) {
+              $steps += [ordered]@{ working_directory = $stepWorkingDir; run = $stepRun }
+            }
+
+            $k = $endIndex
+            continue
           }
         }
 
