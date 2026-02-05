@@ -3,12 +3,12 @@ param(
 )
 
 function Resolve-PythonCommand {
-  $isWindows = $false
-  if ($PSVersionTable.Platform -eq "Win32NT") { $isWindows = $true }
-  if ($env:OS -like "*Windows*") { $isWindows = $true }
+  $isWindowsLocal = $false
+  if ($PSVersionTable.Platform -eq "Win32NT") { $isWindowsLocal = $true }
+  if ($env:OS -like "*Windows*") { $isWindowsLocal = $true }
 
   $candidates = @()
-  if ($isWindows) {
+  if ($isWindowsLocal) {
     $candidates = @("py -3.11", "py -3", "py", "python")
   } else {
     $candidates = @("python3", "python")
