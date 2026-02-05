@@ -12,9 +12,10 @@ if (-not $RunDir) {
 }
 
 $repoRoot = (Resolve-Path ".").Path
-$logsDir = Join-Path $RunDir "logs"
-$artifactsDir = Join-Path $RunDir "artifacts"
-$jsonDir = Join-Path $RunDir "json"
+$runDirFull = if ([System.IO.Path]::IsPathRooted($RunDir)) { $RunDir } else { Join-Path $repoRoot $RunDir }
+$logsDir = Join-Path $runDirFull "logs"
+$artifactsDir = Join-Path $runDirFull "artifacts"
+$jsonDir = Join-Path $runDirFull "json"
 
 New-Item -ItemType Directory -Force -Path $logsDir, $artifactsDir, $jsonDir | Out-Null
 
