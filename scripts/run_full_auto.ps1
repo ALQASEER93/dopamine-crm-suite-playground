@@ -180,7 +180,7 @@ if ($fetchOk -and $changedFiles -and $changedFiles[0]) {
       $totalSize += $size
       $sizeLines += "- ${filePath}: $size"
     } else {
-      $sizeLines += "- $filePath: غير مذكور (file missing)"
+      $sizeLines += "- ${filePath}: غير مذكور (file missing)"
     }
   }
   $sizeLines += ""
