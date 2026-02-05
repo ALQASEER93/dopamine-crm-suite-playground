@@ -1,4 +1,4 @@
-name: Monorepo CI
+name: CI
 
 on:
   push:
@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   ai-orchestrator:
+    name: AI Orchestrator
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +30,7 @@ jobs:
         working-directory: AI-Orchestrator
 
   backend:
+    name: CRM Backend (FastAPI)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +54,7 @@ jobs:
         working-directory: CRM/backend
 
   crm-frontend:
+    name: CRM Frontend (Vite/React)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +72,7 @@ jobs:
         working-directory: CRM/frontend
 
   pwa:
+    name: ALQASEER PWA
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
