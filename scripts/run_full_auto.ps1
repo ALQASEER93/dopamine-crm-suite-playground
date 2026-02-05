@@ -199,6 +199,7 @@ $gatesExit = $LASTEXITCODE
 
 $ownerActionsPath = Join-Path $artifactsDir "OWNER_ACTIONS.md"
 $needsOwnerActions = $false
+if (Test-Path $ownerActionsPath) { Remove-Item -Force $ownerActionsPath }
 if (Test-Path $gatesJson) {
   $gatesData = Get-Content -Path $gatesJson | ConvertFrom-Json
   foreach ($gate in $gatesData.gates) {
