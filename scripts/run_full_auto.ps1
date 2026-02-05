@@ -249,18 +249,17 @@ Set-Content -Path $handoffPlan -Value "Plan-only response based on QWEN_EVIDENCE
 
 $overall = if ($gatesExit -eq 0) { "PASS" } else { "FAIL" }
 
-$report = @(
-  "# report",
-  "",
-  "overall: $overall",
-  "run_dir: $runDir",
-  "",
-  "## key_findings",
-  if ($gatesExit -eq 0) { "- Gates passed." } else { "- Gates failed or missing dependencies." },
-  "",
-  "## next_actions",
-  if (Test-Path $ownerActionsPath) { "- Review OWNER_ACTIONS.md" } else { "- Review GATES.md for failures if any." }
-)
+$report = @()
+$report += "# report"
+$report += ""
+$report += "overall: $overall"
+$report += "run_dir: $runDir"
+$report += ""
+$report += "## key_findings"
+if ($gatesExit -eq 0) { $report += "- Gates passed." } else { $report += "- Gates failed or missing dependencies." }
+$report += ""
+$report += "## next_actions"
+if (Test-Path $ownerActionsPath) { $report += "- Review OWNER_ACTIONS.md" } else { $report += "- Review GATES.md for failures if any." }
 Set-Content -Path (Join-Path $runDir "report.md") -Value ($report -join "`n") -Encoding utf8
 
 $zipPath = "docs/_runs/$runName.zip"
