@@ -198,14 +198,34 @@ $gatesScript = Join-Path $PSScriptRoot "run_gates.ps1"
 $gatesExit = $LASTEXITCODE
 
 $ownerActionsPath = Join-Path $artifactsDir "OWNER_ACTIONS.md"
+$needsOwnerActions = $false
 if (Test-Path $gatesJson) {
   $gatesData = Get-Content -Path $gatesJson | ConvertFrom-Json
   foreach ($gate in $gatesData.gates) {
     if ($gate.error -and ($gate.error -match "not recognized" -or $gate.error -match "command not found")) {
-      Set-Content -Path $ownerActionsPath -Value "# OWNER_ACTIONS`n`nتعذر تشغيل أحد الأوامر محليا. يرجى فتح لوحة التحكم > البرامج > تثبيت Node.js LTS وPython 3.11 عبر المثبت الرسمي، ثم إعادة تشغيل FULL AUTO." -Encoding utf8
+      $needsOwnerActions = $true
       break
     }
   }
+}
+
+if (-not $needsOwnerActions) {
+  if (Test-Path $gatesJson) {
+    $gatesData = Get-Content -Path $gatesJson | ConvertFrom-Json
+    foreach ($gate in $gatesData.gates) {
+      if ($gate.log -and (Test-Path $gate.log)) {
+        $logContent = Get-Content -Path $gate.log -Raw
+        if ($logContent -match "npm ci" -and $logContent -match "package-lock.json") {
+          $needsOwnerActions = $true
+          break
+        }
+      }
+    }
+  }
+}
+
+if ($needsOwnerActions) {
+  Set-Content -Path $ownerActionsPath -Value "# OWNER_ACTIONS`n`nتعذر تشغيل البوابات بالكامل. الرجاء فتح مستكشف الملفات والتحقق من وجود package-lock.json داخل AI-Orchestrator وCRM/backend وCRM/frontend وALQASEER-PWA. إذا كان أي ملف مفقودا، اتبع سياسة الفريق لتوليد ملفات القفل عبر الأدوات المعتمدة، ثم أعد تشغيل FULL AUTO." -Encoding utf8
 }
 
 $qwenEvidence = Join-Path $artifactsDir "QWEN_EVIDENCE.md"
