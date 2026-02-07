@@ -1,0 +1,3 @@
+This placeholder intentionally replaces the binary zip artifact.
+Reason: mobile PR composer reports "الملفات الثنائية غير مدعومة" for binary attachments.
+Use folder contents under docs/_runs/run_20260206_173257/ directly.
