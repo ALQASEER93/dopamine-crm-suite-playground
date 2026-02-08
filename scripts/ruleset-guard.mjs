@@ -35,6 +35,20 @@ const errorLogPath = path.join(logsDir, "error.log");
 
 const errors = [];
 
+async function readEventPayload() {
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (!eventPath) {
+    return null;
+  }
+  try {
+    const raw = await fs.readFile(eventPath, "utf8");
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    await recordError("event_payload", `Failed to read ${eventPath}: ${err?.message || String(err)}`);
+    return null;
+  }
+}
+
 async function ensureDirs() {
   await fs.mkdir(runDir, { recursive: true });
   await fs.mkdir(artifactsDir, { recursive: true });
@@ -194,9 +208,16 @@ async function main() {
   await ensureDirs();
   await writeText(errorLogPath, "");
 
+  const eventPayload = await readEventPayload();
+  const eventName = process.env.GITHUB_EVENT_NAME || null;
+
   const apiBase = process.env.GITHUB_API_URL || "https://api.github.com";
   const token = process.env.GITHUB_TOKEN;
-  const repoSlug = getRepoSlug();
+  const repoSlug =
+    process.env.GITHUB_REPOSITORY ||
+    eventPayload?.repository?.full_name ||
+    eventPayload?.pull_request?.base?.repo?.full_name ||
+    getRepoSlug();
 
   const headers = {
     Accept: "application/vnd.github+json",
@@ -231,7 +252,14 @@ async function main() {
   }
 
   let headSha = null;
-  if (repoSlug && defaultBranch) {
+  let headShaSource = null;
+  if (eventName === "pull_request" && eventPayload?.pull_request?.head?.sha) {
+    headSha = eventPayload.pull_request.head.sha;
+    headShaSource = "pull_request.head.sha";
+  } else if (process.env.GITHUB_SHA) {
+    headSha = process.env.GITHUB_SHA;
+    headShaSource = "GITHUB_SHA";
+  } else if (repoSlug && defaultBranch) {
     const commitResp = await apiGet(
       "default_branch_head",
       `${apiBase}/repos/${repoSlug}/commits/${encodeURIComponent(defaultBranch)}`,
@@ -240,6 +268,7 @@ async function main() {
     );
     if (commitResp.ok) {
       headSha = commitResp.data?.sha || null;
+      headShaSource = "default_branch_head";
     }
   } else if (!defaultBranch) {
     await recordError("default_branch_head", "Default branch is missing; cannot resolve HEAD SHA.");
@@ -362,6 +391,7 @@ async function main() {
   reportLines.push(`- Repo: ${repoSlug || "غير مذكور"}`);
   reportLines.push(`- Default Branch: ${defaultBranch || "غير مذكور"}`);
   reportLines.push(`- Default Branch HEAD SHA: ${headSha || "غير مذكور"}`);
+  reportLines.push(`- Head SHA Source: ${headShaSource || "غير مذكور"}`);
   reportLines.push("");
 
   reportLines.push("## Ruleset Enforcement");

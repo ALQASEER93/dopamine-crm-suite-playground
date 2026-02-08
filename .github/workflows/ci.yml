@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   ai-orchestrator:
-    name: ai-orchestrator
+    name: AI Orchestrator
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
         working-directory: AI-Orchestrator
 
   backend:
-    name: backend
+    name: CRM Backend (FastAPI)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
         working-directory: CRM/backend
 
   crm-frontend:
-    name: crm-frontend
+    name: CRM Frontend (Vite/React)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
         working-directory: CRM/frontend
 
   pwa:
-    name: pwa
+    name: ALQASEER PWA
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
