@@ -10,8 +10,6 @@ on:
 
 permissions:
   contents: read
-  checks: read
-  statuses: read
   pull-requests: read
 
 jobs:
@@ -27,6 +25,8 @@ jobs:
           node-version: "20"
 
       - name: Run Ruleset Guard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/ruleset-guard.mjs
 
       - name: Zip Latest Run
