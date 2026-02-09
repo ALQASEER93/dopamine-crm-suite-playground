@@ -1,19 +1,19 @@
 name: Ruleset Guard
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * *"
   pull_request:
-    branches:
-      - main
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
+  actions: read
+  checks: read
   pull-requests: read
+  administration: read
 
 jobs:
   ruleset-guard:
+    name: ruleset-guard
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,24 +22,29 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
 
-      - name: Run Ruleset Guard
+      - name: Run ruleset guard
+        id: guard
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.sha }}
         run: node scripts/ruleset-guard.mjs
 
-      - name: Zip Latest Run
+      - name: Publish ruleset-guard summary
+        if: always()
         run: |
-          latest_dir=$(ls -1dt docs/_runs/run_* 2>/dev/null | head -n 1)
-          if [ -z "$latest_dir" ]; then
-            echo "No run directory found."
-            exit 1
+          echo "## Ruleset Guard (always-on report)" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f artifacts/ruleset-guard/summary.md ]; then
+            cat artifacts/ruleset-guard/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_No summary file found at artifacts/ruleset-guard/summary.md_" >> "$GITHUB_STEP_SUMMARY"
           fi
-          zip -r "docs/_runs/$(basename "$latest_dir").zip" "$latest_dir"
 
-      - name: Upload Runs
+      - name: Upload ruleset-guard artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ruleset-guard-runs
-          path: docs/_runs/**
+          name: ruleset-guard-report
+          path: artifacts/ruleset-guard/**
+          if-no-files-found: warn

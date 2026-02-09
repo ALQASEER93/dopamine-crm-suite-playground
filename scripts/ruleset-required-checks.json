@@ -1,0 +1,10 @@
+{
+  "required": [
+    "AI Orchestrator",
+    "CRM Backend (FastAPI)",
+    "CRM Frontend (Vite/React)",
+    "ALQASEER PWA",
+
+    { "match": "^CodeQL$" }
+  ]
+}
