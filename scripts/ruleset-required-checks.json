@@ -1,9 +1,9 @@
 {
   "required": [
-    { "match": "(^AI Orchestrator$|^CI\\s*/\\s*AI Orchestrator\\b)" },
-    { "match": "(^CRM Backend \\(FastAPI\\)$|^CI\\s*/\\s*CRM Backend \\(FastAPI\\)\\b)" },
-    { "match": "(^CRM Frontend \\(Vite/React\\)$|^CI\\s*/\\s*CRM Frontend \\(Vite/React\\)\\b)" },
-    { "match": "(^ALQASEER PWA$|^CI\\s*/\\s*ALQASEER PWA\\b)" },
-    { "match": "^CodeQL$" }
+    { "match": "(^AI Orchestrator$|^CI\\s*/\\s*AI Orchestrator(?:$|\\s|\\())" },
+    { "match": "(^CRM Backend \\(FastAPI\\)$|^CI\\s*/\\s*CRM Backend \\(FastAPI\\)(?:$|\\s|\\())" },
+    { "match": "(^CRM Frontend \\(Vite/React\\)$|^CI\\s*/\\s*CRM Frontend \\(Vite/React\\)(?:$|\\s|\\())" },
+    { "match": "(^ALQASEER PWA$|^CI\\s*/\\s*ALQASEER PWA(?:$|\\s|\\())" },
+    { "match": "(^CodeQL$|^Code scanning results\\s*/\\s*CodeQL$)" }
   ]
 }
