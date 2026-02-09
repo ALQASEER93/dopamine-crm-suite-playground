@@ -3,13 +3,16 @@ name: Ruleset Guard
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
+    branches:
+      - main
 
 permissions:
   contents: read
   actions: read
   checks: read
+  statuses: read
   pull-requests: read
-  administration: read
 
 jobs:
   ruleset-guard:
@@ -22,14 +25,22 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20.x"
 
       - name: Run ruleset guard
         id: guard
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          TARGET_SHA: ${{ github.sha }}
-        run: node scripts/ruleset-guard.mjs
+          TARGET_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+        run: |
+          mkdir -p artifacts/ruleset-guard
+          set +e
+          node scripts/ruleset-guard.mjs
+          code=$?
+          echo "$code" > artifacts/ruleset-guard/exit_code.txt
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
 
       - name: Publish ruleset-guard summary
         if: always()
@@ -48,3 +59,12 @@ jobs:
           name: ruleset-guard-report
           path: artifacts/ruleset-guard/**
           if-no-files-found: warn
+
+      - name: Fail job on guard exit code
+        if: always()
+        run: |
+          code="${{ steps.guard.outputs.exit_code }}"
+          if [ -z "$code" ]; then
+            code=1
+          fi
+          exit "$code"

@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  merge_group:
+    branches:
+      - main
 
 permissions:
   contents: read
