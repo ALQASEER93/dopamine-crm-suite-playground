@@ -1,10 +1,9 @@
 {
   "required": [
-    "AI Orchestrator",
-    "CRM Backend (FastAPI)",
-    "CRM Frontend (Vite/React)",
-    "ALQASEER PWA",
-
+    { "match": "(^AI Orchestrator$|^CI\\s*/\\s*AI Orchestrator\\b)" },
+    { "match": "(^CRM Backend \\(FastAPI\\)$|^CI\\s*/\\s*CRM Backend \\(FastAPI\\)\\b)" },
+    { "match": "(^CRM Frontend \\(Vite/React\\)$|^CI\\s*/\\s*CRM Frontend \\(Vite/React\\)\\b)" },
+    { "match": "(^ALQASEER PWA$|^CI\\s*/\\s*ALQASEER PWA\\b)" },
     { "match": "^CodeQL$" }
   ]
 }
