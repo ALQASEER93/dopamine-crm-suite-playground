@@ -17,6 +17,15 @@ function norm(s) {
   return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function stripContextDecorators(s) {
+  let t = String(s || "").trim();
+  t = t.replace(/\s*\((pull_request|merge_group|push|workflow_dispatch|schedule)\)\s*$/i, "").trim();
+  if (t.includes("/")) {
+    t = t.split("/").pop().trim();
+  }
+  return t;
+}
+
 async function writeFileSafe(p, content) {
   await fs.mkdir(OUTDIR, { recursive: true });
   await fs.writeFile(`${OUTDIR}/${p}`, content, "utf8");
@@ -156,8 +165,16 @@ function isSuccess(kind, conclusion) {
 
 function matchRequired(matcher, foundMapNormToBest) {
   if (matcher.type === "exact") {
-    const k = norm(matcher.exact);
-    return foundMapNormToBest.get(k) || null;
+    const directKey = norm(matcher.exact);
+    const direct = foundMapNormToBest.get(directKey);
+    if (direct) return direct;
+
+    const stripped = stripContextDecorators(matcher.exact);
+    const strippedKey = norm(stripped);
+    if (strippedKey && strippedKey !== directKey) {
+      return foundMapNormToBest.get(strippedKey) || null;
+    }
+    return null;
   }
   if (matcher.type === "regex") {
     for (const [_, v] of foundMapNormToBest.entries()) {
