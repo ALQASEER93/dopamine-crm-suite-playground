@@ -102,12 +102,23 @@ export default function VisitsPage() {
         setVisits((prev) => [{ ...created, serverStatus: "scheduled" }, ...prev]);
         setMessage("\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u0628\u0646\u062c\u0627\u062d.");
       } else {
-        enqueueMutation({
+        const queued = enqueueMutation({
           endpoint: "visits",
           method: "POST",
           payload,
           type: "visit",
         });
+        if (!queued.queued) {
+          setMessage(
+            queued.reason === "offline_limit_reached"
+              ? "\u062a\u0645 \u062a\u062c\u0627\u0648\u0632 \u062d\u062f \u0627\u0644\u0639\u0645\u0644 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644 (\u0633\u0627\u0639\u0629 \u064a\u0648\u0645\u064a\u064b\u0627). \u064a\u0631\u062c\u0649 \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u0644\u0644\u0645\u0632\u0627\u0645\u0646\u0629."
+              : queued.reason === "online_required"
+                ? "\u064a\u0631\u062c\u0649 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0625\u0646\u062a\u0631\u0646\u062a \u0644\u0644\u0639\u0645\u0644\u064a\u0627\u062a \u063a\u064a\u0631 \u0627\u0644\u0645\u0644\u0627\u062d\u0638\u0627\u062a \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644."
+              : "\u0644\u0645 \u062a\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0639\u0645\u0644\u064a\u0629 (\u0645\u0643\u0631\u0631\u0629 \u0623\u0648 \u063a\u064a\u0631 \u0645\u0633\u0645\u0648\u062d\u0629)."
+          );
+          setLoading(false);
+          return;
+        }
         refreshQueue();
         setVisits((prev) => [{ ...payload, id: crypto.randomUUID(), serverStatus: "pending_create" } as Visit, ...prev]);
         setMessage("\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644 \u0648\u0633\u064a\u062a\u0645 \u0645\u0632\u0627\u0645\u0646\u062a\u0647\u0627 \u0644\u0627\u062d\u0642\u064b\u0627.");
@@ -173,12 +184,23 @@ export default function VisitsPage() {
     };
 
     if (!navigator.onLine) {
-      enqueueMutation({
+      const queued = enqueueMutation({
         endpoint: `visits/${visit.id}/start`,
         method: "POST",
         payload,
         type: "visit-start",
       });
+      if (!queued.queued) {
+        setMessage(
+          queued.reason === "offline_limit_reached"
+            ? "\u062d\u062f \u0627\u0644\u0639\u0645\u0644 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644 \u0627\u0643\u062a\u0645\u0644 (\u0633\u0627\u0639\u0629 \u064a\u0648\u0645\u064a\u064b\u0627)."
+            : queued.reason === "online_required"
+              ? "\u0628\u062f\u0621/\u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u064a\u062a\u0637\u0644\u0628 \u0627\u062a\u0635\u0627\u0644 \u0625\u0646\u062a\u0631\u0646\u062a \u0641\u0639\u0627\u0644."
+            : "\u0644\u0645 \u062a\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 (\u0645\u0643\u0631\u0631\u0629 \u0623\u0648 \u063a\u064a\u0631 \u0645\u0633\u0645\u0648\u062d\u0629)."
+        );
+        setLoading(false);
+        return;
+      }
       refreshQueue();
       updateVisit(visit.id, { serverStatus: "pending_start", startedAt: payload.startedAt });
       setLoading(false);
@@ -219,12 +241,23 @@ export default function VisitsPage() {
     };
 
     if (!navigator.onLine) {
-      enqueueMutation({
+      const queued = enqueueMutation({
         endpoint: `visits/${visit.id}/end`,
         method: "POST",
         payload,
         type: "visit-end",
       });
+      if (!queued.queued) {
+        setMessage(
+          queued.reason === "offline_limit_reached"
+            ? "\u062d\u062f \u0627\u0644\u0639\u0645\u0644 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644 \u0627\u0643\u062a\u0645\u0644 (\u0633\u0627\u0639\u0629 \u064a\u0648\u0645\u064a\u064b\u0627)."
+            : queued.reason === "online_required"
+              ? "\u0628\u062f\u0621/\u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u064a\u062a\u0637\u0644\u0628 \u0627\u062a\u0635\u0627\u0644 \u0625\u0646\u062a\u0631\u0646\u062a \u0641\u0639\u0627\u0644."
+            : "\u0644\u0645 \u062a\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 (\u0645\u0643\u0631\u0631\u0629 \u0623\u0648 \u063a\u064a\u0631 \u0645\u0633\u0645\u0648\u062d\u0629)."
+        );
+        setLoading(false);
+        return;
+      }
       refreshQueue();
       updateVisit(visit.id, { serverStatus: "pending_end", endedAt: payload.endedAt });
       setLoading(false);
