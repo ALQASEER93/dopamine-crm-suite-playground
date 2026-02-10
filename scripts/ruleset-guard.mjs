@@ -6,6 +6,8 @@ const API = process.env.GITHUB_API_URL || "https://api.github.com";
 const token = process.env.GITHUB_TOKEN;
 const repoSlug = process.env.GITHUB_REPOSITORY;
 const targetSha = process.env.TARGET_SHA || process.env.GITHUB_SHA;
+const MAX_WAIT_SEC = Number.parseInt(process.env.RULESET_GUARD_MAX_WAIT_SEC || "480", 10);
+const POLL_INTERVAL_SEC = Number.parseInt(process.env.RULESET_GUARD_POLL_INTERVAL_SEC || "15", 10);
 
 const OUTDIR = process.env.RULESET_GUARD_OUTDIR || "artifacts/ruleset-guard";
 const FALLBACK_FILES = [
@@ -24,6 +26,10 @@ function stripContextDecorators(s) {
     t = t.split("/").pop().trim();
   }
   return t;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function writeFileSafe(p, content) {
@@ -163,6 +169,18 @@ function isSuccess(kind, conclusion) {
   return conclusion === "success";
 }
 
+function isInFlight(found) {
+  if (!found) return false;
+  if (found.kind === "check_run") {
+    const st = String(found.status || "").toLowerCase();
+    return ["queued", "in_progress", "waiting", "pending", "requested"].includes(st) || found.conclusion == null;
+  }
+  if (found.kind === "status") {
+    return String(found.conclusion || "").toLowerCase() === "pending";
+  }
+  return false;
+}
+
 function matchRequired(matcher, foundMapNormToBest) {
   if (matcher.type === "exact") {
     const directKey = norm(matcher.exact);
@@ -193,8 +211,19 @@ async function main() {
     targetSha,
     rulesets: { source: null, matched: [], required: [] },
     fallback: { used: false, source: null },
-    checks: { total: 0, found: [], requiredMatchers: [] },
-    evaluation: { missing: [], notSuccessful: [], ok: [] },
+    checks: {
+      total: 0,
+      found: [],
+      requiredMatchers: [],
+      polling: {
+        maxWaitSec: MAX_WAIT_SEC,
+        pollIntervalSec: POLL_INTERVAL_SEC,
+        attempts: 0,
+        elapsedSec: 0,
+        timedOut: false,
+      },
+    },
+    evaluation: { missing: [], notSuccessful: [], inFlight: [], ok: [] },
     errors: [],
     exitCode: 0,
   };
@@ -261,44 +290,79 @@ async function main() {
   const requiredMatchers = specToMatchers(requiredSpec);
   report.checks.requiredMatchers = requiredMatchers.map(m => ({ type: m.type, label: m.label, exact: m.exact }));
 
-  // 2) checks for TARGET_SHA
-  const found = await getChecksForSha(owner, repo, targetSha);
-  report.checks.total = found.length;
-  report.checks.found = found;
+  // 2) poll checks for TARGET_SHA until complete/success/failure/timeout
+  const startedMs = Date.now();
+  while (true) {
+    report.checks.polling.attempts += 1;
+    report.evaluation.missing = [];
+    report.evaluation.notSuccessful = [];
+    report.evaluation.inFlight = [];
+    report.evaluation.ok = [];
 
-  const foundBest = new Map();
-  // keep "best" record per normalized name (prefer success over failure)
-  for (const f of found) {
-    const k = norm(f.name);
-    const prev = foundBest.get(k);
-    if (!prev) foundBest.set(k, f);
-    else {
-      const prevOk = isSuccess(prev.kind, prev.conclusion);
-      const curOk = isSuccess(f.kind, f.conclusion);
-      if (curOk && !prevOk) foundBest.set(k, f);
-    }
-  }
+    const found = await getChecksForSha(owner, repo, targetSha);
+    report.checks.total = found.length;
+    report.checks.found = found;
 
-  for (const rm of requiredMatchers) {
-    const matched = matchRequired(rm, foundBest);
-    if (!matched) {
-      report.evaluation.missing.push(rm.label);
-      continue;
+    const foundBest = new Map();
+    // keep "best" record per normalized name (prefer success over failure/in-flight)
+    for (const f of found) {
+      const k = norm(f.name);
+      const prev = foundBest.get(k);
+      if (!prev) foundBest.set(k, f);
+      else {
+        const prevOk = isSuccess(prev.kind, prev.conclusion);
+        const curOk = isSuccess(f.kind, f.conclusion);
+        if (curOk && !prevOk) {
+          foundBest.set(k, f);
+        } else if (!prevOk && !curOk) {
+          const prevInFlight = isInFlight(prev);
+          const curInFlight = isInFlight(f);
+          if (!curInFlight && prevInFlight) foundBest.set(k, f);
+        }
+      }
     }
-    if (!isSuccess(matched.kind, matched.conclusion)) {
+
+    for (const rm of requiredMatchers) {
+      const matched = matchRequired(rm, foundBest);
+      if (!matched) {
+        report.evaluation.missing.push(rm.label);
+        continue;
+      }
+      if (isSuccess(matched.kind, matched.conclusion)) {
+        report.evaluation.ok.push({ required: rm.label, found: matched.name });
+        continue;
+      }
+      if (isInFlight(matched)) {
+        report.evaluation.inFlight.push({ required: rm.label, found: matched.name, status: matched.status, conclusion: matched.conclusion });
+        continue;
+      }
       report.evaluation.notSuccessful.push({ required: rm.label, found: matched.name, conclusion: matched.conclusion });
-      continue;
     }
-    report.evaluation.ok.push({ required: rm.label, found: matched.name });
+
+    const elapsedSec = Math.floor((Date.now() - startedMs) / 1000);
+    report.checks.polling.elapsedSec = elapsedSec;
+
+    if (report.evaluation.notSuccessful.length) {
+      report.exitCode = 2;
+      break;
+    }
+    if (!report.evaluation.missing.length && !report.evaluation.inFlight.length) {
+      report.exitCode = 0;
+      break;
+    }
+    if (elapsedSec >= MAX_WAIT_SEC) {
+      report.checks.polling.timedOut = true;
+      report.exitCode = 2;
+      break;
+    }
+    await sleep(Math.max(1, POLL_INTERVAL_SEC) * 1000);
   }
 
   // exit code rules:
   // 2 => required checks missing/not-success
   // 1 => unexpected error (handled earlier)
   // 0 => ok
-  if (report.evaluation.missing.length || report.evaluation.notSuccessful.length) {
-    report.exitCode = 2;
-  }
+  if (report.exitCode !== 0 && report.exitCode !== 1 && report.exitCode !== 2) report.exitCode = 2;
 
   const summaryLines = [];
   summaryLines.push(`- **TARGET_SHA**: \`${targetSha}\``);
@@ -309,9 +373,18 @@ async function main() {
   }
   summaryLines.push(`- **Found checks on TARGET_SHA**: ${report.checks.total}`);
   summaryLines.push(`- **Required**: ${requiredMatchers.length}`);
+  summaryLines.push(`- **Polling attempts**: ${report.checks.polling.attempts}`);
+  summaryLines.push(`- **Elapsed**: ${report.checks.polling.elapsedSec}s`);
+  if (report.checks.polling.timedOut) {
+    summaryLines.push(`- **Timeout**: reached ${MAX_WAIT_SEC}s waiting for required checks to finish`);
+  }
   if (report.evaluation.missing.length) {
     summaryLines.push(`\n### Missing required checks`);
     for (const x of report.evaluation.missing) summaryLines.push(`- ${x}`);
+  }
+  if (report.evaluation.inFlight.length) {
+    summaryLines.push(`\n### Required checks still in-flight`);
+    for (const x of report.evaluation.inFlight) summaryLines.push(`- ${x.required} -> found: ${x.found} (status: ${x.status || "unknown"}, conclusion: ${x.conclusion ?? "null"})`);
   }
   if (report.evaluation.notSuccessful.length) {
     summaryLines.push(`\n### Required checks not successful`);
