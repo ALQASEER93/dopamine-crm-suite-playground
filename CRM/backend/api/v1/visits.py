@@ -453,6 +453,17 @@ def update_visit(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
 
     updates = payload.model_dump(exclude_unset=True)
+    if "notes" in updates:
+        is_active_window = (
+            visit.status == "in_progress"
+            and visit.started_at is not None
+            and visit.ended_at is None
+        )
+        if not is_active_window:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Visit notes can only be edited while the visit is active.",
+            )
     if "doctor_id" in updates and updates["doctor_id"]:
         if not db.get(Doctor, updates["doctor_id"]):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Doctor not found.")
