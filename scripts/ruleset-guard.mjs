@@ -22,8 +22,8 @@ function norm(s) {
 function stripContextDecorators(s) {
   let t = String(s || "").trim();
   t = t.replace(/\s*\((pull_request|merge_group|push|workflow_dispatch|schedule)\)\s*$/i, "").trim();
-  if (t.includes("/")) {
-    t = t.split("/").pop().trim();
+  if (/\s\/\s/.test(t)) {
+    t = t.split(/\s\/\s/).pop().trim();
   }
   return t;
 }
@@ -164,7 +164,7 @@ async function getChecksForSha(owner, repo, sha) {
 }
 
 function isSuccess(kind, conclusion) {
-  if (kind === "check_run") return conclusion === "success";
+  if (kind === "check_run") return ["success", "neutral", "skipped"].includes(String(conclusion || "").toLowerCase());
   // commit status:
   return conclusion === "success";
 }
