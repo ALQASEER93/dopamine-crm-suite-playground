@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
 import pytest
 
 
 def _auth_headers(client):
+    os.environ.setdefault("ALLOW_DEV_TOKEN_ENDPOINT", "true")
     token = client.get("/api/dev/token").json()["token"]
     return {"Authorization": f"Bearer {token}"}
 

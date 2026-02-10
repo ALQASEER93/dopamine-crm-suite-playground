@@ -1,4 +1,4 @@
-﻿# Backend
+# Backend
 
 FastAPI is the primary backend. The former Express/Sequelize API has been moved under
 `legacy-express/` for reference only.
@@ -63,7 +63,7 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
 - Entry: `main.py` (run with `python -m uvicorn main:app --reload --port 8000` or `.\run-backend-dev.ps1`).
 - Uses SQLite by default (`data/fastapi.db` unless `DATABASE_URL` is set).
 - For PostgreSQL production, set `APP_ENV=production` and provide `PROD_DATABASE_URL` (SQLAlchemy DSN such as `postgresql+psycopg://user:pass@host:5432/db`); optional `PROD_ECHO_SQL=false` keeps logs quiet.
-- Auth/roles: validates JWT signed with `JWT_SECRET` (default `development-secret`) and enforces `admin` / `sales_manager` on admin routes.
+- Auth/roles: validates JWT signed with `JWT_SECRET`; when `DPM_ENV=production`, startup fails if `JWT_SECRET` is missing/weak (short/default secrets are rejected).
 - If the project drive blocks SQLite writes, the app falls back to `%TEMP%\crm_fastapi_fallback.sqlite`; set `DATABASE_URL` to an accessible path to persist data.
 
 ## API Overview
@@ -78,7 +78,7 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
   - `/api/v1/admin/users` ?+' Admin user management
   - `/api/admin/dpm-ledger/...` ?+' Pharmacy/area ledger summaries & statements
   - `/api/admin/ai/...` ?+' AI insights, tasks, drafts, collection plans
-  - `/api/dev/token` ?+' Dev-only JWT for local testing (not for production)
+  - `/api/dev/token` ?+' Dev-only JWT for local testing, exposed only when `DPM_ENV=development` and `ALLOW_DEV_TOKEN_ENDPOINT=true`
 - Docs: `/docs` (Swagger) and `/redoc`
 
 ## Frontend / PWA Integration
@@ -108,3 +108,4 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
 - Agent runner: `python -m ai_agents.scheduler` (honors `AI_SCHEDULER_ENABLED=1`).
 - Admin AI API: `/api/admin/ai/insights`, `/tasks`, `/tasks/{id}` (PATCH), `/drafts`, `/collection-plan`.
 - Agent descriptions: see `backend/ai_agents_overview.md`.
+

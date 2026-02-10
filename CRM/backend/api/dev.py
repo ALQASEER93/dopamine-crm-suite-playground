@@ -19,6 +19,12 @@ from services.auth import hash_password
 
 router = APIRouter(tags=["default"])
 
+_TRUE_VALUES = {"1", "true", "yes", "y", "on"}
+
+
+def _is_enabled(value: str | None) -> bool:
+    return (value or "").strip().lower() in _TRUE_VALUES
+
 
 def _manual_encode(payload: dict, secret: str) -> str:
     header = {"typ": "JWT", "alg": "HS256"}
@@ -37,8 +43,12 @@ def _manual_encode(payload: dict, secret: str) -> str:
 
 @router.get("/token")
 def dev_token() -> dict:
-    if os.environ.get("ALLOW_DEV_TOKEN", "1") != "1":
-        raise HTTPException(status_code=403, detail="Dev token endpoint disabled.")
+    is_dev_env = (settings.app_env or "").strip().lower() == "development"
+    allow_flag = _is_enabled(
+        os.environ.get("ALLOW_DEV_TOKEN_ENDPOINT", os.environ.get("ALLOW_DEV_TOKEN"))
+    )
+    if not (is_dev_env and allow_flag):
+        raise HTTPException(status_code=404, detail="Not Found")
 
     with SessionLocal() as session:
         admin_role = session.query(Role).filter(Role.slug == "admin").first()
