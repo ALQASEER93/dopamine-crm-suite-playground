@@ -1,0 +1,70 @@
+name: Ruleset Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  statuses: read
+  pull-requests: read
+
+jobs:
+  ruleset-guard:
+    name: ruleset-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Run ruleset guard
+        id: guard
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          mkdir -p artifacts/ruleset-guard
+          set +e
+          node scripts/ruleset-guard.mjs
+          code=$?
+          echo "$code" > artifacts/ruleset-guard/exit_code.txt
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Publish ruleset-guard summary
+        if: always()
+        run: |
+          echo "## Ruleset Guard (always-on report)" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f artifacts/ruleset-guard/summary.md ]; then
+            cat artifacts/ruleset-guard/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_No summary file found at artifacts/ruleset-guard/summary.md_" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload ruleset-guard artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ruleset-guard-report
+          path: artifacts/ruleset-guard/**
+          if-no-files-found: warn
+
+      - name: Fail job on guard exit code
+        if: always()
+        run: |
+          code="${{ steps.guard.outputs.exit_code }}"
+          if [ -z "$code" ]; then
+            code=1
+          fi
+          exit "$code"

@@ -3,17 +3,17 @@ const CollectionsPage = () => {
     <div className="page-stack">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">Collections</h1>
-          <p className="page-subtitle">Track invoices, collected amounts, and balances.</p>
+          <h1 className="page-heading">التحصيلات</h1>
+          <p className="page-subtitle">متابعة الفواتير والمبالغ المحصلة والأرصدة.</p>
         </div>
         <button type="button" className="btn btn-primary" disabled>
-          Record collection (coming soon)
+          تسجيل تحصيل (قريبًا)
         </button>
       </div>
 
       <div className="page-card">
         <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>
-          Collections list and update workflows will be wired to backend endpoints in the next milestone.
+          سيتم ربط قائمة التحصيلات ومسارات التحديث مع واجهات الخلفية في المرحلة القادمة.
         </p>
       </div>
     </div>

@@ -4,24 +4,45 @@ import { useAuth } from '../auth/AuthContext';
 import './MainLayout.css';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Doctors', path: '/doctors' },
-  { label: 'Pharmacies', path: '/pharmacies' },
-  { label: 'Products', path: '/products' },
-  { label: 'Orders', path: '/orders' },
-  { label: 'Visits', path: '/visits' },
-  { label: 'Routes', path: '/routes' },
-  { label: 'Stock', path: '/stock' },
-  { label: 'Targets', path: '/targets' },
-  { label: 'Collections', path: '/collections' },
-  { label: 'Reports', path: '/reports', roles: ['admin', 'sales_manager'] },
-  { label: 'Settings', path: '/settings' },
-  { label: 'Admin', path: '/settings/users', roles: ['admin', 'sales_manager'] },
+  { label: 'لوحة التحكم', path: '/dashboard' },
+  { label: 'الأطباء', path: '/doctors' },
+  { label: 'الصيدليات', path: '/pharmacies' },
+  { label: 'المنتجات', path: '/products' },
+  { label: 'الطلبات', path: '/orders' },
+  { label: 'الزيارات', path: '/visits' },
+  { label: 'المسارات', path: '/routes' },
+  { label: 'المخزون', path: '/stock' },
+  { label: 'الأهداف', path: '/targets' },
+  { label: 'التحصيلات', path: '/collections' },
+  { label: 'التقارير', path: '/reports', roles: ['admin', 'sales_manager'] },
+  { label: 'الإعدادات', path: '/settings' },
+  { label: 'الإدارة', path: '/settings/users', roles: ['admin', 'sales_manager'] },
 ];
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+    try {
+      const stored = window.localStorage?.getItem('theme');
+      if (stored === 'light' || stored === 'dark') {
+        return stored;
+      }
+    } catch (error) {
+      console.warn('Theme storage unavailable', error);
+    }
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+  const [isUserOverride, setIsUserOverride] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = window.localStorage?.getItem('theme');
+      return stored === 'light' || stored === 'dark';
+    } catch (error) {
+      return false;
+    }
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const roleSlug = useMemo(() => {
@@ -47,16 +68,54 @@ const MainLayout = () => {
   const userInitial = (user?.name || user?.email || '?').charAt(0).toUpperCase();
   const roleLabel =
     roleSlug === 'sales_rep'
-      ? 'Sales Representative'
+      ? 'مندوب مبيعات'
       : roleSlug === 'sales_manager'
-      ? 'Sales Manager'
+      ? 'مدير مبيعات'
       : roleSlug === 'admin'
-      ? 'Admin'
-      : roleSlug || 'Team Member';
+      ? 'مدير النظام'
+      : roleSlug || 'عضو الفريق';
   const navItems = useMemo(
     () => NAV_ITEMS.filter(item => !item.roles || item.roles.includes(roleSlug)),
     [roleSlug],
   );
+  const themeLabel = theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن';
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (isUserOverride || typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = event => {
+      setTheme(event.matches ? 'dark' : 'light');
+    };
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleChange);
+    }
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else if (mediaQuery.removeListener) {
+        mediaQuery.removeListener(handleChange);
+      }
+    };
+  }, [isUserOverride]);
+
+  const handleThemeToggle = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    setIsUserOverride(true);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage?.setItem('theme', nextTheme);
+      } catch (error) {
+        console.warn('Unable to persist theme preference', error);
+      }
+    }
+  };
 
   return (
     <div className="layout">
@@ -82,9 +141,9 @@ const MainLayout = () => {
             type="button"
             className="layout__menu-button"
             onClick={() => setSidebarOpen(prev => !prev)}
-            aria-label="Toggle navigation"
+            aria-label="تبديل القائمة"
           >
-            Menu
+            القائمة
           </button>
           <div className="layout__header-info">
             <div>
@@ -97,8 +156,11 @@ const MainLayout = () => {
                 <strong>{user?.name}</strong>
                 <span>{user?.email}</span>
               </div>
+              <button type="button" className="btn btn-secondary layout__theme-toggle" onClick={handleThemeToggle}>
+                {themeLabel}
+              </button>
               <button type="button" className="btn btn-secondary layout__signout" onClick={handleSignOut}>
-                Sign out
+                تسجيل الخروج
               </button>
             </div>
           </div>

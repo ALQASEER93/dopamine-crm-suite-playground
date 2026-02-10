@@ -15,7 +15,7 @@ const formatDashboardError = error => {
       ? error.payload.detail || error.payload.message
       : null;
   const baseMessage =
-    typeof payloadDetail === 'string' && payloadDetail.trim() ? payloadDetail : error.message || 'Unable to load data';
+    typeof payloadDetail === 'string' && payloadDetail.trim() ? payloadDetail : error.message || 'تعذر تحميل البيانات';
   return status ? `${baseMessage} (${status})` : baseMessage;
 };
 
@@ -66,11 +66,11 @@ const DashboardPage = () => {
     <div className="page-stack">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">Dashboard</h1>
-          <p className="page-subtitle">Monitor performance across teams and accounts.</p>
+          <h1 className="page-heading">لوحة التحكم</h1>
+          <p className="page-subtitle">تابع الأداء عبر الفرق والحسابات.</p>
         </div>
         <Link to="/visits" className="btn btn-primary">
-          Manage visits
+          إدارة الزيارات
         </Link>
       </div>
 
@@ -81,29 +81,29 @@ const DashboardPage = () => {
       />
 
       {summaryQuery.data?.lastActivityAt && (
-        <div className="table-card__empty" style={{ textAlign: 'left' }}>
-          Last activity: {new Date(summaryQuery.data.lastActivityAt).toLocaleString()}
+        <div className="table-card__empty table-card__meta">
+          آخر نشاط: {new Date(summaryQuery.data.lastActivityAt).toLocaleString()}
         </div>
       )}
 
       <section className="table-card">
         <div className="table-card__header">
           <div>
-            <h2>Visits per rep</h2>
-            <p>Completion rate and average duration by representative.</p>
+            <h2>الزيارات لكل مندوب</h2>
+            <p>معدل الإكمال ومتوسط المدة لكل مندوب.</p>
           </div>
         </div>
         {summaryQuery.isLoading ? (
-          <div className="table-card__empty">Loading rep metrics...</div>
+          <div className="table-card__empty">جارٍ تحميل مؤشرات المندوبين...</div>
         ) : Array.isArray(summaryQuery.data?.visitsByRep) && summaryQuery.data.visitsByRep.length > 0 ? (
           <table>
             <thead>
               <tr>
-                <th>Rep</th>
-                <th>Total</th>
-                <th>Completed</th>
-                <th>Avg duration</th>
-                <th>Last visit</th>
+                <th>المندوب</th>
+                <th>الإجمالي</th>
+                <th>المكتملة</th>
+                <th>متوسط المدة</th>
+                <th>آخر زيارة</th>
               </tr>
             </thead>
             <tbody>
@@ -112,45 +112,45 @@ const DashboardPage = () => {
                   <td>{rep.repName}</td>
                   <td>{rep.totalVisits}</td>
                   <td>{rep.completedVisits}</td>
-                  <td>{rep.avgDurationMinutes != null ? `${rep.avgDurationMinutes} min` : 'N/A'}</td>
-                  <td>{rep.lastVisitAt ? new Date(rep.lastVisitAt).toLocaleString() : 'N/A'}</td>
+                  <td>{rep.avgDurationMinutes != null ? `${rep.avgDurationMinutes} دقيقة` : 'غير متاح'}</td>
+                  <td>{rep.lastVisitAt ? new Date(rep.lastVisitAt).toLocaleString() : 'غير متاح'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <div className="table-card__empty">No rep metrics available yet.</div>
+          <div className="table-card__empty">لا توجد مؤشرات للمندوبين بعد.</div>
         )}
       </section>
 
       <section className="table-card">
         <div className="table-card__header">
           <div>
-            <h2>Recent visits</h2>
-            <p>Latest calls across all territories.</p>
+            <h2>أحدث الزيارات</h2>
+            <p>أحدث الزيارات عبر جميع المناطق.</p>
           </div>
           <Link to="/visits" className="btn btn-secondary">
-            View all
+            عرض الكل
           </Link>
         </div>
         {recentVisitsQuery.error && (
-          <div className="table-card__empty">Unable to load latest visits: {recentVisitsErrorMessage}</div>
+          <div className="table-card__empty">تعذر تحميل أحدث الزيارات: {recentVisitsErrorMessage}</div>
         )}
         {!recentVisitsQuery.error && recentVisits.length === 0 && !recentVisitsQuery.isLoading && (
-          <div className="table-card__empty">No visits recorded yet.</div>
+          <div className="table-card__empty">لا توجد زيارات مسجلة بعد.</div>
         )}
         {recentVisitsQuery.isLoading ? (
-          <div className="table-card__empty">Loading latest visits...</div>
+          <div className="table-card__empty">جارٍ تحميل أحدث الزيارات...</div>
         ) : (
           recentVisits.length > 0 && (
             <table>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Representative</th>
-                  <th>Account</th>
-                  <th>Status</th>
-                  <th>Duration</th>
+                  <th>التاريخ</th>
+                  <th>المندوب</th>
+                  <th>الحساب</th>
+                  <th>الحالة</th>
+                  <th>المدة</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,7 +162,7 @@ const DashboardPage = () => {
                     <td>
                       <span className="badge">{(visit.status || 'scheduled').replace(/_/g, ' ')}</span>
                     </td>
-                    <td>{visit.durationMinutes != null ? `${visit.durationMinutes} min` : 'N/A'}</td>
+                    <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : 'غير متاح'}</td>
                   </tr>
                 ))}
               </tbody>

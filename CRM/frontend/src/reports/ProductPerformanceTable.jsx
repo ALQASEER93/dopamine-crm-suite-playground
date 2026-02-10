@@ -22,20 +22,20 @@ const ProductPerformanceTable = ({ from, to }) => {
 
   return (
     <section className="page-card">
-      <h2>Product performance</h2>
-      <p>Based on products recorded in visits.</p>
+      <h2>أداء المنتجات</h2>
+      <p>بناءً على المنتجات المسجلة ضمن الزيارات.</p>
 
       {productQuery.error && (
         <div className="table-card__empty">
-          Unable to load product performance: {productQuery.error.message}
+          تعذر تحميل أداء المنتجات: {productQuery.error.message}
         </div>
       )}
       {productQuery.isLoading && !productQuery.error && (
-        <div className="table-card__empty">Loading product performance...</div>
+        <div className="table-card__empty">جاري تحميل أداء المنتجات...</div>
       )}
 
       {!productQuery.isLoading && !productQuery.error && rows.length === 0 && (
-        <div className="table-card__empty">No product data for selected period.</div>
+        <div className="table-card__empty">لا توجد بيانات للمنتجات في الفترة المختارة.</div>
       )}
 
       {!productQuery.isLoading && !productQuery.error && rows.length > 0 && (
@@ -43,11 +43,11 @@ const ProductPerformanceTable = ({ from, to }) => {
           <table>
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Visits count</th>
-                <th>Total quantity</th>
-                <th>Avg quantity / visit</th>
-                <th>Total order (JOD)</th>
+                <th>المنتج</th>
+                <th>عدد الزيارات</th>
+                <th>إجمالي الكمية</th>
+                <th>متوسط الكمية / زيارة</th>
+                <th>إجمالي الطلبات (JOD)</th>
               </tr>
             </thead>
             <tbody>
