@@ -1,0 +1,7 @@
+{
+  "error_type": "github_pr_creation",
+  "http_status": 400,
+  "error_code": "9c9c60db3fffe422-AMM",
+  "context": "mobile app push PR flow",
+  "recommended_path": "create PR from GitHub web UI"
+}
