@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     prod_database_url: str | None = None
     echo_sql: bool = False
     prod_echo_sql: bool | None = None
-    jwt_secret: str = "development-secret"
+    jwt_secret: str | None = Field(default=None, validation_alias="JWT_SECRET")
     jwt_algorithm: str = "HS256"
     jwt_expires_minutes: int = 60
     debug: bool = False
@@ -52,8 +52,15 @@ class Settings(BaseSettings):
                 object.__setattr__(self, "echo_sql", self.prod_echo_sql)
             if self.seed_default_users is None:
                 object.__setattr__(self, "seed_default_users", False)
+            secret = (self.jwt_secret or "").strip()
+            weak_secrets = {"", "development-secret", "change-me", "changeme", "default-secret"}
+            if secret.lower() in weak_secrets or len(secret) < 16:
+                raise ValueError("JWT_SECRET is required and must be strong when DPM_ENV=production.")
+            object.__setattr__(self, "jwt_secret", secret)
         elif self.seed_default_users is None:
             object.__setattr__(self, "seed_default_users", True)
+        if not self.jwt_secret:
+            object.__setattr__(self, "jwt_secret", "development-secret")
 
 
 settings = Settings()

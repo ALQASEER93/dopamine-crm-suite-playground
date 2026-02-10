@@ -1,15 +1,8 @@
+@import "../../../../shared/design-tokens.css";
+
 :root {
-  --color-bg: #f5f7fb;
-  --color-sidebar: #0f172a;
-  --color-sidebar-accent: #1d2b53;
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-border: #e2e8f0;
-  --color-card: #ffffff;
   --radius-md: 12px;
-  --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.08);
+  color-scheme: light dark;
 }
 
 *,
@@ -36,7 +29,7 @@ button {
 }
 
 .page-card {
-  background-color: var(--color-card);
+  background-color: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: 1.5rem;
@@ -49,7 +42,7 @@ button {
 }
 
 .table-card {
-  background-color: var(--color-card);
+  background-color: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   overflow: hidden;
@@ -64,12 +57,12 @@ button {
 .table-card td {
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--color-border);
-  text-align: left;
+  text-align: start;
   font-size: 0.95rem;
 }
 
 .table-card th {
-  background-color: #f8fafc;
+  background-color: var(--color-surface-2);
   font-weight: 600;
   color: var(--color-text-muted);
 }
@@ -81,8 +74,8 @@ button {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
-  background-color: #e0e7ff;
-  color: #312e81;
+  background-color: var(--color-badge-bg);
+  color: var(--color-badge-text);
 }
 
 .btn {
@@ -99,7 +92,7 @@ button {
 
 .btn-primary {
   background-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-contrast);
   border-color: var(--color-primary);
 }
 
@@ -108,7 +101,7 @@ button {
 }
 
 .btn-secondary {
-  background-color: #fff;
+  background-color: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text);
 }
@@ -177,15 +170,15 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+  background: linear-gradient(135deg, var(--color-login-gradient-start) 0%, var(--color-login-gradient-end) 100%);
 }
 
 .login-card {
   width: min(380px, 90%);
   padding: 32px;
   border-radius: 12px;
-  background-color: #ffffff;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-elevated);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -219,9 +212,19 @@ button {
 }
 
 .login-card__error {
-  background-color: #fde8e8;
-  color: #b83232;
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
   border-radius: 8px;
   padding: 12px;
   font-size: 14px;
+}
+
+input[type='email'],
+input[type='number'],
+input[type='tel'],
+input[type='search'],
+input[type='url'],
+.force-ltr {
+  direction: ltr;
+  text-align: left;
 }

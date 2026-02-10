@@ -1,0 +1,68 @@
+:root {
+  --color-bg: #f5f7fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8fafc;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-contrast: #ffffff;
+  --color-sidebar: #0f172a;
+  --color-sidebar-accent: #1d2b53;
+  --color-sidebar-text: rgba(255, 255, 255, 0.8);
+  --color-badge-bg: #e0e7ff;
+  --color-badge-text: #312e81;
+  --color-login-gradient-start: #f0f4f8;
+  --color-login-gradient-end: #d9e2ec;
+  --color-error-bg: #fde8e8;
+  --color-error-text: #b83232;
+  --color-offline-bg: #3f2c00;
+  --color-offline-text: #fcd34d;
+  --color-offline-border: rgba(252, 211, 77, 0.2);
+  --color-accent: #22d3ee;
+  --color-accent-strong: #06b6d4;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-success: #34d399;
+  --color-button-text-on-accent: #04101f;
+  --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --shadow-elevated: 0 20px 40px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="dark"] {
+  --color-bg: #0b1220;
+  --color-surface: #111827;
+  --color-surface-2: #1f2937;
+  --color-text: #e5e7eb;
+  --color-text-muted: #9ca3af;
+  --color-border: #1f2937;
+  --color-primary: #38bdf8;
+  --color-primary-hover: #0ea5e9;
+  --color-primary-contrast: #ffffff;
+  --color-sidebar: #0f172a;
+  --color-sidebar-accent: #1f2a44;
+  --color-sidebar-text: rgba(255, 255, 255, 0.85);
+  --color-badge-bg: #1e293b;
+  --color-badge-text: #c7d2fe;
+  --color-login-gradient-start: #0b1220;
+  --color-login-gradient-end: #111827;
+  --color-error-bg: #3b0f0f;
+  --color-error-text: #fca5a5;
+  --color-offline-bg: #3f2c00;
+  --color-offline-text: #fcd34d;
+  --color-offline-border: rgba(252, 211, 77, 0.25);
+  --color-accent: #22d3ee;
+  --color-accent-strong: #06b6d4;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-success: #34d399;
+  --color-button-text-on-accent: #04101f;
+  --shadow-card: 0 12px 34px rgba(0, 0, 0, 0.35);
+  --shadow-elevated: 0 24px 48px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}

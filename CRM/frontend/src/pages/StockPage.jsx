@@ -3,14 +3,14 @@ const StockPage = () => {
     <div className="page-stack">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">Stock</h1>
-          <p className="page-subtitle">Monitor inventory by product and location.</p>
+          <h1 className="page-heading">المخزون</h1>
+          <p className="page-subtitle">متابعة المخزون حسب المنتج والموقع.</p>
         </div>
       </div>
 
       <div className="page-card">
         <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>
-          Stock availability, reserved quantities, and movements will be surfaced here once the API layer is wired.
+          ستظهر توافر المخزون والكميات المحجوزة والحركات هنا بعد تكامل واجهات البرمجة.
         </p>
       </div>
     </div>

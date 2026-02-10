@@ -1,0 +1,28 @@
+{
+  "startedAt": "2026-02-09T04:24:00.967Z",
+  "repo": "ALQASEER93/dopamine-crm-suite-playground",
+  "targetSha": "2a22fbc333769c85564a026c885d6d3a0b2e20cd",
+  "rulesets": {
+    "source": null,
+    "matched": [],
+    "required": []
+  },
+  "fallback": {
+    "used": false,
+    "source": null
+  },
+  "checks": {
+    "total": 0,
+    "found": [],
+    "requiredMatchers": []
+  },
+  "evaluation": {
+    "missing": [],
+    "notSuccessful": [],
+    "ok": []
+  },
+  "errors": [
+    "GitHub API 401 for /repos/ALQASEER93/dopamine-crm-suite-playground/rulesets?includes_parents=true&per_page=100: {\r\n  \"message\": \"Bad credentials\",\r\n  \"documentation_url\": \"https://docs.github.com/rest\",\r\n  \"status\": \"401\"\r\n}"
+  ],
+  "exitCode": 1
+}

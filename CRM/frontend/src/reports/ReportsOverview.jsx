@@ -20,30 +20,30 @@ const ReportsOverview = ({ from, to }) => {
 
   return (
     <section className="page-card" style={{ marginBottom: '16px' }}>
-      <h2>Overview</h2>
-      <p>High-level performance metrics.</p>
+      <h2>نظرة عامة</h2>
+      <p>مؤشرات الأداء الرئيسية.</p>
       {overviewQuery.error && (
-        <div className="table-card__empty">Unable to load overview: {overviewQuery.error.message}</div>
+        <div className="table-card__empty">تعذر تحميل النظرة العامة: {overviewQuery.error.message}</div>
       )}
       {overviewQuery.isLoading && !overviewQuery.error && (
-        <div className="table-card__empty">Loading overview...</div>
+        <div className="table-card__empty">جاري تحميل النظرة العامة...</div>
       )}
       {!overviewQuery.isLoading && !overviewQuery.error && (
         <div className="overview-grid">
           <div className="overview-card">
-            <p className="label">Total visits</p>
+            <p className="label">إجمالي الزيارات</p>
             <p className="value">{data.totalVisits ?? '-'}</p>
           </div>
           <div className="overview-card">
-            <p className="label">Successful visits</p>
+            <p className="label">الزيارات الناجحة</p>
             <p className="value">{data.successfulVisits ?? '-'}</p>
           </div>
           <div className="overview-card">
-            <p className="label">Orders (count)</p>
+            <p className="label">عدد الطلبات</p>
             <p className="value">{data.ordersCount ?? '-'}</p>
           </div>
           <div className="overview-card">
-            <p className="label">Orders total (JOD)</p>
+            <p className="label">إجمالي الطلبات (JOD)</p>
             <p className="value">{data.ordersTotal ?? '-'}</p>
           </div>
         </div>

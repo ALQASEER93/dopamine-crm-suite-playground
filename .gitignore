@@ -29,6 +29,8 @@ __pycache__/
 FINAL_STATUS.md
 PR_BLOCKER_ANALYSIS.md
 _runs/
+docs/_runs/**
+!docs/_runs/README.md
 CRM/backend/data/
 
 # Local archives

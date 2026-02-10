@@ -20,18 +20,18 @@ const TerritoryPerformanceTable = ({ from, to }) => {
 
   return (
     <section className="page-card">
-      <h2>Territory performance</h2>
-      <p>Visits, coverage and commercial value per territory.</p>
+      <h2>أداء الأقاليم</h2>
+      <p>الزيارات والتغطية والقيمة التجارية لكل إقليم.</p>
 
       {territoryQuery.error && (
-        <div className="table-card__empty">Unable to load territory performance: {territoryQuery.error.message}</div>
+        <div className="table-card__empty">تعذر تحميل أداء الأقاليم: {territoryQuery.error.message}</div>
       )}
       {territoryQuery.isLoading && !territoryQuery.error && (
-        <div className="table-card__empty">Loading territory performance...</div>
+        <div className="table-card__empty">جاري تحميل أداء الأقاليم...</div>
       )}
 
       {!territoryQuery.isLoading && !territoryQuery.error && rows.length === 0 && (
-        <div className="table-card__empty">No territory data for selected period.</div>
+        <div className="table-card__empty">لا توجد بيانات للأقاليم في الفترة المختارة.</div>
       )}
 
       {!territoryQuery.isLoading && !territoryQuery.error && rows.length > 0 && (
@@ -39,13 +39,13 @@ const TerritoryPerformanceTable = ({ from, to }) => {
           <table>
             <thead>
               <tr>
-                <th>Territory</th>
-                <th>Total visits</th>
-                <th>Completed</th>
-                <th>Unique accounts</th>
-                <th>Total order (JOD)</th>
-                <th>Avg order (JOD)</th>
-                <th>Avg rating</th>
+                <th>الإقليم</th>
+                <th>إجمالي الزيارات</th>
+                <th>المكتملة</th>
+                <th>الحسابات الفريدة</th>
+                <th>إجمالي الطلبات (JOD)</th>
+                <th>متوسط الطلب (JOD)</th>
+                <th>متوسط التقييم</th>
               </tr>
             </thead>
             <tbody>

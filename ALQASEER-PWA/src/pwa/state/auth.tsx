@@ -24,8 +24,9 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "dpm-auth",
-      partialize: (state) => ({ token: state.token, user: state.user }),
+      partialize: (state) => ({ user: state.user }),
       onRehydrateStorage: () => (state) => {
+        state?.clearSession();
         state?.markHydrated();
       },
     },

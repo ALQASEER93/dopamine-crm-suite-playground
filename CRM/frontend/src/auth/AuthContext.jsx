@@ -26,7 +26,7 @@ function parseStoredState() {
     if (parsed && typeof parsed === 'object') {
       return {
         user: parsed.user ?? null,
-        token: parsed.token ?? null,
+        token: null,
       };
     }
   } catch (error) {
@@ -62,8 +62,8 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      if (user && token) {
-        window.localStorage.setItem(storageKey, JSON.stringify({ user, token }));
+      if (user) {
+        window.localStorage.setItem(storageKey, JSON.stringify({ user }));
       } else {
         window.localStorage.removeItem(storageKey);
       }

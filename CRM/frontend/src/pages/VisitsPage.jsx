@@ -49,7 +49,7 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
   return (
     <form className="form" onSubmit={handleSubmit}>
       <label className="form__label">
-        Visit date
+        تاريخ الزيارة
         <input
           type="date"
           value={form.visit_date}
@@ -58,9 +58,9 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
         />
       </label>
       <label className="form__label">
-        Rep
+        المندوب
         <select value={form.rep_id} onChange={e => updateField('rep_id', e.target.value)} required>
-          <option value="">Select rep</option>
+          <option value="">اختر المندوب</option>
           {reps.map(rep => (
             <option key={rep.id} value={rep.id}>
               {rep.name} ({rep.email})
@@ -69,9 +69,9 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
         </select>
       </label>
       <label className="form__label">
-        Doctor
+        الطبيب
         <select value={form.doctor_id} onChange={e => updateField('doctor_id', e.target.value)}>
-          <option value="">Select doctor</option>
+          <option value="">اختر الطبيب</option>
           {doctors.map(doc => (
             <option key={doc.id} value={doc.id}>
               {doc.name} {doc.city ? `- ${doc.city}` : ''}
@@ -80,15 +80,15 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
         </select>
       </label>
       <label className="form__label">
-        Notes
+        الملاحظات
         <textarea value={form.notes} onChange={e => updateField('notes', e.target.value)} rows={3} />
       </label>
       <label className="form__label">
-        Next action
+        الإجراء التالي
         <input type="text" value={form.next_action} onChange={e => updateField('next_action', e.target.value)} />
       </label>
       <label className="form__label">
-        Next action date
+        تاريخ الإجراء التالي
         <input
           type="date"
           value={form.next_action_date}
@@ -104,10 +104,10 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Save'}
+          {submitting ? 'جاري الحفظ…' : 'حفظ'}
         </button>
         <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
+          إلغاء
         </button>
       </div>
     </form>
@@ -178,7 +178,7 @@ const VisitsPage = () => {
       queryClient.invalidateQueries({ queryKey: visitKeys.all });
       closeForm();
     },
-    onError: error => setFormError(error.message || 'Unable to create visit'),
+    onError: error => setFormError(error.message || 'تعذر إنشاء الزيارة'),
   });
 
   const updateMutation = useMutation({
@@ -187,7 +187,7 @@ const VisitsPage = () => {
       queryClient.invalidateQueries({ queryKey: visitKeys.all });
       closeForm();
     },
-    onError: error => setFormError(error.message || 'Unable to update visit'),
+    onError: error => setFormError(error.message || 'تعذر تحديث الزيارة'),
   });
 
   const deleteMutation = useMutation({
@@ -200,7 +200,7 @@ const VisitsPage = () => {
 
   const captureLocation = async () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      throw new Error('GPS not available in this browser.');
+      throw new Error('خدمة GPS غير متاحة في هذا المتصفح.');
     }
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
@@ -210,7 +210,7 @@ const VisitsPage = () => {
             lng: position.coords.longitude,
             accuracy: position.coords.accuracy,
           }),
-        error => reject(new Error(error.message || 'Unable to capture location')),
+        error => reject(new Error(error.message || 'تعذر التقاط الموقع')),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
       );
     });
@@ -226,7 +226,7 @@ const VisitsPage = () => {
       setSelected(data);
       setActionError(null);
     },
-    onError: error => setActionError(error.message || 'Unable to start visit'),
+    onError: error => setActionError(error.message || 'تعذر بدء الزيارة'),
   });
 
   const endMutation = useMutation({
@@ -239,7 +239,7 @@ const VisitsPage = () => {
       setSelected(data);
       setActionError(null);
     },
-    onError: error => setActionError(error.message || 'Unable to end visit'),
+    onError: error => setActionError(error.message || 'تعذر إنهاء الزيارة'),
   });
 
   const openCreate = () => {
@@ -278,7 +278,7 @@ const VisitsPage = () => {
     try {
       await startMutation.mutateAsync(selected.id);
     } catch (error) {
-      setActionError(error.message || 'Unable to start visit');
+      setActionError(error.message || 'تعذر بدء الزيارة');
     }
   };
 
@@ -288,7 +288,7 @@ const VisitsPage = () => {
     try {
       await endMutation.mutateAsync(selected.id);
     } catch (error) {
-      setActionError(error.message || 'Unable to end visit');
+      setActionError(error.message || 'تعذر إنهاء الزيارة');
     }
   };
 
@@ -308,20 +308,35 @@ const VisitsPage = () => {
   const totalPages = visitsQuery.data?.totalPages || 1;
 
   const renderAccount = visit => {
-    if (visit.doctor) return `Doctor: ${visit.doctor.name}`;
-    if (visit.pharmacy) return `Pharmacy: ${visit.pharmacy.name}`;
-    return 'N/A';
+    if (visit.doctor) return `الطبيب: ${visit.doctor.name}`;
+    if (visit.pharmacy) return `الصيدلية: ${visit.pharmacy.name}`;
+    return 'غير متاح';
   };
 
-  const formatTimestamp = value => (value ? new Date(value).toLocaleString() : 'Not captured');
+  const formatTimestamp = value => (value ? new Date(value).toLocaleString() : 'غير مسجل');
 
   const formatLocation = location => {
-    if (!location || location.lat == null || location.lng == null) return 'Not captured';
+    if (!location || location.lat == null || location.lng == null) return 'غير مسجل';
     const accuracyText =
       location.accuracy != null && Number.isFinite(Number(location.accuracy))
-        ? ` (+/-${Number(location.accuracy).toFixed(1)}m)`
+        ? ` (+/-${Number(location.accuracy).toFixed(1)}م)`
         : '';
     return `${formatCoords(location.lat, location.lng)}${accuracyText}`;
+  };
+
+  const formatStatus = status => {
+    if (!status) return '-';
+    const normalized = String(status).toLowerCase();
+    const labels = {
+      scheduled: 'مجدولة',
+      planned: 'مخططة',
+      active: 'جارية',
+      completed: 'مكتملة',
+      cancelled: 'ملغاة',
+      canceled: 'ملغاة',
+      pending: 'قيد الانتظار',
+    };
+    return labels[normalized] || String(status).replace(/_/g, ' ');
   };
 
   const renderGpsLinks = location => {
@@ -331,13 +346,13 @@ const VisitsPage = () => {
     return (
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
         <a className="btn btn-secondary" href={buildOpenStreetMapUrl(lat, lng)} target="_blank" rel="noreferrer">
-          Open in OpenStreetMap
+          فتح في OpenStreetMap
         </a>
         <a className="btn btn-secondary" href={buildGoogleMapsUrl(lat, lng)} target="_blank" rel="noreferrer">
-          Open in Google Maps
+          فتح في خرائط Google
         </a>
-        <span style={{ fontSize: '11px', color: '#6b7280', alignSelf: 'center' }}>
-          (c) OpenStreetMap contributors
+        <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', alignSelf: 'center' }}>
+          (c) مساهمو OpenStreetMap
         </span>
       </div>
     );
@@ -352,11 +367,11 @@ const VisitsPage = () => {
     <div className="entity-page">
       <div className="entity-toolbar">
         <div>
-          <h1 className="page-heading">Visits</h1>
-          <p className="page-subtitle">Track field visits and follow-ups.</p>
+          <h1 className="page-heading">الزيارات</h1>
+          <p className="page-subtitle">متابعة الزيارات الميدانية والمتابعات.</p>
         </div>
         <button type="button" className="btn btn-primary" onClick={openCreate}>
-          Add visit
+          إضافة زيارة
         </button>
       </div>
 
@@ -370,7 +385,7 @@ const VisitsPage = () => {
           }}
           disabled={user?.role?.slug === 'medical_rep'}
         >
-          <option value="">All reps</option>
+          <option value="">كل المندوبين</option>
           {reps.map(rep => (
             <option key={rep.id} value={rep.id}>
               {rep.name}
@@ -385,7 +400,7 @@ const VisitsPage = () => {
             setPage(1);
           }}
         >
-          <option value="">All doctors</option>
+          <option value="">كل الأطباء</option>
           {doctors.map(doc => (
             <option key={doc.id} value={doc.id}>
               {doc.name}
@@ -411,27 +426,27 @@ const VisitsPage = () => {
           }}
         />
         <button type="button" className="btn btn-secondary" onClick={resetFilters}>
-          Clear filters
+          مسح الفلاتر
         </button>
       </div>
 
       <section className="table-card entity-table">
-        {visitsQuery.error && <div className="entity-empty">Unable to load visits: {visitsQuery.error.message}</div>}
-        {!visitsQuery.error && visitsQuery.isLoading && <div className="entity-empty">Loading visits...</div>}
+        {visitsQuery.error && <div className="entity-empty">تعذر تحميل الزيارات: {visitsQuery.error.message}</div>}
+        {!visitsQuery.error && visitsQuery.isLoading && <div className="entity-empty">جاري تحميل الزيارات...</div>}
         {!visitsQuery.error && !visitsQuery.isLoading && visits.length === 0 && (
-          <div className="entity-empty">No visits found for the selected filters.</div>
+          <div className="entity-empty">لا توجد زيارات للفلاتر المختارة.</div>
         )}
         {!visitsQuery.error && visits.length > 0 && (
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Rep</th>
-                <th>Account</th>
-                <th>Status</th>
-                <th>Duration</th>
-                <th>Notes</th>
-                <th>Next action</th>
+                <th>التاريخ</th>
+                <th>المندوب</th>
+                <th>الحساب</th>
+                <th>الحالة</th>
+                <th>المدة</th>
+                <th>الملاحظات</th>
+                <th>الإجراء التالي</th>
               </tr>
             </thead>
             <tbody>
@@ -446,8 +461,8 @@ const VisitsPage = () => {
                   <td>{visit.visitDate || visit.visit_date}</td>
                   <td>{visit.rep?.name || visit.rep_id || '-'}</td>
                   <td>{renderAccount(visit)}</td>
-                  <td>{visit.status ? visit.status.replace(/_/g, ' ') : '-'}</td>
-                  <td>{visit.durationMinutes != null ? `${visit.durationMinutes} min` : '-'}</td>
+                  <td>{formatStatus(visit.status)}</td>
+                  <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : '-'}</td>
                   <td>{visit.notes || '-'}</td>
                   <td>
                     {visit.next_action || '-'} {visit.next_action_date ? `(${visit.next_action_date})` : ''}
@@ -460,7 +475,7 @@ const VisitsPage = () => {
 
         <div className="entity-pagination">
           <span>
-            Page {page} of {totalPages}
+            صفحة {page} من {totalPages}
           </span>
           <div>
             <button
@@ -469,7 +484,7 @@ const VisitsPage = () => {
               onClick={() => setPage(prev => Math.max(1, prev - 1))}
               disabled={page === 1}
             >
-              Prev
+              السابق
             </button>
             <button
               type="button"
@@ -477,11 +492,11 @@ const VisitsPage = () => {
               onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
               disabled={page >= totalPages}
             >
-              Next
+              التالي
             </button>
           </div>
           <div>
-            Rows
+            الصفوف
             <select
               value={pageSize}
               onChange={event => {
@@ -495,59 +510,59 @@ const VisitsPage = () => {
                 </option>
               ))}
             </select>
-            <span style={{ marginLeft: '8px' }}>Total: {totalVisits}</span>
+            <span style={{ marginLeft: '8px' }}>الإجمالي: {totalVisits}</span>
           </div>
         </div>
       </section>
 
       <DetailDrawer
-        title={selected ? `Visit on ${selected.visitDate || selected.visit_date}` : ''}
+        title={selected ? `زيارة بتاريخ ${selected.visitDate || selected.visit_date}` : ''}
         isOpen={Boolean(selected)}
         onClose={() => setSelected(null)}
       >
         {selected && (
           <div className="detail-grid">
             <p>
-              <strong>Rep:</strong> {selected.rep?.name || selected.rep_id}
+              <strong>المندوب:</strong> {selected.rep?.name || selected.rep_id}
             </p>
             <p>
-              <strong>Doctor:</strong> {selected.doctor?.name || '-'}
+              <strong>الطبيب:</strong> {selected.doctor?.name || '-'}
             </p>
             <p>
-              <strong>Pharmacy:</strong> {selected.pharmacy?.name || '-'}
+              <strong>الصيدلية:</strong> {selected.pharmacy?.name || '-'}
             </p>
             <p>
-              <strong>Status:</strong> {selected.status ? selected.status.replace(/_/g, ' ') : '-'}
+              <strong>الحالة:</strong> {formatStatus(selected.status)}
             </p>
             <p>
-              <strong>Duration:</strong>{' '}
-              {selected.durationMinutes != null ? `${selected.durationMinutes} min` : 'Not finished'}
+              <strong>المدة:</strong>{' '}
+              {selected.durationMinutes != null ? `${selected.durationMinutes} دقيقة` : 'غير منتهية'}
             </p>
             <p>
-              <strong>Started:</strong> {formatTimestamp(selected.startedAt || selected.started_at)}
+              <strong>بدأت:</strong> {formatTimestamp(selected.startedAt || selected.started_at)}
             </p>
             <div>
-              <strong>Start GPS:</strong> {formatLocation(selected.startLocation)}
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                Timestamp: {formatTimestamp(selected.startedAt || selected.started_at)}
+              <strong>GPS البداية:</strong> {formatLocation(selected.startLocation)}
+              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                التوقيت: {formatTimestamp(selected.startedAt || selected.started_at)}
               </div>
               {renderGpsLinks(selected.startLocation)}
             </div>
             <p>
-              <strong>Ended:</strong> {formatTimestamp(selected.endedAt || selected.ended_at)}
+              <strong>انتهت:</strong> {formatTimestamp(selected.endedAt || selected.ended_at)}
             </p>
             <div>
-              <strong>End GPS:</strong> {formatLocation(selected.endLocation)}
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                Timestamp: {formatTimestamp(selected.endedAt || selected.ended_at)}
+              <strong>GPS النهاية:</strong> {formatLocation(selected.endLocation)}
+              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                التوقيت: {formatTimestamp(selected.endedAt || selected.ended_at)}
               </div>
               {renderGpsLinks(selected.endLocation)}
             </div>
             <p>
-              <strong>Notes:</strong> {selected.notes || '-'}
+              <strong>الملاحظات:</strong> {selected.notes || '-'}
             </p>
             <p>
-              <strong>Next action:</strong> {selected.next_action || '-'} {selected.next_action_date || ''}
+              <strong>الإجراء التالي:</strong> {selected.next_action || '-'} {selected.next_action_date || ''}
             </p>
             {actionError && (
               <div className="alert alert-danger" style={{ gridColumn: '1 / -1' }}>
@@ -556,7 +571,7 @@ const VisitsPage = () => {
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
               <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
-                Edit
+                تعديل
               </button>
               <button
                 type="button"
@@ -564,7 +579,7 @@ const VisitsPage = () => {
                 onClick={() => deleteMutation.mutate(selected.id)}
                 disabled={deleteMutation.isPending}
               >
-                Delete
+                حذف
               </button>
               <button
                 type="button"
@@ -577,7 +592,7 @@ const VisitsPage = () => {
                   selected.status === 'cancelled'
                 }
               >
-                {startMutation.isPending ? 'Starting...' : 'Start with GPS'}
+                {startMutation.isPending ? 'جارٍ البدء...' : 'بدء باستخدام GPS'}
               </button>
               <button
                 type="button"
@@ -585,17 +600,17 @@ const VisitsPage = () => {
                 onClick={handleEndWithGps}
                 disabled={endMutation.isPending || selected.status === 'completed' || selected.status === 'cancelled'}
               >
-                {endMutation.isPending ? 'Ending...' : 'End visit'}
+                {endMutation.isPending ? 'جارٍ الإنهاء...' : 'إنهاء الزيارة'}
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
-                Close
+                إغلاق
               </button>
             </div>
           </div>
         )}
       </DetailDrawer>
 
-      <DetailDrawer title={formMode === 'edit' ? 'Edit visit' : 'Add visit'} isOpen={Boolean(formMode)} onClose={closeForm}>
+      <DetailDrawer title={formMode === 'edit' ? 'تعديل زيارة' : 'إضافة زيارة'} isOpen={Boolean(formMode)} onClose={closeForm}>
         {formMode && (
           <VisitForm
             initialValues={formInitial}
