@@ -31,6 +31,9 @@ PR_BLOCKER_ANALYSIS.md
 _runs/
 docs/_runs/**
 !docs/_runs/README.md
+docs/_runs/LATEST.txt
+docs/_runs/run_*/
+docs/_runs/run_*.zip
 CRM/backend/data/
 
 # Local archives

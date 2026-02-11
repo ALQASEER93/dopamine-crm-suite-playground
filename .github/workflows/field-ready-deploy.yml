@@ -1,0 +1,68 @@
+name: Field-Ready Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check deployment secrets
+        id: secrets
+        run: |
+          missing=0
+          for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!key}" ]; then
+              echo "Missing secret: $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Skip deploy when secrets are missing
+        if: steps.secrets.outputs.should_deploy != 'true'
+        run: |
+          echo "Field-Ready deploy skipped: missing Vercel secrets."
+          echo "Add VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID to enable deployment."
+
+      - name: Setup Node
+        if: steps.secrets.outputs.should_deploy == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        if: steps.secrets.outputs.should_deploy == 'true'
+        working-directory: ALQASEER-PWA
+        run: npm ci
+
+      - name: Build PWA
+        if: steps.secrets.outputs.should_deploy == 'true'
+        working-directory: ALQASEER-PWA
+        run: npm run build
+
+      - name: Deploy to Vercel (production)
+        if: steps.secrets.outputs.should_deploy == 'true'
+        working-directory: ALQASEER-PWA
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
