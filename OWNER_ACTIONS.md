@@ -11,6 +11,23 @@ This document provides **exact step-by-step instructions** for configuring GitHu
 
 ---
 
+## Field-Ready Cloudflare Deploy (UI-only)
+
+1. In Cloudflare Dashboard, create a Pages project for `ALQASEER-PWA`.
+2. Create an API token with minimal Pages deploy permissions for the target account.
+3. In GitHub repository settings, add Actions secrets:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+   - `CLOUDFLARE_PROJECT_NAME`
+4. Run workflow: **Field-Ready Deploy (Cloudflare)** using `workflow_dispatch`.
+5. Verify workflow summary shows deployed URL and smoke checks passed.
+
+Notes:
+- When secrets are missing, workflow skips safely without failing CI.
+- Existing Vercel workflow is optional; Vercel Hobby is non-commercial.
+
+---
+
 ## Step 1: Verify Workflows Are Enabled
 
 1. Go to your repository on GitHub
