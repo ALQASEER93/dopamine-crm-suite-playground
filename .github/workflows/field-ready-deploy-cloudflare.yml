@@ -217,11 +217,11 @@ jobs:
             echo "- Result: Success"
             echo "- Deploy URL: $DEPLOY_ROOT"
             echo "- Production URL: $PRODUCTION_ROOT"
-            echo "- Deploy URL HTTP `/`: $deploy_root_code"
-            echo "- Deploy URL HTTP `/login`: $deploy_login_code"
-            echo "- Production URL HTTP `/`: $prod_root_code"
-            echo "- Production URL HTTP `/login`: $prod_login_code"
-            echo "- Smoke: Passed (deploy + production URLs for `/` and `/login`)"
+            echo "- Deploy URL HTTP /: $deploy_root_code"
+            echo "- Deploy URL HTTP /login: $deploy_login_code"
+            echo "- Production URL HTTP /: $prod_root_code"
+            echo "- Production URL HTTP /login: $prod_login_code"
+            echo "- Smoke: Passed (deploy + production URLs for / and /login)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload deploy and smoke logs
