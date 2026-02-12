@@ -1,0 +1,9 @@
+npm warn config production Use `--omit=dev` instead.
+
+ ⛅️ wrangler 4.64.0 (update available 4.65.0)
+─────────────────────────────────────────────
+Uploading... (10/10)
+✨ Success! Uploaded 0 files (10 already uploaded) (0.42 sec)
+
+🌎 Deploying...
+✨ Deployment complete! Take a peek over at https://ed90f20f.dopamine-crm-suite-playground.pages.dev

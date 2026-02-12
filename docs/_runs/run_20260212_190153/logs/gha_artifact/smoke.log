@@ -1,0 +1,4 @@
+[deploy-root] attempt=1 http=200 url=https://ed90f20f.dopamine-crm-suite-playground.pages.dev/
+[deploy-login] attempt=1 http=200 url=https://ed90f20f.dopamine-crm-suite-playground.pages.dev/login
+[prod-root] attempt=1 http=200 url=https://dopamine-crm-suite-playground.pages.dev/
+[prod-login] attempt=1 http=200 url=https://dopamine-crm-suite-playground.pages.dev/login

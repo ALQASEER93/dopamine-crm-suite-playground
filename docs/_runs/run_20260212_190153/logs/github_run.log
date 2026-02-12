@@ -1,0 +1,448 @@
+deploy-pwa-cloudflare	Set up job	﻿2026-02-12T16:02:37.1197181Z Current runner version: '2.331.0'
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1221977Z ##[group]Runner Image Provisioner
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1222837Z Hosted Compute Agent
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1223495Z Version: 20260123.484
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1224131Z Commit: 6bd6555ca37d84114959e1c76d2c01448ff61c5d
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1224800Z Build Date: 2026-01-23T19:41:17Z
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1225510Z Worker ID: {1375c5bc-313f-4cbd-a955-85cbd2707258}
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1226277Z Azure Region: westcentralus
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1226884Z ##[endgroup]
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1228276Z ##[group]Operating System
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1228918Z Ubuntu
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1229778Z 24.04.3
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1230294Z LTS
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1230798Z ##[endgroup]
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1231350Z ##[group]Runner Image
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1231922Z Image: ubuntu-24.04
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1232536Z Version: 20260209.23.1
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1233540Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260209.23/images/ubuntu/Ubuntu2404-Readme.md
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1235286Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260209.23
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1236153Z ##[endgroup]
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1237265Z ##[group]GITHUB_TOKEN Permissions
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1239456Z Contents: read
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1240087Z Metadata: read
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1240668Z ##[endgroup]
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1242770Z Secret source: Actions
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1243516Z Prepare workflow directory
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1688279Z Prepare all required actions
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.1725337Z Getting action download info
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.6548649Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.8155320Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:37.9085121Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+deploy-pwa-cloudflare	Set up job	2026-02-12T16:02:38.1257463Z Complete job name: deploy-pwa-cloudflare
+deploy-pwa-cloudflare	Checkout	﻿2026-02-12T16:02:38.1987571Z ##[group]Run actions/checkout@v4
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1988425Z with:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1988934Z   repository: ALQASEER93/dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1989905Z   token: ***
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1990293Z   ssh-strict: true
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1990697Z   ssh-user: git
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1991105Z   persist-credentials: true
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1991545Z   clean: true
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1991953Z   sparse-checkout-cone-mode: true
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1992433Z   fetch-depth: 1
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1992817Z   fetch-tags: false
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1993217Z   show-progress: true
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1993626Z   lfs: false
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1993997Z   submodules: false
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1994404Z   set-safe-directory: true
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1995074Z env:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1995457Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.1995948Z ##[endgroup]
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3075497Z Syncing repository: ALQASEER93/dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3077371Z ##[group]Getting Git version info
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3078361Z Working directory is '/home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground'
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3079859Z [command]/usr/bin/git version
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3100144Z git version 2.52.0
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3125835Z ##[endgroup]
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3140745Z Temporarily overriding HOME='/home/runner/work/_temp/adcbb579-6fb7-45a4-821e-4e2f065f0572' before making global git config changes
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3142066Z Adding repository directory to the temporary git global config as a safe directory
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3154444Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3194345Z Deleting the contents of '/home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground'
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3196852Z ##[group]Initializing the repository
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3202968Z [command]/usr/bin/git init /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3297125Z hint: Using 'master' as the name for the initial branch. This default branch name
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3298545Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3299945Z hint: to use in all of your new repositories, which will suppress this warning,
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3301194Z hint: call:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3301591Z hint:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3302427Z hint: 	git config --global init.defaultBranch <name>
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3303493Z hint:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3304509Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3306160Z hint: 'development'. The just-created branch can be renamed via this command:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3307517Z hint:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3308246Z hint: 	git branch -m <name>
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3308989Z hint:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3310251Z hint: Disable this message with "git config set advice.defaultBranchName false"
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3312529Z Initialized empty Git repository in /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground/.git/
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3316082Z [command]/usr/bin/git remote add origin https://github.com/ALQASEER93/dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3351108Z ##[endgroup]
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3352330Z ##[group]Disabling automatic garbage collection
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3356179Z [command]/usr/bin/git config --local gc.auto 0
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3386190Z ##[endgroup]
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3387409Z ##[group]Setting up auth
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3394081Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3427469Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3759608Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.3791670Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.4027579Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.4060262Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.4308701Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.4344393Z ##[endgroup]
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.4345642Z ##[group]Fetching the repository
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:38.4355163Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +8dcd3a56e2673c6f5998b4700a4a33d9aef08a30:refs/remotes/origin/codex/fix-cloudflare-field-ready-evidence-20260212
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.0988038Z From https://github.com/ALQASEER93/dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.0992421Z  * [new ref]         8dcd3a56e2673c6f5998b4700a4a33d9aef08a30 -> origin/codex/fix-cloudflare-field-ready-evidence-20260212
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1025475Z ##[endgroup]
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1027293Z ##[group]Determining the checkout info
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1029658Z ##[endgroup]
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1033360Z [command]/usr/bin/git sparse-checkout disable
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1077874Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1105297Z ##[group]Checking out the ref
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1110282Z [command]/usr/bin/git checkout --progress --force -B codex/fix-cloudflare-field-ready-evidence-20260212 refs/remotes/origin/codex/fix-cloudflare-field-ready-evidence-20260212
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1649581Z Switched to a new branch 'codex/fix-cloudflare-field-ready-evidence-20260212'
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1657547Z branch 'codex/fix-cloudflare-field-ready-evidence-20260212' set up to track 'origin/codex/fix-cloudflare-field-ready-evidence-20260212'.
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1665028Z ##[endgroup]
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1706747Z [command]/usr/bin/git log -1 --format=%H
+deploy-pwa-cloudflare	Checkout	2026-02-12T16:02:39.1732831Z 8dcd3a56e2673c6f5998b4700a4a33d9aef08a30
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	﻿2026-02-12T16:02:39.1964664Z ##[group]Run set -euo pipefail
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1965878Z [36;1mset -euo pipefail[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1966832Z [36;1mmissing=0[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1968017Z [36;1mfor key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1969794Z [36;1m  if [ -z "${!key}" ]; then[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1970936Z [36;1m    echo "Missing secret: $key"[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1972032Z [36;1m    missing=1[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1972913Z [36;1m  fi[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1973666Z [36;1mdone[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1974469Z [36;1mif [ "$missing" -eq 1 ]; then[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1976085Z [36;1m  echo "Cloudflare Pages deploy blocked: required secrets are missing."[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1978158Z [36;1m  echo "Required: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID."[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1979924Z [36;1m  exit 1[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1980691Z [36;1mfi[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1981540Z [36;1mrepo_name="${GITHUB_REPOSITORY##*/}"[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1983167Z [36;1mresolved_project_name="${CLOUDFLARE_PROJECT_NAME:-$repo_name}"[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1984910Z [36;1mif [ -z "$resolved_project_name" ]; then[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1986359Z [36;1m  echo "Unable to resolve Cloudflare project name."[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1988344Z [36;1m  echo "Provide CLOUDFLARE_PROJECT_NAME or ensure GITHUB_REPOSITORY is available."[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1990272Z [36;1m  exit 1[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1991045Z [36;1mfi[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1992470Z [36;1mecho "CLOUDFLARE_PROJECT_NAME_RESOLVED=$resolved_project_name" >> "$GITHUB_ENV"[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.1994683Z [36;1mecho "Resolved Cloudflare Pages project: $resolved_project_name"[0m
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.2051447Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.2052874Z env:
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.2053629Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.2055475Z   CLOUDFLARE_API_TOKEN: ***
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.2056758Z   CLOUDFLARE_ACCOUNT_ID: ***
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.2057761Z   CLOUDFLARE_PROJECT_NAME: 
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.2058709Z ##[endgroup]
+deploy-pwa-cloudflare	Resolve project name and check required secrets (fail-fast)	2026-02-12T16:02:39.2166849Z Resolved Cloudflare Pages project: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Setup Node	﻿2026-02-12T16:02:39.2341997Z ##[group]Run actions/setup-node@v4
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2343018Z with:
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2343697Z   node-version: 20.x
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2344485Z   always-auth: false
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2345274Z   check-latest: false
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2346341Z   token: ***
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2347011Z env:
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2347667Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2348910Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.2350544Z ##[endgroup]
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.4241594Z Found in cache @ /opt/hostedtoolcache/node/20.20.0/x64
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.4248385Z ##[group]Environment details
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.7641727Z node: v20.20.0
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.7642670Z npm: 10.8.2
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.7643218Z yarn: 1.22.22
+deploy-pwa-cloudflare	Setup Node	2026-02-12T16:02:39.7644458Z ##[endgroup]
+deploy-pwa-cloudflare	Install dependencies	﻿2026-02-12T16:02:39.7756276Z ##[group]Run npm ci
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:39.7756787Z [36;1mnpm ci[0m
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:39.7815006Z shell: /usr/bin/bash -e {0}
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:39.7815501Z env:
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:39.7815915Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:39.7816519Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:39.7817132Z ##[endgroup]
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:39.8755847Z npm warn config production Use `--omit=dev` instead.
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:42.5909470Z npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:42.7144548Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:43.3849393Z npm warn deprecated source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:43.3910522Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:43.4927318Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:44.3548501Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:44.3704697Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:47.6290453Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.6895564Z 
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.6896316Z added 637 packages, and audited 638 packages in 9s
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.6896998Z 
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.6897323Z 165 packages are looking for funding
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.6897929Z   run `npm fund` for details
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7241272Z 
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7242014Z 10 vulnerabilities (6 moderate, 4 high)
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7242553Z 
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7242926Z To address issues that do not require attention, run:
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7243526Z   npm audit fix
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7243794Z 
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7244507Z To address all issues possible (including breaking changes), run:
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7245156Z   npm audit fix --force
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7245422Z 
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7245769Z Some issues need review, and may require choosing
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7246394Z a different dependency.
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7246661Z 
+deploy-pwa-cloudflare	Install dependencies	2026-02-12T16:02:48.7246868Z Run `npm audit` for details.
+deploy-pwa-cloudflare	Build PWA	﻿2026-02-12T16:02:48.7540581Z ##[group]Run npm run build
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.7540882Z [36;1mnpm run build[0m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.7595841Z shell: /usr/bin/bash -e {0}
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.7596105Z env:
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.7596284Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.7596632Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.7596983Z ##[endgroup]
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.8534692Z npm warn config production Use `--omit=dev` instead.
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.8765074Z 
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.8765865Z > dopamine-pwa@0.2.0 build
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.8766447Z > vite build
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:48.8766670Z 
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:49.0938553Z [36mvite v5.4.21 [32mbuilding for production...[36m[39m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:49.1474173Z transforming...
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.4484599Z [32m✓[39m 67 modules transformed.
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.5608760Z rendering chunks...
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.6448043Z computing gzip size...
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.6559729Z [2mdist/[22m[32mmanifest.webmanifest                        [39m[1m[2m  0.32 kB[22m[1m[22m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.6561616Z [2mdist/[22m[32mindex.html                                  [39m[1m[2m  0.60 kB[22m[1m[22m[2m │ gzip:   0.38 kB[22m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.6563467Z [2mdist/[22m[2massets/[22m[35mindex-t8vtfoFI.css                   [39m[1m[2m  5.47 kB[22m[1m[22m[2m │ gzip:   1.72 kB[22m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.6565532Z [2mdist/[22m[2massets/[22m[36mworkbox-window.prod.es5-vqzQaGvo.js  [39m[1m[2m  5.72 kB[22m[1m[22m[2m │ gzip:   2.35 kB[22m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.6567481Z [2mdist/[22m[2massets/[22m[36mindex-BnoxOYp3.js                    [39m[1m[2m361.84 kB[22m[1m[22m[2m │ gzip: 101.43 kB[22m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.6568594Z [32m✓ built in 1.54s[39m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:50.9126312Z [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:52.7583423Z 
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:52.7590451Z [36mPWA v0.20.5[39m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:52.7597509Z mode      [35mgenerateSW[39m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:52.7598259Z precache  [32m8 entries[39m [2m(367.22 KiB)[22m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:52.7598752Z files generated
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:52.7599127Z   [2mdist/sw.js[22m
+deploy-pwa-cloudflare	Build PWA	2026-02-12T16:02:52.7600159Z   [2mdist/workbox-0b0dccde.js[22m
+deploy-pwa-cloudflare	Verify build output exists	﻿2026-02-12T16:02:52.8287102Z ##[group]Run set -euo pipefail
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8287465Z [36;1mset -euo pipefail[0m
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8287731Z [36;1mif [ ! -d "ALQASEER-PWA/dist" ]; then[0m
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8288063Z [36;1m  echo "Build output missing: ALQASEER-PWA/dist"[0m
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8288453Z [36;1m  echo "Run the PWA build first and ensure dist/ is produced."[0m
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8288785Z [36;1m  exit 1[0m
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8288964Z [36;1mfi[0m
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8339884Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8340211Z env:
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8340393Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8340716Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Verify build output exists	2026-02-12T16:02:52.8341049Z ##[endgroup]
+deploy-pwa-cloudflare	Prepare CI log paths	﻿2026-02-12T16:02:52.8436882Z ##[group]Run set -euo pipefail
+deploy-pwa-cloudflare	Prepare CI log paths	2026-02-12T16:02:52.8437246Z [36;1mset -euo pipefail[0m
+deploy-pwa-cloudflare	Prepare CI log paths	2026-02-12T16:02:52.8437557Z [36;1mmkdir -p .github/_ci_logs/cloudflare[0m
+deploy-pwa-cloudflare	Prepare CI log paths	2026-02-12T16:02:52.8484600Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy-pwa-cloudflare	Prepare CI log paths	2026-02-12T16:02:52.8484930Z env:
+deploy-pwa-cloudflare	Prepare CI log paths	2026-02-12T16:02:52.8485113Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Prepare CI log paths	2026-02-12T16:02:52.8485438Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Prepare CI log paths	2026-02-12T16:02:52.8485780Z ##[endgroup]
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	﻿2026-02-12T16:02:52.8594940Z ##[group]Run set -euo pipefail
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8595269Z [36;1mset -euo pipefail[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8595600Z [36;1mlog_file=".github/_ci_logs/cloudflare/project-ensure.log"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8596016Z [36;1mwrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8596408Z [36;1mprojects_json_file="$RUNNER_TEMP/pages-projects.json"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8596798Z [36;1mprojects_err_file="$RUNNER_TEMP/pages-projects.err"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8597309Z [36;1mif ! $wrangler_cmd pages project list --json >"$projects_json_file" 2>"$projects_err_file"; then[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8597809Z [36;1m  cat "$projects_err_file" | tee "$log_file"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8598164Z [36;1m  echo "Failed to list Cloudflare Pages projects."[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8598469Z [36;1m  exit 1[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8598649Z [36;1mfi[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8598850Z [36;1mcat "$projects_json_file" > "$log_file"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8599148Z [36;1mif [ -s "$projects_err_file" ]; then[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8599800Z [36;1m  echo "" >> "$log_file"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8600082Z [36;1m  cat "$projects_err_file" >> "$log_file"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8600348Z [36;1mfi[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8600523Z [36;1mif node -e '[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8600735Z [36;1m  const fs = require("fs");[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8601001Z [36;1m  const file = process.argv[1];[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8601285Z [36;1m  const target = process.argv[2];[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8601537Z [36;1m  let parsed;[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8601736Z [36;1m  try {[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8601969Z [36;1m    const raw = fs.readFileSync(file, "utf8");[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8602275Z [36;1m    parsed = JSON.parse(raw);[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8602523Z [36;1m  } catch (_err) {[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8602744Z [36;1m    process.exit(2);[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8602952Z [36;1m  }[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8603183Z [36;1m  if (!Array.isArray(parsed)) process.exit(2);[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8603510Z [36;1m  const exists = parsed.some((item) => {[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8603848Z [36;1m    const name = item?.name ?? item?.["Project Name"];[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8604163Z [36;1m    return name === target;[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8604390Z [36;1m  });[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8604577Z [36;1m  process.exit(exists ? 0 : 1);[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8604917Z [36;1m' "$projects_json_file" "$CLOUDFLARE_PROJECT_NAME_RESOLVED"; then[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8605265Z [36;1m  project_exists_rc=0[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8605474Z [36;1melse[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8605656Z [36;1m  project_exists_rc=$?[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8605873Z [36;1mfi[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8606068Z [36;1mif [ "$project_exists_rc" -eq 2 ]; then[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8606704Z [36;1m  echo "Unable to parse pages project list JSON output." | tee -a "$log_file"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8607138Z [36;1m  exit 1[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8607313Z [36;1mfi[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8607518Z [36;1mif [ "$project_exists_rc" -eq 1 ]; then[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8608083Z [36;1m  echo "Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED' not found. Creating..." | tee -a "$log_file"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8608951Z [36;1m  if ! $wrangler_cmd pages project create "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --production-branch main 2>&1 | tee -a "$log_file"; then[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8610053Z [36;1m    echo "Failed to create Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED'."[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8610605Z [36;1m    echo "Check token permissions and account/project naming."[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8610950Z [36;1m    exit 1[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8611139Z [36;1m  fi[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8611310Z [36;1melse[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8611737Z [36;1m  echo "Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED' already exists." | tee -a "$log_file"[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8612228Z [36;1mfi[0m
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8657673Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8658018Z env:
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8658207Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8658715Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8659495Z   CLOUDFLARE_API_TOKEN: ***
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8659819Z   CLOUDFLARE_ACCOUNT_ID: ***
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:52.8660035Z ##[endgroup]
+deploy-pwa-cloudflare	Ensure Cloudflare Pages project exists	2026-02-12T16:02:59.9694211Z Cloudflare Pages project 'dopamine-crm-suite-playground' already exists.
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	﻿2026-02-12T16:02:59.9741448Z ##[group]Run set -euo pipefail
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9741962Z [36;1mset -euo pipefail[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9742482Z [36;1mlog_file=".github/_ci_logs/cloudflare/deploy.log"[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9743196Z [36;1mwrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9744199Z [36;1m$wrangler_cmd pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch "main" 2>&1 | tee "$log_file"[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9745052Z [36;1mdeploy_url="$(grep -Eo 'https://[a-zA-Z0-9._/-]+\.pages\.dev[^ ]*' "$log_file" | head -n 1 || true)"[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9745513Z [36;1mif [ -z "$deploy_url" ]; then[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9745901Z [36;1m  deploy_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9746273Z [36;1mfi[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9746553Z [36;1mprod_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9746962Z [36;1mecho "DEPLOY_URL=$deploy_url" >> "$GITHUB_ENV"[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9747323Z [36;1mecho "PROD_URL=$prod_url" >> "$GITHUB_ENV"[0m
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9796540Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9796862Z env:
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9797043Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9797370Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9797906Z   CLOUDFLARE_API_TOKEN: ***
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9798221Z   CLOUDFLARE_ACCOUNT_ID: ***
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:02:59.9798442Z ##[endgroup]
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:00.0752532Z npm warn config production Use `--omit=dev` instead.
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:01.7426948Z 
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:01.7427845Z  ⛅️ wrangler 4.64.0 (update available 4.65.0)
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:01.7428408Z ─────────────────────────────────────────────
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:03.9028368Z Uploading... (10/10)
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:03.9034686Z ✨ Success! Uploaded 0 files (10 already uploaded) (0.42 sec)
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:03.9035210Z 
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:05.2059417Z 🌎 Deploying...
+deploy-pwa-cloudflare	Deploy to Cloudflare Pages	2026-02-12T16:03:09.2947989Z ✨ Deployment complete! Take a peek over at https://ed90f20f.dopamine-crm-suite-playground.pages.dev
+deploy-pwa-cloudflare	Smoke check deployed URL	﻿2026-02-12T16:03:09.4235777Z ##[group]Run set -euo pipefail
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4236136Z [36;1mset -euo pipefail[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4236412Z [36;1mlog_file=".github/_ci_logs/cloudflare/smoke.log"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4236939Z [36;1mDEPLOY_ROOT="${DEPLOY_URL%/}/"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4237225Z [36;1mDEPLOY_LOGIN="${DEPLOY_ROOT%/}/login"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4237512Z [36;1mPRODUCTION_ROOT="${PROD_URL%/}/"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4237830Z [36;1mPRODUCTION_LOGIN="${PRODUCTION_ROOT%/}/login"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4238115Z [36;1m[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4238297Z [36;1mcheck_url_with_retry() {[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4238533Z [36;1m  local label="$1"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4238756Z [36;1m  local target_url="$2"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4238986Z [36;1m  local mode="$3"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4239425Z [36;1m  local attempts=6[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4239687Z [36;1m  local code="000"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4239901Z [36;1m  local delay=3[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4240098Z [36;1m  local i=1[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4240359Z [36;1m  while [ "$i" -le "$attempts" ]; do[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4240885Z [36;1m    code="$(curl -sS -L --connect-timeout 15 --max-time 45 -o /dev/null -w "%{http_code}" "$target_url" || echo "000")"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4241531Z [36;1m    echo "[$label] attempt=$i http=$code url=$target_url" | tee -a "$log_file" >&2[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4241971Z [36;1m    if [ "$mode" = "root" ] && [ "$code" -lt 400 ]; then[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4242266Z [36;1m      echo "$code"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4242484Z [36;1m      return 0[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4242684Z [36;1m    fi[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4242957Z [36;1m    if [ "$mode" = "login" ] && [ "$code" -lt 400 ] && [ "$code" != "404" ]; then[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4243307Z [36;1m      echo "$code"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4243520Z [36;1m      return 0[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4243703Z [36;1m    fi[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4243882Z [36;1m    sleep "$delay"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4244099Z [36;1m    delay=$((delay * 2))[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4244326Z [36;1m    i=$((i + 1))[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4244525Z [36;1m  done[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4244698Z [36;1m  echo "$code"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4265076Z [36;1m  return 1[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4265300Z [36;1m}[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4265474Z [36;1m[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4265873Z [36;1mdeploy_root_code="$(check_url_with_retry "deploy-root" "$DEPLOY_ROOT" "root")" || deploy_root_failed=1[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4266585Z [36;1mdeploy_login_code="$(check_url_with_retry "deploy-login" "$DEPLOY_LOGIN" "login")" || deploy_login_failed=1[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4267272Z [36;1mprod_root_code="$(check_url_with_retry "prod-root" "$PRODUCTION_ROOT" "root")" || prod_root_failed=1[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4267978Z [36;1mprod_login_code="$(check_url_with_retry "prod-login" "$PRODUCTION_LOGIN" "login")" || prod_login_failed=1[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4268451Z [36;1m[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4268668Z [36;1mdeploy_root_failed="${deploy_root_failed:-0}"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4269016Z [36;1mdeploy_login_failed="${deploy_login_failed:-0}"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4269694Z [36;1mprod_root_failed="${prod_root_failed:-0}"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4270026Z [36;1mprod_login_failed="${prod_login_failed:-0}"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4270293Z [36;1m[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4270813Z [36;1mif [ "$deploy_root_failed" -eq 1 ] || [ "$deploy_login_failed" -eq 1 ] || [ "$prod_root_failed" -eq 1 ] || [ "$prod_login_failed" -eq 1 ]; then[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4271500Z [36;1m  echo "Smoke checks failed for one or more URLs." | tee -a "$log_file"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4271972Z [36;1m  if [ "$deploy_login_code" = "404" ] || [ "$prod_login_code" = "404" ]; then[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4272591Z [36;1m    echo "Guidance: ensure ALQASEER-PWA/public/_redirects contains '/* /index.html 200'." | tee -a "$log_file"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4273097Z [36;1m  fi[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4273269Z [36;1m  exit 1[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4273438Z [36;1mfi[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4273599Z [36;1m[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4273750Z [36;1m{[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4274165Z [36;1m  echo "## Field-Ready Cloudflare Deploy"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4274436Z [36;1m  echo ""[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4274633Z [36;1m  echo "- Result: Success"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4275007Z [36;1m  echo "- Deploy URL: $DEPLOY_ROOT"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4275311Z [36;1m  echo "- Production URL: $PRODUCTION_ROOT"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4275631Z [36;1m  echo "- Deploy URL HTTP /: $deploy_root_code"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4275992Z [36;1m  echo "- Deploy URL HTTP /login: $deploy_login_code"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4276369Z [36;1m  echo "- Production URL HTTP /: $prod_root_code"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4276768Z [36;1m  echo "- Production URL HTTP /login: $prod_login_code"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4277209Z [36;1m  echo "- Smoke: Passed (deploy + production URLs for / and /login)"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4277574Z [36;1m} >> "$GITHUB_STEP_SUMMARY"[0m
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4326549Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4326883Z env:
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4327063Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4327403Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4327880Z   DEPLOY_URL: https://ed90f20f.dopamine-crm-suite-playground.pages.dev
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4328345Z   PROD_URL: https://dopamine-crm-suite-playground.pages.dev/
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.4328674Z ##[endgroup]
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.6074805Z [deploy-root] attempt=1 http=200 url=https://ed90f20f.dopamine-crm-suite-playground.pages.dev/
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.7243994Z [deploy-login] attempt=1 http=200 url=https://ed90f20f.dopamine-crm-suite-playground.pages.dev/login
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:09.9398599Z [prod-root] attempt=1 http=200 url=https://dopamine-crm-suite-playground.pages.dev/
+deploy-pwa-cloudflare	Smoke check deployed URL	2026-02-12T16:03:10.1322190Z [prod-login] attempt=1 http=200 url=https://dopamine-crm-suite-playground.pages.dev/login
+deploy-pwa-cloudflare	Upload deploy and smoke logs	﻿2026-02-12T16:03:10.1412430Z ##[group]Run actions/upload-artifact@v4
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1412727Z with:
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1412948Z   name: cloudflare-deploy-smoke-logs-21954161951
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1413250Z   if-no-files-found: warn
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1413794Z   path: .github/_ci_logs/cloudflare/project-ensure.log
+deploy-pwa-cloudflare	Upload deploy and smoke logs	.github/_ci_logs/cloudflare/deploy.log
+deploy-pwa-cloudflare	Upload deploy and smoke logs	.github/_ci_logs/cloudflare/smoke.log
+deploy-pwa-cloudflare	Upload deploy and smoke logs	
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1414400Z   compression-level: 6
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1414621Z   overwrite: false
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1414830Z   include-hidden-files: false
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1415043Z env:
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1415212Z   WRANGLER_VERSION: 4.64.0
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1415524Z   CLOUDFLARE_PROJECT_NAME_RESOLVED: dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1415993Z   DEPLOY_URL: https://ed90f20f.dopamine-crm-suite-playground.pages.dev
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1416463Z   PROD_URL: https://dopamine-crm-suite-playground.pages.dev/
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.1416785Z ##[endgroup]
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.3669113Z Multiple search paths detected. Calculating the least common ancestor of all paths
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.3676988Z The least common ancestor is /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground/.github/_ci_logs/cloudflare. This will be the root directory of the artifact
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.3678827Z With the provided path, there will be 3 files uploaded
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.3682965Z Artifact name is valid!
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.3684687Z Root directory input is valid!
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.5760623Z Beginning upload of artifact content to blob storage
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.8005976Z Uploaded bytes 939
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.8612397Z Finished uploading artifact content to blob storage!
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.8617253Z SHA256 digest of uploaded artifact zip is c01428139b068c8978a63f6d0e69f7ea089a402b06564e8016a22f5823ecfcc9
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:10.8618908Z Finalizing artifact upload
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:11.0206927Z Artifact cloudflare-deploy-smoke-logs-21954161951.zip successfully finalized. Artifact ID 5485403137
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:11.0208382Z Artifact cloudflare-deploy-smoke-logs-21954161951 has been successfully uploaded! Final size is 939 bytes. Artifact ID is 5485403137
+deploy-pwa-cloudflare	Upload deploy and smoke logs	2026-02-12T16:03:11.0217860Z Artifact download URL: https://github.com/ALQASEER93/dopamine-crm-suite-playground/actions/runs/21954161951/artifacts/5485403137
+deploy-pwa-cloudflare	Post Setup Node	﻿2026-02-12T16:03:11.0380587Z Post job cleanup.
+deploy-pwa-cloudflare	Post Checkout	﻿2026-02-12T16:03:11.2059064Z Post job cleanup.
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3075812Z [command]/usr/bin/git version
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3118764Z git version 2.52.0
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3165044Z Temporarily overriding HOME='/home/runner/work/_temp/0ec6f35c-67c4-43b5-ac50-cfad83b4e2ea' before making global git config changes
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3166756Z Adding repository directory to the temporary git global config as a safe directory
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3180206Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3219063Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3255901Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3523220Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3548616Z http.https://github.com/.extraheader
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3562249Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3598179Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3859119Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy-pwa-cloudflare	Post Checkout	2026-02-12T16:03:11.3896241Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy-pwa-cloudflare	Complete job	﻿2026-02-12T16:03:11.4270548Z Cleaning up orphan processes

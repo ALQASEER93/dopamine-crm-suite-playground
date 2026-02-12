@@ -1,0 +1,6 @@
+{
+  "source": "gh run download",
+  "artifact_name": "cloudflare-deploy-smoke-logs-21954161951",
+  "artifact_download_url": "https://github.com/ALQASEER93/dopamine-crm-suite-playground/actions/runs/21954161951/artifacts/5485403137",
+  "downloaded_to": "logs/gha_artifact"
+}
