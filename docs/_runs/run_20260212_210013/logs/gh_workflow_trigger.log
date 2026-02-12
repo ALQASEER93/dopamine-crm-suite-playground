@@ -1,0 +1,16 @@
+COMMAND: gh workflow run .github/workflows/field-ready-deploy-cloudflare.yml --ref codex/fix-cloudflare-field-ready-evidence-20260212
+Android - Field Tracker	active	225991250
+CI	active	216258149
+CodeQL	active	217197507
+Codex Auto Fix	active	216477787
+.github/workflows/codex-review-bot.yml	active	216258147
+Field-Ready Deploy (Cloudflare)	active	232818744
+Field-Ready Deploy	active	232771565
+PWA - Capacitor Android (Build Only)	active	228153708
+PWA - Capacitor iOS (Build Only)	active	228153709
+Ruleset Guard	active	231505611
+Security - Gitleaks	active	225877577
+Security - Node Audit	active	225991251
+Security - Python Audit	active	225877578
+Verify Pack + Android Smoke	active	223923347
+TRIGGER_EXIT_CODE=0

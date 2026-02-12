@@ -1,0 +1,54 @@
+COMMAND: cd ALQASEER-PWA && npm ci && npm test --if-present && npm run build
+npm warn config production Use `--omit=dev` instead.
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+npm warn deprecated source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
+npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 636 packages, and audited 637 packages in 22s
+
+165 packages are looking for funding
+  run `npm fund` for details
+
+10 vulnerabilities (6 moderate, 4 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+npm warn config production Use `--omit=dev` instead.
+npm warn config production Use `--omit=dev` instead.
+
+> dopamine-pwa@0.2.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 67 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/manifest.webmanifest                          0.32 kB
+dist/index.html                                    0.62 kB │ gzip:   0.39 kB
+dist/assets/index-t8vtfoFI.css                     5.47 kB │ gzip:   1.72 kB
+dist/assets/workbox-window.prod.es5-vqzQaGvo.js    5.72 kB │ gzip:   2.35 kB
+dist/assets/index-BnoxOYp3.js                    361.84 kB │ gzip: 101.43 kB
+✓ built in 1.09s
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+
+PWA v0.20.5
+mode      generateSW
+precache  8 entries (367.25 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-0b0dccde.js
+EXIT_CODES: npm_ci=0 npm_test_if_present=0 npm_run_build=0

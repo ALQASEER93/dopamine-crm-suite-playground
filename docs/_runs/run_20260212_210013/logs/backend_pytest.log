@@ -1,0 +1,7 @@
+COMMAND_ATTEMPT_1: cd CRM/backend && python -m pytest -q
+RESULT_ATTEMPT_1: python not found in PATH
+COMMAND_ATTEMPT_2: cd CRM/backend && py -3 -m pytest -q
+Unable to create process using '"C:\Users\M S I\AppData\Local\Python\pythoncore-3.14-64\python.exe" -m pytest -q': The system cannot find the file specified.
+
+
+EXIT_CODE_ATTEMPT_2=101
