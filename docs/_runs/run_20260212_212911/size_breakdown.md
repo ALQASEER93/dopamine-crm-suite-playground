@@ -1,0 +1,30 @@
+# Size Breakdown
+
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\CI_GATES_EVIDENCE.md :: 4018
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\cloudflare_artifacts\cloudflare-deploy-smoke-logs-21959272798\deploy.log :: 548
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\cloudflare_artifacts\cloudflare-deploy-smoke-logs-21959272798\project-ensure.log :: 322
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\cloudflare_artifacts\cloudflare-deploy-smoke-logs-21959272798\smoke.log :: 370
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\CLOUDFLARE_DEPLOY_EVIDENCE.md :: 874
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\GO_NO_GO.md :: 863
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\MERGE_BLOCKERS.md :: 910
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\PR_CHECKS.json :: 2849
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\PR_CHECKS.md :: 2181
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\ruleset_guard\report.json :: 5132
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\ruleset_guard\summary.md :: 329
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\STATE.md :: 1336
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\artifacts\WORKFLOW_AUDIT.md :: 1627
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\json\cloudflare_run_list.json :: 1252
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\json\repo_rulesets.json :: 1028
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\ci_job_63429528619.log :: 30226
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\ci_job_63429528623.log :: 24680
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\ci_job_63429528634.log :: 51624
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\cloudflare_artifacts_download.log :: 0
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\cloudflare_run_watch_21959272798.log :: 6495
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\gh_auth_status.log :: 258
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\gh_workflow_dispatch.log :: 0
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\gh_workflow_list.log :: 555
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\logs\ruleset_guard.log :: 352
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\master_audit.md :: 377
+D:\ALQASEER_DEV\dopamine-crm-suite_PLAYGROUND\docs\_runs\run_20260212_212911\report.md :: 544
+
+Total bytes: 138750

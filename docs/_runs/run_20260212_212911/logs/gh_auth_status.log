@@ -1,0 +1,7 @@
+github.com
+  ✓ Logged in to github.com account ALQASEER93 (keyring)
+  - Active account: true
+  - Git operations protocol: https
+  - Token: gho_************************************
+  - Token scopes: 'gist', 'read:org', 'repo', 'workflow'
+EXIT_CODE=0

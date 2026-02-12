@@ -1,0 +1,383 @@
+CRM Backend (FastAPI)	Set up job	﻿2026-02-12T18:10:35.2399594Z Current runner version: '2.331.0'
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2425422Z ##[group]Runner Image Provisioner
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2426449Z Hosted Compute Agent
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2427213Z Version: 20260123.484
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2427808Z Commit: 6bd6555ca37d84114959e1c76d2c01448ff61c5d
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2428566Z Build Date: 2026-01-23T19:41:17Z
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2429247Z Worker ID: {f29e255e-aabd-4fec-a4d1-21caf0bc3b73}
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2429920Z Azure Region: westus
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2430575Z ##[endgroup]
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2432011Z ##[group]Operating System
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2432653Z Ubuntu
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2433173Z 24.04.3
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2433672Z LTS
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2434106Z ##[endgroup]
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2434693Z ##[group]Runner Image
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2435280Z Image: ubuntu-24.04
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2435762Z Version: 20260209.23.1
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2437090Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260209.23/images/ubuntu/Ubuntu2404-Readme.md
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2438834Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260209.23
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2439844Z ##[endgroup]
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2440808Z ##[group]GITHUB_TOKEN Permissions
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2442621Z Contents: read
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2443339Z Metadata: read
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2443822Z ##[endgroup]
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2445981Z Secret source: Actions
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2447090Z Prepare workflow directory
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2771234Z Prepare all required actions
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.2814020Z Getting action download info
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.7898254Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:35.9656164Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:36.0641304Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+CRM Backend (FastAPI)	Set up job	2026-02-12T18:10:36.3482770Z Complete job name: CRM Backend (FastAPI)
+CRM Backend (FastAPI)	Run actions/checkout@v4	﻿2026-02-12T18:10:36.4185931Z ##[group]Run actions/checkout@v4
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4187025Z with:
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4187542Z   repository: ALQASEER93/dopamine-crm-suite-playground
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4188305Z   token: ***
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4188685Z   ssh-strict: true
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4189075Z   ssh-user: git
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4189466Z   persist-credentials: true
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4189919Z   clean: true
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4190320Z   sparse-checkout-cone-mode: true
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4190789Z   fetch-depth: 1
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4191163Z   fetch-tags: false
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4191552Z   show-progress: true
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4191942Z   lfs: false
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4192345Z   submodules: false
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4192743Z   set-safe-directory: true
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.4193472Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5290654Z Syncing repository: ALQASEER93/dopamine-crm-suite-playground
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5292531Z ##[group]Getting Git version info
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5293461Z Working directory is '/home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground'
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5294736Z [command]/usr/bin/git version
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5305418Z git version 2.52.0
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5332001Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5346906Z Temporarily overriding HOME='/home/runner/work/_temp/6a0e839f-aed7-4a03-b1d3-fec3704fda62' before making global git config changes
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5348363Z Adding repository directory to the temporary git global config as a safe directory
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5360692Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5403748Z Deleting the contents of '/home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground'
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5407061Z ##[group]Initializing the repository
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5411770Z [command]/usr/bin/git init /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5534405Z hint: Using 'master' as the name for the initial branch. This default branch name
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5536251Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5538095Z hint: to use in all of your new repositories, which will suppress this warning,
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5539465Z hint: call:
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5540363Z hint:
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5541241Z hint: 	git config --global init.defaultBranch <name>
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5542151Z hint:
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5542760Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5543761Z hint: 'development'. The just-created branch can be renamed via this command:
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5544583Z hint:
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5544986Z hint: 	git branch -m <name>
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5545468Z hint:
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5546257Z hint: Disable this message with "git config set advice.defaultBranchName false"
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5548306Z Initialized empty Git repository in /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground/.git/
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5552863Z [command]/usr/bin/git remote add origin https://github.com/ALQASEER93/dopamine-crm-suite-playground
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5590093Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5591298Z ##[group]Disabling automatic garbage collection
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5595380Z [command]/usr/bin/git config --local gc.auto 0
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5626350Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5627758Z ##[group]Setting up auth
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5634329Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.5667691Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.6058811Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.6092485Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.6333164Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.6374026Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.6617973Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.6655463Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.6656438Z ##[group]Fetching the repository
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:36.6665273Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +7edbb8b6c159863842e9333d7ef8d1a1bf9c6f0a:refs/remotes/origin/codex/fix-cloudflare-field-ready-evidence-20260212
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.4875307Z From https://github.com/ALQASEER93/dopamine-crm-suite-playground
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.4877978Z  * [new ref]         7edbb8b6c159863842e9333d7ef8d1a1bf9c6f0a -> origin/codex/fix-cloudflare-field-ready-evidence-20260212
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.4910515Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.4911831Z ##[group]Determining the checkout info
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.4913314Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.4918138Z [command]/usr/bin/git sparse-checkout disable
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.4984622Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.5012899Z ##[group]Checking out the ref
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.5019679Z [command]/usr/bin/git checkout --progress --force -B codex/fix-cloudflare-field-ready-evidence-20260212 refs/remotes/origin/codex/fix-cloudflare-field-ready-evidence-20260212
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.5607849Z Switched to a new branch 'codex/fix-cloudflare-field-ready-evidence-20260212'
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.5609722Z branch 'codex/fix-cloudflare-field-ready-evidence-20260212' set up to track 'origin/codex/fix-cloudflare-field-ready-evidence-20260212'.
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.5618883Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.5659640Z [command]/usr/bin/git log -1 --format=%H
+CRM Backend (FastAPI)	Run actions/checkout@v4	2026-02-12T18:10:37.5684968Z 7edbb8b6c159863842e9333d7ef8d1a1bf9c6f0a
+CRM Backend (FastAPI)	Run actions/setup-node@v4	﻿2026-02-12T18:10:37.5931986Z ##[group]Run actions/setup-node@v4
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.5932526Z with:
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.5932882Z   node-version: 18
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.5933240Z   cache: npm
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.5933676Z   cache-dependency-path: CRM/backend/package-lock.json
+CRM Backend (FastAPI)	Run actions/setup-node@v4	
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.5934193Z   always-auth: false
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.5934590Z   check-latest: false
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.5935120Z   token: ***
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.5935493Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:37.7744367Z Attempting to download 18...
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:38.7383794Z Acquiring 18.20.8 - x64 from https://github.com/actions/node-versions/releases/download/18.20.8-14110393767/node-18.20.8-linux-x64.tar.gz
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:39.2873768Z Extracting ...
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:39.2980302Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/78248b2c-1ad0-4843-918b-31d9103560b6 -f /home/runner/work/_temp/ad4203c5-2d13-4088-b6a0-3e7bde0cbc22
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:40.2546352Z Adding to the cache ...
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.1280709Z ##[group]Environment details
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.4835885Z node: v18.20.8
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.4836573Z npm: 10.8.2
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.4837170Z yarn: 1.22.22
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.4842007Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.4863013Z [command]/opt/hostedtoolcache/node/18.20.8/x64/bin/npm config get cache
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.5887388Z npm warn config production Use `--omit=dev` instead.
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.6065252Z /home/runner/.npm
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:42.8479076Z Cache hit for: node-cache-Linux-x64-npm-ed29566491825fc385d01adc4ca39a06ca151e8c64252310bf0af5774dae75df
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:44.1645871Z Received 4194304 of 20540910 (20.4%), 4.0 MBs/sec
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:44.4228081Z Received 20540910 of 20540910 (100.0%), 15.6 MBs/sec
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:44.4229135Z Cache Size: ~20 MB (20540910 B)
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:44.4259751Z [command]/usr/bin/tar -xf /home/runner/work/_temp/fe59d168-0b03-4e12-98ce-02e47900ed91/cache.tzst -P -C /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground --use-compress-program unzstd
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:44.5490273Z Cache restored successfully
+CRM Backend (FastAPI)	Run actions/setup-node@v4	2026-02-12T18:10:44.5538493Z Cache restored from key: node-cache-Linux-x64-npm-ed29566491825fc385d01adc4ca39a06ca151e8c64252310bf0af5774dae75df
+CRM Backend (FastAPI)	Run actions/setup-python@v5	﻿2026-02-12T18:10:44.5821146Z ##[group]Run actions/setup-python@v5
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.5821456Z with:
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.5821666Z   python-version: 3.11
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.5821883Z   check-latest: false
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.5822210Z   token: ***
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.5822415Z   update-environment: true
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.5822646Z   allow-prereleases: false
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.5822876Z   freethreaded: false
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.5823079Z ##[endgroup]
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.7583548Z ##[group]Installed versions
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.9042855Z Successfully set up CPython (3.11.14)
+CRM Backend (FastAPI)	Run actions/setup-python@v5	2026-02-12T18:10:44.9043659Z ##[endgroup]
+CRM Backend (FastAPI)	Install node deps	﻿2026-02-12T18:10:44.9151683Z ##[group]Run npm ci
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9151980Z [36;1mnpm ci[0m
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9636120Z shell: /usr/bin/bash -e {0}
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9636482Z env:
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9636996Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9637627Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9638261Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9638817Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9639365Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9639939Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:44.9640395Z ##[endgroup]
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:46.8180817Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:46.8311624Z npm warn deprecated @npmcli/move-file@1.1.2: This functionality has been moved to @npmcli/fs
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:46.8729314Z npm warn deprecated npmlog@6.0.2: This package is no longer supported.
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:46.9173821Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:46.9668542Z npm warn deprecated are-we-there-yet@3.0.1: This package is no longer supported.
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:46.9800935Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:47.1515781Z npm warn deprecated gauge@4.0.4: This package is no longer supported.
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4207583Z 
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4208442Z added 535 packages, and audited 536 packages in 3s
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4209082Z 
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4209921Z 65 packages are looking for funding
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4217712Z   run `npm fund` for details
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4354561Z 
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4355087Z 11 vulnerabilities (2 moderate, 9 high)
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4355691Z 
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4356313Z To address issues that do not require attention, run:
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4357591Z   npm audit fix
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4357934Z 
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4358654Z To address all issues possible (including breaking changes), run:
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4359667Z   npm audit fix --force
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4360027Z 
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4360543Z Some issues need review, and may require choosing
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4361458Z a different dependency.
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4361852Z 
+CRM Backend (FastAPI)	Install node deps	2026-02-12T18:10:48.4362183Z Run `npm audit` for details.
+CRM Backend (FastAPI)	Install python deps	﻿2026-02-12T18:10:48.4614141Z ##[group]Run python -m pip install -r requirements.txt
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4614603Z [36;1mpython -m pip install -r requirements.txt[0m
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4667299Z shell: /usr/bin/bash -e {0}
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4667539Z env:
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4667804Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4668270Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4668723Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4669122Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4669517Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4669914Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:48.4670242Z ##[endgroup]
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:52.6100031Z Collecting fastapi<0.116,>=0.115.5 (from -r requirements.txt (line 1))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:52.6740714Z   Downloading fastapi-0.115.14-py3-none-any.whl.metadata (27 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:52.7139046Z Collecting uvicorn<0.31,>=0.30.6 (from uvicorn[standard]<0.31,>=0.30.6->-r requirements.txt (line 2))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:52.7181681Z   Downloading uvicorn-0.30.6-py3-none-any.whl.metadata (6.6 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:52.9708344Z Collecting sqlalchemy<3.0,>=2.0.25 (from -r requirements.txt (line 3))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:52.9750338Z   Downloading sqlalchemy-2.0.46-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.5 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.0370314Z Collecting psycopg2-binary<3.0,>=2.9.9 (from -r requirements.txt (line 4))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.0410976Z   Downloading psycopg2_binary-2.9.11-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.0549877Z Collecting openpyxl<4.0,>=3.1.2 (from -r requirements.txt (line 5))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.0589730Z   Downloading openpyxl-3.1.5-py2.py3-none-any.whl.metadata (2.5 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.1586081Z Collecting pydantic<3.0,>=2.7.0 (from -r requirements.txt (line 6))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.1623143Z   Downloading pydantic-2.12.5-py3-none-any.whl.metadata (90 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2060732Z Collecting pydantic-settings<3.0,>=2.2.1 (from -r requirements.txt (line 7))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2097680Z   Downloading pydantic_settings-2.12.0-py3-none-any.whl.metadata (3.4 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2241694Z Collecting python-dotenv<2.0,>=1.0.1 (from -r requirements.txt (line 8))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2274889Z   Downloading python_dotenv-1.2.1-py3-none-any.whl.metadata (25 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2423543Z Collecting PyJWT<3.0,>=2.9.0 (from -r requirements.txt (line 9))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2458417Z   Downloading pyjwt-2.11.0-py3-none-any.whl.metadata (4.0 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2618790Z Collecting httpx<0.28,>=0.27.0 (from -r requirements.txt (line 10))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2653034Z   Downloading httpx-0.27.2-py3-none-any.whl.metadata (7.1 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2777827Z Collecting passlib<2.0,>=1.7.4 (from passlib[bcrypt]<2.0,>=1.7.4->-r requirements.txt (line 11))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.2810811Z   Downloading passlib-1.7.4-py2.py3-none-any.whl.metadata (1.7 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3057381Z Collecting pytest<9.0,>=8.3.0 (from -r requirements.txt (line 14))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3092482Z   Downloading pytest-8.4.2-py3-none-any.whl.metadata (7.7 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3222012Z Collecting email-validator (from -r requirements.txt (line 15))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3288507Z   Downloading email_validator-2.3.0-py3-none-any.whl.metadata (26 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3514067Z Collecting starlette<0.47.0,>=0.40.0 (from fastapi<0.116,>=0.115.5->-r requirements.txt (line 1))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3558814Z   Downloading starlette-0.46.2-py3-none-any.whl.metadata (6.2 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3774811Z Collecting typing-extensions>=4.8.0 (from fastapi<0.116,>=0.115.5->-r requirements.txt (line 1))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3808355Z   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3961347Z Collecting click>=7.0 (from uvicorn<0.31,>=0.30.6->uvicorn[standard]<0.31,>=0.30.6->-r requirements.txt (line 2))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.3998137Z   Downloading click-8.3.1-py3-none-any.whl.metadata (2.6 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.4102544Z Collecting h11>=0.8 (from uvicorn<0.31,>=0.30.6->uvicorn[standard]<0.31,>=0.30.6->-r requirements.txt (line 2))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.4135879Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.5239510Z Collecting greenlet>=1 (from sqlalchemy<3.0,>=2.0.25->-r requirements.txt (line 3))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.5280413Z   Downloading greenlet-3.3.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.7 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.5406514Z Collecting et-xmlfile (from openpyxl<4.0,>=3.1.2->-r requirements.txt (line 5))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.5443404Z   Downloading et_xmlfile-2.0.0-py3-none-any.whl.metadata (2.7 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.5565402Z Collecting annotated-types>=0.6.0 (from pydantic<3.0,>=2.7.0->-r requirements.txt (line 6))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:53.5600110Z   Downloading annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.1948881Z Collecting pydantic-core==2.41.5 (from pydantic<3.0,>=2.7.0->-r requirements.txt (line 6))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.1987228Z   Downloading pydantic_core-2.41.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2097391Z Collecting typing-inspection>=0.4.2 (from pydantic<3.0,>=2.7.0->-r requirements.txt (line 6))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2130919Z   Downloading typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2400107Z Collecting anyio (from httpx<0.28,>=0.27.0->-r requirements.txt (line 10))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2434254Z   Downloading anyio-4.12.1-py3-none-any.whl.metadata (4.3 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2626050Z Collecting certifi (from httpx<0.28,>=0.27.0->-r requirements.txt (line 10))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2657768Z   Downloading certifi-2026.1.4-py3-none-any.whl.metadata (2.5 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2810845Z Collecting httpcore==1.* (from httpx<0.28,>=0.27.0->-r requirements.txt (line 10))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2842582Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.2982427Z Collecting idna (from httpx<0.28,>=0.27.0->-r requirements.txt (line 10))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3018850Z   Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3114470Z Collecting sniffio (from httpx<0.28,>=0.27.0->-r requirements.txt (line 10))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3149538Z   Downloading sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3259016Z Collecting iniconfig>=1 (from pytest<9.0,>=8.3.0->-r requirements.txt (line 14))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3293111Z   Downloading iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3438602Z Collecting packaging>=20 (from pytest<9.0,>=8.3.0->-r requirements.txt (line 14))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3472156Z   Downloading packaging-26.0-py3-none-any.whl.metadata (3.3 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3593244Z Collecting pluggy<2,>=1.5 (from pytest<9.0,>=8.3.0->-r requirements.txt (line 14))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3625925Z   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3811340Z Collecting pygments>=2.7.2 (from pytest<9.0,>=8.3.0->-r requirements.txt (line 14))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.3845308Z   Downloading pygments-2.19.2-py3-none-any.whl.metadata (2.5 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.4234021Z Collecting bcrypt>=3.1.0 (from passlib[bcrypt]<2.0,>=1.7.4->-r requirements.txt (line 11))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.4270379Z   Downloading bcrypt-5.0.0-cp39-abi3-manylinux_2_34_x86_64.whl.metadata (10 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.4613165Z Collecting httptools>=0.5.0 (from uvicorn[standard]<0.31,>=0.30.6->-r requirements.txt (line 2))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.4645386Z   Downloading httptools-0.7.1-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (3.5 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.4988589Z Collecting pyyaml>=5.1 (from uvicorn[standard]<0.31,>=0.30.6->-r requirements.txt (line 2))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.5022833Z   Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.5370561Z Collecting uvloop!=0.15.0,!=0.15.1,>=0.14.0 (from uvicorn[standard]<0.31,>=0.30.6->-r requirements.txt (line 2))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.5406268Z   Downloading uvloop-0.22.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (4.9 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.6218691Z Collecting watchfiles>=0.13 (from uvicorn[standard]<0.31,>=0.30.6->-r requirements.txt (line 2))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.6253085Z   Downloading watchfiles-1.1.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7009656Z Collecting websockets>=10.4 (from uvicorn[standard]<0.31,>=0.30.6->-r requirements.txt (line 2))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7050059Z   Downloading websockets-16.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.8 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7183376Z Collecting dnspython>=2.0.0 (from email-validator->-r requirements.txt (line 15))
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7215272Z   Downloading dnspython-2.8.0-py3-none-any.whl.metadata (5.7 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7421629Z Downloading fastapi-0.115.14-py3-none-any.whl (95 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7484597Z Downloading uvicorn-0.30.6-py3-none-any.whl (62 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7541365Z Downloading sqlalchemy-2.0.46-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.3 MB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7782126Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 165.4 MB/s  0:00:00
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.7819287Z Downloading psycopg2_binary-2.9.11-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.2 MB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8147889Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.2/4.2 MB 137.7 MB/s  0:00:00
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8187851Z Downloading openpyxl-3.1.5-py2.py3-none-any.whl (250 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8250487Z Downloading pydantic-2.12.5-py3-none-any.whl (463 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8325600Z Downloading pydantic_core-2.41.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8495725Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 154.7 MB/s  0:00:00
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8530655Z Downloading pydantic_settings-2.12.0-py3-none-any.whl (51 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8584734Z Downloading python_dotenv-1.2.1-py3-none-any.whl (21 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8637451Z Downloading pyjwt-2.11.0-py3-none-any.whl (28 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8692315Z Downloading httpx-0.27.2-py3-none-any.whl (76 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8746428Z Downloading passlib-1.7.4-py2.py3-none-any.whl (525 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8811302Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 525.6/525.6 kB 79.9 MB/s  0:00:00
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8847318Z Downloading pytest-8.4.2-py3-none-any.whl (365 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8919508Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.8999355Z Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9053178Z Downloading starlette-0.46.2-py3-none-any.whl (72 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9109747Z Downloading anyio-4.12.1-py3-none-any.whl (113 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9167078Z Downloading email_validator-2.3.0-py3-none-any.whl (35 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9223509Z Downloading annotated_types-0.7.0-py3-none-any.whl (13 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9276573Z Downloading bcrypt-5.0.0-cp39-abi3-manylinux_2_34_x86_64.whl (278 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9352868Z Downloading click-8.3.1-py3-none-any.whl (108 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9411073Z Downloading dnspython-2.8.0-py3-none-any.whl (331 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9475556Z Downloading greenlet-3.3.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (590 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9553555Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 590.3/590.3 kB 82.3 MB/s  0:00:00
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9588157Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9642544Z Downloading httptools-0.7.1-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (456 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9722298Z Downloading idna-3.11-py3-none-any.whl (71 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9777702Z Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9828424Z Downloading packaging-26.0-py3-none-any.whl (74 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9881959Z Downloading pygments-2.19.2-py3-none-any.whl (1.2 MB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:54.9971902Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 143.2 MB/s  0:00:00
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0007461Z Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0113947Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 806.6/806.6 kB 63.6 MB/s  0:00:00
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0147582Z Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0202183Z Downloading typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0254030Z Downloading uvloop-0.22.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.8 MB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0489632Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.8/3.8 MB 185.6 MB/s  0:00:00
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0523488Z Downloading watchfiles-1.1.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (456 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0611108Z Downloading websockets-16.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (184 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0671883Z Downloading certifi-2026.1.4-py3-none-any.whl (152 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0740695Z Downloading et_xmlfile-2.0.0-py3-none-any.whl (18 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.0793133Z Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:55.2578774Z Installing collected packages: passlib, websockets, uvloop, typing-extensions, sniffio, pyyaml, python-dotenv, PyJWT, pygments, psycopg2-binary, pluggy, packaging, iniconfig, idna, httptools, h11, greenlet, et-xmlfile, dnspython, click, certifi, bcrypt, annotated-types, uvicorn, typing-inspection, sqlalchemy, pytest, pydantic-core, openpyxl, httpcore, email-validator, anyio, watchfiles, starlette, pydantic, httpx, pydantic-settings, fastapi
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:59.2502488Z 
+CRM Backend (FastAPI)	Install python deps	2026-02-12T18:10:59.2527602Z Successfully installed PyJWT-2.11.0 annotated-types-0.7.0 anyio-4.12.1 bcrypt-5.0.0 certifi-2026.1.4 click-8.3.1 dnspython-2.8.0 email-validator-2.3.0 et-xmlfile-2.0.0 fastapi-0.115.14 greenlet-3.3.1 h11-0.16.0 httpcore-1.0.9 httptools-0.7.1 httpx-0.27.2 idna-3.11 iniconfig-2.3.0 openpyxl-3.1.5 packaging-26.0 passlib-1.7.4 pluggy-1.6.0 psycopg2-binary-2.9.11 pydantic-2.12.5 pydantic-core-2.41.5 pydantic-settings-2.12.0 pygments-2.19.2 pytest-8.4.2 python-dotenv-1.2.1 pyyaml-6.0.3 sniffio-1.3.1 sqlalchemy-2.0.46 starlette-0.46.2 typing-extensions-4.15.0 typing-inspection-0.4.2 uvicorn-0.30.6 uvloop-0.22.1 watchfiles-1.1.1 websockets-16.0
+CRM Backend (FastAPI)	Pytest	﻿2026-02-12T18:10:59.6313048Z ##[group]Run python -m pytest -q
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6313419Z [36;1mpython -m pytest -q[0m
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6364025Z shell: /usr/bin/bash -e {0}
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6364299Z env:
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6364598Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6365124Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6365631Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6366085Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6366539Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6367227Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:10:59.6367601Z ##[endgroup]
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3482329Z ....................................                                     [100%]
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3483388Z =============================== warnings summary ===============================
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3484681Z ../../../../../../../opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/passlib/utils/__init__.py:854
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3487403Z   /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3488680Z     from crypt import crypt as _crypt
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3488955Z 
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3489200Z tests/test_admin_ai_and_ledger.py: 6 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3489692Z tests/test_admin_users.py: 3 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3490127Z tests/test_auth.py: 2 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3490541Z tests/test_gps_policy.py: 3 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3490935Z tests/test_hcps.py: 1 warning
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3491330Z tests/test_orders.py: 1 warning
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3491752Z tests/test_pwa_endpoints.py: 2 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3492233Z tests/test_reports.py: 10 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3492651Z tests/test_visits.py: 2 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3493101Z tests/test_visits_dashboard.py: 2 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3493565Z tests/test_visits_export.py: 1 warning
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3495161Z   /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/jwt/api_jwt.py:153: InsecureKeyLengthWarning: The HMAC key is 18 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3496612Z     return self._jws.encode(
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3497017Z 
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3497251Z tests/test_admin_ai_and_ledger.py: 6 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3497625Z tests/test_admin_users.py: 3 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3497916Z tests/test_auth.py: 1 warning
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3498207Z tests/test_gps_policy.py: 3 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3498487Z tests/test_hcps.py: 1 warning
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3498761Z tests/test_orders.py: 1 warning
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3499070Z tests/test_pwa_endpoints.py: 2 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3499376Z tests/test_reports.py: 10 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3499667Z tests/test_visits.py: 2 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3499969Z tests/test_visits_dashboard.py: 2 warnings
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3500289Z tests/test_visits_export.py: 1 warning
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3501373Z   /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/jwt/api_jwt.py:371: InsecureKeyLengthWarning: The HMAC key is 18 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3502403Z     decoded = self.decode_complete(
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3502580Z 
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3502864Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+CRM Backend (FastAPI)	Pytest	2026-02-12T18:11:06.3503331Z 36 passed, 66 warnings in 3.86s
+CRM Backend (FastAPI)	Post Run actions/setup-python@v5	﻿2026-02-12T18:11:06.6005978Z Post job cleanup.
+CRM Backend (FastAPI)	Post Run actions/setup-node@v4	﻿2026-02-12T18:11:06.7660485Z Post job cleanup.
+CRM Backend (FastAPI)	Post Run actions/setup-node@v4	2026-02-12T18:11:06.9308577Z Cache hit occurred on the primary key node-cache-Linux-x64-npm-ed29566491825fc385d01adc4ca39a06ca151e8c64252310bf0af5774dae75df, not saving cache.
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	﻿2026-02-12T18:11:06.9424946Z Post job cleanup.
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0398338Z [command]/usr/bin/git version
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0435651Z git version 2.52.0
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0480303Z Temporarily overriding HOME='/home/runner/work/_temp/cc649997-9068-4ef6-9350-c00c3400c4d4' before making global git config changes
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0481916Z Adding repository directory to the temporary git global config as a safe directory
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0487734Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dopamine-crm-suite-playground/dopamine-crm-suite-playground
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0528314Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0564368Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0821607Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0843288Z http.https://github.com/.extraheader
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0855997Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.0889926Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.1136493Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+CRM Backend (FastAPI)	Post Run actions/checkout@v4	2026-02-12T18:11:07.1170781Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+CRM Backend (FastAPI)	Complete job	﻿2026-02-12T18:11:07.1524224Z Cleaning up orphan processes
