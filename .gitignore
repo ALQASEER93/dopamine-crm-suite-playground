@@ -28,12 +28,17 @@ __pycache__/
 *.bak_before_path_fix
 FINAL_STATUS.md
 PR_BLOCKER_ANALYSIS.md
-_runs/
-docs/_runs/**
-!docs/_runs/README.md
-docs/_runs/LATEST.txt
+/_runs/
+
+# docs/_runs hygiene
 docs/_runs/run_*/
-docs/_runs/run_*.zip
+docs/_runs/*.zip
+docs/_runs/report.md
+docs/_runs/master_audit.md
+docs/_runs/size_breakdown.md
+!docs/_runs/README.md
+!docs/_runs/LATEST.txt
+
 CRM/backend/data/
 
 # Local archives
