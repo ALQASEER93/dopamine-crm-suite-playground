@@ -1,0 +1,236 @@
+1	name: Field-Ready Deploy (Cloudflare)
+2	
+3	on:
+4	  workflow_dispatch:
+5	
+6	permissions:
+7	  contents: read
+8	
+9	jobs:
+10	  deploy-pwa-cloudflare:
+11	    runs-on: ubuntu-latest
+12	    env:
+13	      WRANGLER_VERSION: "4.64.0"
+14	    steps:
+15	      - name: Checkout
+16	        uses: actions/checkout@v4
+17	
+18	      - name: Resolve project name and check required secrets (fail-fast)
+19	        shell: bash
+20	        env:
+21	          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+22	          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+23	          CLOUDFLARE_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+24	        run: |
+25	          set -euo pipefail
+26	          missing=0
+27	          for key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+28	            if [ -z "${!key}" ]; then
+29	              echo "Missing secret: $key"
+30	              missing=1
+31	            fi
+32	          done
+33	          if [ "$missing" -eq 1 ]; then
+34	            echo "Cloudflare Pages deploy blocked: required secrets are missing."
+35	            echo "Required: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID."
+36	            exit 1
+37	          fi
+38	          repo_name="${GITHUB_REPOSITORY##*/}"
+39	          resolved_project_name="${CLOUDFLARE_PROJECT_NAME:-$repo_name}"
+40	          if [ -z "$resolved_project_name" ]; then
+41	            echo "Unable to resolve Cloudflare project name."
+42	            echo "Provide CLOUDFLARE_PROJECT_NAME or ensure GITHUB_REPOSITORY is available."
+43	            exit 1
+44	          fi
+45	          echo "CLOUDFLARE_PROJECT_NAME_RESOLVED=$resolved_project_name" >> "$GITHUB_ENV"
+46	          echo "Resolved Cloudflare Pages project: $resolved_project_name"
+47	
+48	      - name: Setup Node
+49	        uses: actions/setup-node@v4
+50	        with:
+51	          node-version: "20.x"
+52	
+53	      - name: Install dependencies
+54	        working-directory: ALQASEER-PWA
+55	        run: npm ci
+56	
+57	      - name: Build PWA
+58	        working-directory: ALQASEER-PWA
+59	        run: npm run build
+60	
+61	      - name: Verify build output exists
+62	        shell: bash
+63	        run: |
+64	          set -euo pipefail
+65	          if [ ! -d "ALQASEER-PWA/dist" ]; then
+66	            echo "Build output missing: ALQASEER-PWA/dist"
+67	            echo "Run the PWA build first and ensure dist/ is produced."
+68	            exit 1
+69	          fi
+70	
+71	      - name: Prepare CI log paths
+72	        shell: bash
+73	        run: |
+74	          set -euo pipefail
+75	          mkdir -p .github/_ci_logs/cloudflare
+76	
+77	      - name: Ensure Cloudflare Pages project exists
+78	        shell: bash
+79	        env:
+80	          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+81	          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+82	          CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
+83	        run: |
+84	          set -euo pipefail
+85	          log_file=".github/_ci_logs/cloudflare/project-ensure.log"
+86	          wrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"
+87	          projects_json_file="$RUNNER_TEMP/pages-projects.json"
+88	          projects_err_file="$RUNNER_TEMP/pages-projects.err"
+89	          if ! $wrangler_cmd pages project list --json >"$projects_json_file" 2>"$projects_err_file"; then
+90	            cat "$projects_err_file" | tee "$log_file"
+91	            echo "Failed to list Cloudflare Pages projects."
+92	            exit 1
+93	          fi
+94	          cat "$projects_json_file" > "$log_file"
+95	          if [ -s "$projects_err_file" ]; then
+96	            echo "" >> "$log_file"
+97	            cat "$projects_err_file" >> "$log_file"
+98	          fi
+99	          if node -e '
+100	            const fs = require("fs");
+101	            const file = process.argv[1];
+102	            const target = process.argv[2];
+103	            let parsed;
+104	            try {
+105	              const raw = fs.readFileSync(file, "utf8");
+106	              parsed = JSON.parse(raw);
+107	            } catch (_err) {
+108	              process.exit(2);
+109	            }
+110	            if (!Array.isArray(parsed)) process.exit(2);
+111	            const exists = parsed.some((item) => {
+112	              const name = item?.name ?? item?.["Project Name"];
+113	              return name === target;
+114	            });
+115	            process.exit(exists ? 0 : 1);
+116	          ' "$projects_json_file" "$CLOUDFLARE_PROJECT_NAME_RESOLVED"; then
+117	            project_exists_rc=0
+118	          else
+119	            project_exists_rc=$?
+120	          fi
+121	          if [ "$project_exists_rc" -eq 2 ]; then
+122	            echo "Unable to parse pages project list JSON output." | tee -a "$log_file"
+123	            exit 1
+124	          fi
+125	          if [ "$project_exists_rc" -eq 1 ]; then
+126	            echo "Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED' not found. Creating..." | tee -a "$log_file"
+127	            if ! $wrangler_cmd pages project create "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --production-branch main 2>&1 | tee -a "$log_file"; then
+128	              echo "Failed to create Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED'."
+129	              echo "Check token permissions and account/project naming."
+130	              exit 1
+131	            fi
+132	          else
+133	            echo "Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED' already exists." | tee -a "$log_file"
+134	          fi
+135	
+136	      - name: Deploy to Cloudflare Pages
+137	        shell: bash
+138	        env:
+139	          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+140	          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+141	          CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
+142	        run: |
+143	          set -euo pipefail
+144	          log_file=".github/_ci_logs/cloudflare/deploy.log"
+145	          wrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"
+146	          $wrangler_cmd pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" 2>&1 | tee "$log_file"
+147	          deploy_url="$(grep -Eo 'https://[a-zA-Z0-9._/-]+\.pages\.dev[^ ]*' "$log_file" | head -n 1 || true)"
+148	          if [ -z "$deploy_url" ]; then
+149	            deploy_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"
+150	          fi
+151	          prod_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"
+152	          echo "DEPLOY_URL=$deploy_url" >> "$GITHUB_ENV"
+153	          echo "PROD_URL=$prod_url" >> "$GITHUB_ENV"
+154	
+155	      - name: Smoke check deployed URL
+156	        shell: bash
+157	        env:
+158	          CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
+159	          DEPLOY_URL: ${{ env.DEPLOY_URL }}
+160	          PROD_URL: ${{ env.PROD_URL }}
+161	        run: |
+162	          set -euo pipefail
+163	          log_file=".github/_ci_logs/cloudflare/smoke.log"
+164	          DEPLOY_ROOT="${DEPLOY_URL%/}/"
+165	          DEPLOY_LOGIN="${DEPLOY_ROOT%/}/login"
+166	          PRODUCTION_ROOT="${PROD_URL%/}/"
+167	          PRODUCTION_LOGIN="${PRODUCTION_ROOT%/}/login"
+168	
+169	          check_url_with_retry() {
+170	            local label="$1"
+171	            local target_url="$2"
+172	            local mode="$3"
+173	            local attempts=6
+174	            local code="000"
+175	            local delay=3
+176	            local i=1
+177	            while [ "$i" -le "$attempts" ]; do
+178	              code="$(curl -s -o /dev/null -w "%{http_code}" "$target_url" || echo "000")"
+179	              echo "[$label] attempt=$i http=$code url=$target_url" | tee -a "$log_file" >&2
+180	              if [ "$mode" = "root" ] && [ "$code" -lt 400 ]; then
+181	                echo "$code"
+182	                return 0
+183	              fi
+184	              if [ "$mode" = "login" ] && [ "$code" -lt 400 ] && [ "$code" != "404" ]; then
+185	                echo "$code"
+186	                return 0
+187	              fi
+188	              sleep "$delay"
+189	              delay=$((delay * 2))
+190	              i=$((i + 1))
+191	            done
+192	            echo "$code"
+193	            return 1
+194	          }
+195	
+196	          deploy_root_code="$(check_url_with_retry "deploy-root" "$DEPLOY_ROOT" "root")" || deploy_root_failed=1
+197	          deploy_login_code="$(check_url_with_retry "deploy-login" "$DEPLOY_LOGIN" "login")" || deploy_login_failed=1
+198	          prod_root_code="$(check_url_with_retry "prod-root" "$PRODUCTION_ROOT" "root")" || prod_root_failed=1
+199	          prod_login_code="$(check_url_with_retry "prod-login" "$PRODUCTION_LOGIN" "login")" || prod_login_failed=1
+200	
+201	          deploy_root_failed="${deploy_root_failed:-0}"
+202	          deploy_login_failed="${deploy_login_failed:-0}"
+203	          prod_root_failed="${prod_root_failed:-0}"
+204	          prod_login_failed="${prod_login_failed:-0}"
+205	
+206	          if [ "$deploy_root_failed" -eq 1 ] || [ "$deploy_login_failed" -eq 1 ] || [ "$prod_root_failed" -eq 1 ] || [ "$prod_login_failed" -eq 1 ]; then
+207	            echo "Smoke checks failed for one or more URLs." | tee -a "$log_file"
+208	            if [ "$deploy_login_code" = "404" ] || [ "$prod_login_code" = "404" ]; then
+209	              echo "Guidance: ensure ALQASEER-PWA/public/_redirects contains '/* /index.html 200'." | tee -a "$log_file"
+210	            fi
+211	            exit 1
+212	          fi
+213	
+214	          {
+215	            echo "## Field-Ready Cloudflare Deploy"
+216	            echo ""
+217	            echo "- Result: Success"
+218	            echo "- Deploy URL: $DEPLOY_ROOT"
+219	            echo "- Production URL: $PRODUCTION_ROOT"
+220	            echo "- Deploy URL HTTP `/`: $deploy_root_code"
+221	            echo "- Deploy URL HTTP `/login`: $deploy_login_code"
+222	            echo "- Production URL HTTP `/`: $prod_root_code"
+223	            echo "- Production URL HTTP `/login`: $prod_login_code"
+224	            echo "- Smoke: Passed (deploy + production URLs for `/` and `/login`)"
+225	          } >> "$GITHUB_STEP_SUMMARY"
+226	
+227	      - name: Upload deploy and smoke logs
+228	        if: ${{ always() }}
+229	        uses: actions/upload-artifact@v4
+230	        with:
+231	          name: cloudflare-deploy-smoke-logs-${{ github.run_id }}
+232	          if-no-files-found: warn
+233	          path: |
+234	            .github/_ci_logs/cloudflare/project-ensure.log
+235	            .github/_ci_logs/cloudflare/deploy.log
+236	            .github/_ci_logs/cloudflare/smoke.log

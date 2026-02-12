@@ -9,6 +9,8 @@ permissions:
 jobs:
   deploy-pwa-cloudflare:
     runs-on: ubuntu-latest
+    env:
+      WRANGLER_VERSION: "4.64.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,14 +83,54 @@ jobs:
         run: |
           set -euo pipefail
           log_file=".github/_ci_logs/cloudflare/project-ensure.log"
-          project_list="$(npx -y wrangler@4 pages project list 2>&1 | tee "$log_file")"
-          if ! printf '%s\n' "$project_list" | grep -Fq "$CLOUDFLARE_PROJECT_NAME_RESOLVED"; then
+          wrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"
+          projects_json_file="$RUNNER_TEMP/pages-projects.json"
+          projects_err_file="$RUNNER_TEMP/pages-projects.err"
+          if ! $wrangler_cmd pages project list --json >"$projects_json_file" 2>"$projects_err_file"; then
+            cat "$projects_err_file" | tee "$log_file"
+            echo "Failed to list Cloudflare Pages projects."
+            exit 1
+          fi
+          cat "$projects_json_file" > "$log_file"
+          if [ -s "$projects_err_file" ]; then
+            echo "" >> "$log_file"
+            cat "$projects_err_file" >> "$log_file"
+          fi
+          if node -e '
+            const fs = require("fs");
+            const file = process.argv[1];
+            const target = process.argv[2];
+            let parsed;
+            try {
+              const raw = fs.readFileSync(file, "utf8");
+              parsed = JSON.parse(raw);
+            } catch (_err) {
+              process.exit(2);
+            }
+            if (!Array.isArray(parsed)) process.exit(2);
+            const exists = parsed.some((item) => {
+              const name = item?.name ?? item?.["Project Name"];
+              return name === target;
+            });
+            process.exit(exists ? 0 : 1);
+          ' "$projects_json_file" "$CLOUDFLARE_PROJECT_NAME_RESOLVED"; then
+            project_exists_rc=0
+          else
+            project_exists_rc=$?
+          fi
+          if [ "$project_exists_rc" -eq 2 ]; then
+            echo "Unable to parse pages project list JSON output." | tee -a "$log_file"
+            exit 1
+          fi
+          if [ "$project_exists_rc" -eq 1 ]; then
             echo "Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED' not found. Creating..." | tee -a "$log_file"
-            if ! npx -y wrangler@4 pages project create "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --production-branch main 2>&1 | tee -a "$log_file"; then
+            if ! $wrangler_cmd pages project create "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --production-branch main 2>&1 | tee -a "$log_file"; then
               echo "Failed to create Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED'."
               echo "Check token permissions and account/project naming."
               exit 1
             fi
+          else
+            echo "Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED' already exists." | tee -a "$log_file"
           fi
 
       - name: Deploy to Cloudflare Pages
@@ -100,52 +142,86 @@ jobs:
         run: |
           set -euo pipefail
           log_file=".github/_ci_logs/cloudflare/deploy.log"
-          npx -y wrangler@4 pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch "main" 2>&1 | tee "$log_file"
+          wrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"
+          $wrangler_cmd pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" 2>&1 | tee "$log_file"
           deploy_url="$(grep -Eo 'https://[a-zA-Z0-9._/-]+\.pages\.dev[^ ]*' "$log_file" | head -n 1 || true)"
           if [ -z "$deploy_url" ]; then
             deploy_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"
           fi
+          prod_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"
           echo "DEPLOY_URL=$deploy_url" >> "$GITHUB_ENV"
+          echo "PROD_URL=$prod_url" >> "$GITHUB_ENV"
 
       - name: Smoke check deployed URL
         shell: bash
         env:
           CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
           DEPLOY_URL: ${{ env.DEPLOY_URL }}
+          PROD_URL: ${{ env.PROD_URL }}
         run: |
           set -euo pipefail
           log_file=".github/_ci_logs/cloudflare/smoke.log"
-          ROOT_URL="${DEPLOY_URL:-https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/}"
-          ROOT_URL="${ROOT_URL%/}/"
-          LOGIN_URL="${ROOT_URL%/}/login"
-          root_code="$(curl -s -o /dev/null -w "%{http_code}" "$ROOT_URL")"
-          login_code="$(curl -s -o /dev/null -w "%{http_code}" "$LOGIN_URL")"
-          {
-            echo "Deploy URL: $ROOT_URL"
-            echo "Root HTTP: $root_code"
-            echo "Login HTTP: $login_code"
-          } | tee "$log_file"
-          if [ "$root_code" -ge 400 ]; then
-            echo "Root smoke check failed: $ROOT_URL returned HTTP $root_code"
+          DEPLOY_ROOT="${DEPLOY_URL%/}/"
+          DEPLOY_LOGIN="${DEPLOY_ROOT%/}/login"
+          PRODUCTION_ROOT="${PROD_URL%/}/"
+          PRODUCTION_LOGIN="${PRODUCTION_ROOT%/}/login"
+
+          check_url_with_retry() {
+            local label="$1"
+            local target_url="$2"
+            local mode="$3"
+            local attempts=6
+            local code="000"
+            local delay=3
+            local i=1
+            while [ "$i" -le "$attempts" ]; do
+              code="$(curl -s -o /dev/null -w "%{http_code}" "$target_url" || echo "000")"
+              echo "[$label] attempt=$i http=$code url=$target_url" | tee -a "$log_file" >&2
+              if [ "$mode" = "root" ] && [ "$code" -lt 400 ]; then
+                echo "$code"
+                return 0
+              fi
+              if [ "$mode" = "login" ] && [ "$code" -lt 400 ] && [ "$code" != "404" ]; then
+                echo "$code"
+                return 0
+              fi
+              sleep "$delay"
+              delay=$((delay * 2))
+              i=$((i + 1))
+            done
+            echo "$code"
+            return 1
+          }
+
+          deploy_root_code="$(check_url_with_retry "deploy-root" "$DEPLOY_ROOT" "root")" || deploy_root_failed=1
+          deploy_login_code="$(check_url_with_retry "deploy-login" "$DEPLOY_LOGIN" "login")" || deploy_login_failed=1
+          prod_root_code="$(check_url_with_retry "prod-root" "$PRODUCTION_ROOT" "root")" || prod_root_failed=1
+          prod_login_code="$(check_url_with_retry "prod-login" "$PRODUCTION_LOGIN" "login")" || prod_login_failed=1
+
+          deploy_root_failed="${deploy_root_failed:-0}"
+          deploy_login_failed="${deploy_login_failed:-0}"
+          prod_root_failed="${prod_root_failed:-0}"
+          prod_login_failed="${prod_login_failed:-0}"
+
+          if [ "$deploy_root_failed" -eq 1 ] || [ "$deploy_login_failed" -eq 1 ] || [ "$prod_root_failed" -eq 1 ] || [ "$prod_login_failed" -eq 1 ]; then
+            echo "Smoke checks failed for one or more URLs." | tee -a "$log_file"
+            if [ "$deploy_login_code" = "404" ] || [ "$prod_login_code" = "404" ]; then
+              echo "Guidance: ensure ALQASEER-PWA/public/_redirects contains '/* /index.html 200'." | tee -a "$log_file"
+            fi
             exit 1
           fi
-          if [ "$login_code" = "404" ]; then
-            echo "Login smoke check failed: $LOGIN_URL returned HTTP 404."
-            echo "Guidance: ensure ALQASEER-PWA/public/_redirects contains '/* /index.html 200'."
-            exit 1
-          fi
-          if [ "$login_code" -ge 400 ]; then
-            echo "Login smoke check failed: $LOGIN_URL returned HTTP $login_code"
-            exit 1
-          fi
+
           {
             echo "## Field-Ready Cloudflare Deploy"
             echo ""
             echo "- Result: Success"
-            echo "- URL: $ROOT_URL"
-            echo "- Smoke / HTTP `/`: $root_code"
-            echo "- Smoke / HTTP `/login`: $login_code"
-            echo "- Smoke: Passed (`/` and `/login` reachable)"
+            echo "- Deploy URL: $DEPLOY_ROOT"
+            echo "- Production URL: $PRODUCTION_ROOT"
+            echo "- Deploy URL HTTP `/`: $deploy_root_code"
+            echo "- Deploy URL HTTP `/login`: $deploy_login_code"
+            echo "- Production URL HTTP `/`: $prod_root_code"
+            echo "- Production URL HTTP `/login`: $prod_login_code"
+            echo "- Smoke: Passed (deploy + production URLs for `/` and `/login`)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload deploy and smoke logs
