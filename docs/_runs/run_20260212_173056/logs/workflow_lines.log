@@ -1,0 +1,27 @@
+19:          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+20:          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+21:          CLOUDFLARE_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+25:          for key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+33:            echo "Required: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID."
+37:          resolved_project_name="${CLOUDFLARE_PROJECT_NAME:-$repo_name}"
+40:            echo "Provide CLOUDFLARE_PROJECT_NAME or ensure GITHUB_REPOSITORY is available."
+43:          echo "CLOUDFLARE_PROJECT_NAME_RESOLVED=$resolved_project_name" >> "$GITHUB_ENV"
+78:          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+79:          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+80:          CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
+85:          if ! printf '%s\n' "$project_list" | grep -Fq "$CLOUDFLARE_PROJECT_NAME_RESOLVED"; then
+86:            echo "Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED' not found. Creating..." | tee -a "$log_file"
+87:            if ! npx -y wrangler@4 pages project create "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --production-branch main 2>&1 | tee -a "$log_file"; then
+88:              echo "Failed to create Cloudflare Pages project '$CLOUDFLARE_PROJECT_NAME_RESOLVED'."
+97:          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+98:          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+99:          CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
+103:          npx -y wrangler@4 pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch "main" 2>&1 | tee "$log_file"
+106:            deploy_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"
+113:          CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
+118:          ROOT_URL="${DEPLOY_URL:-https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/}"
+120:          LOGIN_URL="${ROOT_URL%/}/login"
+147:            echo "- Smoke / HTTP `/login`: $login_code"
+148:            echo "- Smoke: Passed (`/` and `/login` reachable)"
+149:          } >> "$GITHUB_STEP_SUMMARY"
+153:        uses: actions/upload-artifact@v4

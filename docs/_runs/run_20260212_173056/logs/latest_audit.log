@@ -1,0 +1,16 @@
+LATEST=$latest
+# Smoke Test (CI Plan)
+
+Planned target URL root: https://<resolved-project-name>.pages.dev/
+Planned target URL login: https://<resolved-project-name>.pages.dev/login
+Workflow implementation: .github/workflows/field-ready-deploy-cloudflare.yml
+
+Execution in this local run: غير مذكور.
+Needed file/log: GitHub Actions run log after workflow_dispatch for smoke step output.
+# deploy plan
+
+Local execution status: NOT EXECUTED (APPROVE_RELEASE=NO)
+Needed runtime location: GitHub Actions runner
+
+CI deploy command configured:
+npx -y wrangler@4 pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch "main"
