@@ -1,0 +1,11 @@
+[
+  {
+    "Project Name": "dopamine-crm-suite-playground",
+    "Project Domains": "dopamine-crm-suite-playground.pages.dev",
+    "Git Provider": "No",
+    "Last Modified": "4 minutes ago"
+  }
+]
+
+npm warn config production Use `--omit=dev` instead.
+Cloudflare Pages project 'dopamine-crm-suite-playground' already exists.

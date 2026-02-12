@@ -10,7 +10,7 @@
 - Local gates: backend failed (runtime missing), frontend passed, PWA passed.
 - Cloudflare field-ready workflow dispatched via gh, completed successfully, artifacts downloaded.
 - PR checks analyzed; failing Cloudflare Workers App check is not in active required checks rulesets.
-- Merge readiness: NO-GO pending backend pytest evidence.
+- Merge readiness: NO-GO pending backend pytest evidence. Cloudflare evidence is from post-push run 21958521508 on patched SHA.
 
 ## Core Evidence
 - docs/_runs/run_20260212_210013/artifacts/STATE.md
@@ -21,3 +21,4 @@
 - docs/_runs/run_20260212_210013/artifacts/CLOUDFLARE_DEPLOY_EVIDENCE.md
 - docs/_runs/run_20260212_210013/artifacts/PR_CHECKS.md
 - docs/_runs/run_20260212_210013/artifacts/GO_NO_GO.md
+

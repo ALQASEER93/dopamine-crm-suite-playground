@@ -1,0 +1,2 @@
+COMMAND: gh workflow run .github/workflows/field-ready-deploy-cloudflare.yml --ref codex/fix-cloudflare-field-ready-evidence-20260212
+TRIGGER_EXIT_CODE=0
