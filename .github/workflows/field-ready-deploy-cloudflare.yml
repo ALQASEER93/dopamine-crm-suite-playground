@@ -143,7 +143,7 @@ jobs:
           set -euo pipefail
           log_file=".github/_ci_logs/cloudflare/deploy.log"
           wrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"
-          $wrangler_cmd pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" 2>&1 | tee "$log_file"
+          $wrangler_cmd pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch "main" 2>&1 | tee "$log_file"
           deploy_url="$(grep -Eo 'https://[a-zA-Z0-9._/-]+\.pages\.dev[^ ]*' "$log_file" | head -n 1 || true)"
           if [ -z "$deploy_url" ]; then
             deploy_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"
@@ -175,7 +175,7 @@ jobs:
             local delay=3
             local i=1
             while [ "$i" -le "$attempts" ]; do
-              code="$(curl -s -o /dev/null -w "%{http_code}" "$target_url" || echo "000")"
+              code="$(curl -sS -L --connect-timeout 15 --max-time 45 -o /dev/null -w "%{http_code}" "$target_url" || echo "000")"
               echo "[$label] attempt=$i http=$code url=$target_url" | tee -a "$log_file" >&2
               if [ "$mode" = "root" ] && [ "$code" -lt 400 ]; then
                 echo "$code"
