@@ -52,6 +52,7 @@ foreach ($job in $ciTruths.jobs) {
   $jobName = $job.name
   $gateLog = Join-Path $logsDir ("gate_{0}.log" -f $jobId)
   if (Test-Path $gateLog) { Remove-Item -Force $gateLog }
+  $pwaCiHelper = Join-Path $repoRoot "tools/pwa_npm_ci_windows_no_drama.ps1"
 
   $attempt = 0
   $jobPass = $false
@@ -79,6 +80,21 @@ foreach ($job in $ciTruths.jobs) {
 
         Push-Location $workingDir
         try {
+          # Windows-only: ALQASEER-PWA npm ci can flake/hang due to locked esbuild.exe.
+          # Use a bounded retry helper with timeout to keep gates from "stopping suddenly".
+          if ($IsWindows -and (Test-Path $pwaCiHelper) -and ($cmdLine -eq "npm ci") -and ((Split-Path $workingDir -Leaf) -eq "ALQASEER-PWA")) {
+            $pwaCiLog = Join-Path $logsDir ("pwa_npm_ci_{0}_attempt{1}.log" -f $jobId, $attempt)
+            & $pwaCiHelper -ProjectDir $workingDir -LogPath $pwaCiLog -MaxAttempts 5 -TimeoutMinutes 20 -CleanOnEperm:$false | Out-Null
+            if (Test-Path $pwaCiLog) {
+              "=== pwa_npm_ci_windows_no_drama log ===" | Out-File -FilePath $gateLog -Append -Encoding utf8
+              Get-Content -Path $pwaCiLog | Out-File -FilePath $gateLog -Append -Encoding utf8
+            }
+            if ($LASTEXITCODE -ne 0) {
+              $jobPass = $false
+              $jobError = "PWA npm ci failed (helper): $pwaCiHelper"
+              break
+            }
+          } else {
           if ($IsWindows) {
             $output = & cmd.exe /c $cmdLine 2>&1
           } else {
@@ -91,6 +107,7 @@ foreach ($job in $ciTruths.jobs) {
             $jobPass = $false
             $jobError = "Command failed: $cmdLine"
             break
+          }
           }
         } catch {
           $jobPass = $false
