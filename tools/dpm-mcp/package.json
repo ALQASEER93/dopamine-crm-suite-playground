@@ -1,0 +1,14 @@
+{
+  "name": "@dpm/tools-dpm-mcp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "DPM internal MCP server (OpenAI + CRM backend tools)",
+  "type": "module",
+  "scripts": {
+    "start": "node src/dpm-mcp-server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "zod": "^4.3.6"
+  }
+}
