@@ -47,12 +47,21 @@ def maybe_bootstrap_admin_on_startup(
     if not _is_truthy(env.get(ENV_BOOTSTRAP_ON_STARTUP)):
         return None
 
-    email = _require_env(env, ENV_BOOTSTRAP_EMAIL)
-    password = _require_env(env, ENV_BOOTSTRAP_PASSWORD)
-    name = (env.get(ENV_BOOTSTRAP_NAME) or "").strip() or "Admin"
+    try:
+        email = _require_env(env, ENV_BOOTSTRAP_EMAIL)
+        password = _require_env(env, ENV_BOOTSTRAP_PASSWORD)
+        name = (env.get(ENV_BOOTSTRAP_NAME) or "").strip() or "Admin"
 
-    logger.info("Startup admin bootstrap enabled; attempting bootstrap for email=%s", email.strip().lower())
-    result = ensure_bootstrap_admin_user(db, email=email, password=password, name=name)
-    logger.info("Startup admin bootstrap result: created=%s reason=%s email=%s", result.created, result.reason, result.email)
-    return result
-
+        logger.info("Startup admin bootstrap enabled; attempting bootstrap for email=%s", email.strip().lower())
+        result = ensure_bootstrap_admin_user(db, email=email, password=password, name=name)
+        logger.info(
+            "Startup admin bootstrap result: created=%s reason=%s email=%s",
+            result.created,
+            result.reason,
+            result.email,
+        )
+        return result
+    except (RuntimeError, ValueError) as exc:
+        # Do not block startup; refuse escalation / misconfiguration should be visible via logs.
+        logger.error("Startup admin bootstrap skipped: %s", exc)
+        return None

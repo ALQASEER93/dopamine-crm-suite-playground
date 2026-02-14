@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -62,21 +61,22 @@ def test_startup_bootstrap_enabled_creates_first_admin():
 def test_startup_bootstrap_enabled_requires_email_and_password():
     db = _make_session()
 
-    with pytest.raises(RuntimeError, match="DPM_BOOTSTRAP_ADMIN_EMAIL"):
-        maybe_bootstrap_admin_on_startup(
-            db,
-            env={
-                "DPM_BOOTSTRAP_ADMIN_ON_STARTUP": "1",
-                "DPM_BOOTSTRAP_ADMIN_PASSWORD": "Secret12345!",
-            },
-        )
+    r1 = maybe_bootstrap_admin_on_startup(
+        db,
+        env={
+            "DPM_BOOTSTRAP_ADMIN_ON_STARTUP": "1",
+            "DPM_BOOTSTRAP_ADMIN_PASSWORD": "Secret12345!",
+        },
+    )
+    assert r1 is None
+    assert _active_admins(db) == []
 
-    with pytest.raises(RuntimeError, match="DPM_BOOTSTRAP_ADMIN_PASSWORD"):
-        maybe_bootstrap_admin_on_startup(
-            db,
-            env={
-                "DPM_BOOTSTRAP_ADMIN_ON_STARTUP": "1",
-                "DPM_BOOTSTRAP_ADMIN_EMAIL": "bootstrap_admin@dpm.test",
-            },
-        )
-
+    r2 = maybe_bootstrap_admin_on_startup(
+        db,
+        env={
+            "DPM_BOOTSTRAP_ADMIN_ON_STARTUP": "1",
+            "DPM_BOOTSTRAP_ADMIN_EMAIL": "bootstrap_admin@dpm.test",
+        },
+    )
+    assert r2 is None
+    assert _active_admins(db) == []
