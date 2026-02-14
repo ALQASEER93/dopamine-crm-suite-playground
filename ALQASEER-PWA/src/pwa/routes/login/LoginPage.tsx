@@ -16,13 +16,17 @@ async function checkHealth(opts: { timeoutMs: number }): Promise<{ status: Healt
   const timeout = window.setTimeout(() => controller.abort(), opts.timeoutMs);
 
   try {
+    let lastHttpResult: { status: HealthStatus; detail: string; url: string } | null = null;
     for (const url of candidates) {
       try {
         const res = await fetch(url, { method: "GET", signal: controller.signal, credentials: "omit" });
         if (res.status === 401) return { status: "401", detail: `HTTP 401 (${url})`, url };
         if (res.ok) return { status: "OK", detail: `HTTP ${res.status} (${url})`, url };
-        // Endpoint missing or error; still useful to show backend reachability.
-        return { status: "OK", detail: `HTTP ${res.status} (${url})`, url };
+        // 404 may mean the endpoint isn't mounted; keep trying other candidates.
+        lastHttpResult = { status: "OK", detail: `HTTP ${res.status} (${url})`, url };
+        if (res.status === 404) continue;
+        // Other non-2xx errors still indicate the origin is reachable.
+        return lastHttpResult;
       } catch (err) {
         // Try next candidate only for network/CORS-ish failures.
         if (err instanceof DOMException && err.name === "AbortError") throw err;
@@ -31,6 +35,7 @@ async function checkHealth(opts: { timeoutMs: number }): Promise<{ status: Healt
       }
     }
 
+    if (lastHttpResult) return lastHttpResult;
     return { status: "CORS", detail: "Fetch failed (CORS or network).", url: candidates[0] };
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
