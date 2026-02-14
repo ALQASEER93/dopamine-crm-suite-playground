@@ -40,19 +40,22 @@ export default function App() {
       <div className="app-shell">
         {!isOnline ? <div className="offline-banner">الاتصال مفقود، يتم استخدام البيانات المخزنة.</div> : null}
 
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route element={<RequireAuth />}>
-            <Route path="/" element={<Navigate to={token ? "/today-route" : "/login"} replace />} />
-            <Route path="/today-route" element={<TodayRoutePage />} />
-            <Route path="/live-map" element={<LiveMapPage />} />
-            <Route path="/visits" element={<VisitsPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/account" element={<AccountPage />} />
-          </Route>
-          <Route path="*" element={<Navigate to={token ? "/today-route" : "/login"} replace />} />
-        </Routes>
+        {/* Exactly one main landmark for a11y (axe: landmark-one-main). */}
+        <main className="app-main">
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<RequireAuth />}>
+              <Route path="/" element={<Navigate to={token ? "/today-route" : "/login"} replace />} />
+              <Route path="/today-route" element={<TodayRoutePage />} />
+              <Route path="/live-map" element={<LiveMapPage />} />
+              <Route path="/visits" element={<VisitsPage />} />
+              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/account" element={<AccountPage />} />
+            </Route>
+            <Route path="*" element={<Navigate to={token ? "/today-route" : "/login"} replace />} />
+          </Routes>
+        </main>
       </div>
 
       {token ? <BottomNav /> : null}
