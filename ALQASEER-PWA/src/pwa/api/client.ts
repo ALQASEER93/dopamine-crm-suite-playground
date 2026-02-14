@@ -54,8 +54,12 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   const res = await fetch(buildUrl(path), { ...options, headers });
 
   if (res.status === 401) {
-    clearSession();
-    window.location.replace("/login");
+    // For login, avoid a forced redirect so the UI can show "wrong credentials"
+    // vs "API unreachable" without leaking details.
+    if (path !== "auth/login") {
+      clearSession();
+      window.location.replace("/login");
+    }
     throw new Error("Unauthorized");
   }
 
