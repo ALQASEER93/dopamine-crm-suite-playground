@@ -12,6 +12,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -229,6 +230,11 @@ class Visit(Base):
             "(pharmacy_id IS NOT NULL AND doctor_id IS NULL)",
             name="ck_visit_account_link",
         ),
+        Index("idx_visit_date", "visit_date"),
+        Index("idx_visit_rep_id", "rep_id"),
+        Index("idx_visit_doctor_id", "doctor_id"),
+        Index("idx_visit_status", "status"),
+        Index("idx_visit_is_deleted", "is_deleted"),
     )
 
     rep = relationship(User)

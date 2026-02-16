@@ -17,10 +17,12 @@ api_router.include_router(
     dpm_ledger_router.router,
     prefix="/admin/dpm-ledger",
     tags=["dpm_ledger"],
+    dependencies=[Depends(require_roles("admin", "sales_manager"))],
 )
 api_router.include_router(
     admin_ai.router,
     prefix="/admin/ai",
     tags=["admin_ai"],
+    dependencies=[Depends(require_roles("admin", "sales_manager"))],
 )
 api_router.include_router(dev.router, prefix="/dev", tags=["default"])
