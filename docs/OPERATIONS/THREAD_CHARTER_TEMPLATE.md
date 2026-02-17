@@ -1,8 +1,8 @@
-# قالب ميثاق Thread (Thread Charter Template)
+# قالب ميثاق المسار (Thread Charter Template)
 
 استخدم هذا الميثاق لأي مهمة متوسطة/كبيرة قبل التنفيذ.
 
-## بيانات الـ Thread (Thread Metadata)
+## بيانات المسار (Thread Metadata)
 - `thread_id`:
 - `thread_type`: (`feature` | `bugfix` | `hotfix` | `investigation`)
 - `branch`:
@@ -34,13 +34,13 @@
 - Use sub-agents? (`yes/no`)
 - إذا نعم: روابط ownership contracts
 
-## خطة MCP/Apps
+## خطة MCP/التطبيقات (Apps Plan)
 - External systems required:
 - MCP search queries to run:
 - Selected tools/apps:
 - Fallback if unavailable:
 
-## خطة Skills
+## خطة المهارات (Skills Plan)
 - Skills to trigger and why:
 
 ## خطة التحقق (Validation Plan)

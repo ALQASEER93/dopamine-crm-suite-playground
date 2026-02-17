@@ -1,3 +1,0 @@
-zip=docs/_runs/run_20260215_014909/artifacts/run_20260215_014909.zip
-zip_bytes=1540
-

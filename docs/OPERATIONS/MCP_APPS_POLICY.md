@@ -1,4 +1,4 @@
-# سياسة MCP + Apps (Strict Production)
+# سياسة MCP + التطبيقات (Apps) — إنتاج صارم (Strict Production)
 
 ## 1) الهدف (Purpose)
 تحديد ضوابط إلزامية للوصول للأنظمة الخارجية عبر MCP والأدوات المرتبطة.

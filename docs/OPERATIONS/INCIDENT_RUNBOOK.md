@@ -1,4 +1,4 @@
-# دليل الحوادث (Incident Runbook) — Agents + MCP + Apps
+# دليل الحوادث (Incident Runbook) — الوكلاء (Agents) + MCP + التطبيقات (Apps)
 
 ## 1) أنواع الحوادث (Incident Types)
 1. CI/PR incident (فشل checks).
@@ -17,7 +17,7 @@
 - PWA lane: offline queue/SW/mobile flow.
 - Verification lane: reproduction + validation.
 
-## 4) سير عمل CI incident
+## 4) سير عمل حادث التكامل المستمر (CI incident)
 1. افحص checks عبر GitHub app/MCP.
 2. فعّل `gh-fix-ci` عند الملاءمة.
 3. ابنِ minimal fix plan.
@@ -25,7 +25,7 @@
 5. أعد تشغيل checks المتأثرة.
 6. انشر الأدلة داخل PR.
 
-## 5) سير عمل Production/Deploy incident
+## 5) سير عمل حادث الإنتاج/النشر (Production/Deploy incident)
 1. حدّد البيئة (`preview` أو `production`).
 2. افحص logs/status عبر منصة النشر.
 3. أرسل تحديثًا مختصرًا عبر Slack app.

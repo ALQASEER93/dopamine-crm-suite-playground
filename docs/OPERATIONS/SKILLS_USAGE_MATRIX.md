@@ -4,36 +4,36 @@
 إذا تطابقت نية المهمة بوضوح مع skill، يجب استخدامها.
 
 ## 2) السيناريوهات الأساسية (Core Scenarios)
-### CI failure triage and fixes
+### فرز وإصلاح فشل CI (CI failure triage and fixes)
 - Primary skill: `gh-fix-ci`
 - Expected output: ملخص checks الفاشلة + فرضية السبب + خطة إصلاح + تحقق.
 
-### Addressing PR comments
+### معالجة تعليقات PR (Addressing PR comments)
 - Primary skill: `gh-address-comments`
 - Expected output: معالجة comment-by-comment وتوثيق التغييرات.
 
-### Browser flow validation (visits/maps/forms)
+### تحقق تدفقات المتصفح (Browser flow validation)
 - Primary skill: `playwright`
 - Expected output: script/log قابل للإعادة + snapshots عند الحاجة.
 
-### OpenAI API/product guidance
+### إرشاد OpenAI API/المنتج (OpenAI API/product guidance)
 - Primary skill: `openai-docs`
 - Expected output: guidance مبني على المصادر الرسمية فقط.
 
-### Deployment to Vercel
+### النشر إلى Vercel (Deployment to Vercel)
 - Primary skill: `vercel-deploy`
 - Expected output: البيئة المستهدفة + URL + حالة التحقق.
 
-### Explicit security review
+### مراجعة أمنية صريحة (Explicit security review)
 - Skills: `security-best-practices` و/أو `security-threat-model`
 - Expected output: findings مرتبة حسب الأولوية + mitigations عملية.
 
-### Production issue triage with Sentry
+### فرز أعطال الإنتاج عبر Sentry (Production issue triage with Sentry)
 - Primary skill: `sentry`
 - Preconditions: connector/token متاح.
 - Fallback: توثيق عدم التوفر واستخدام telemetry البديل.
 
-### Documentation outputs
+### مخرجات التوثيق (Documentation outputs)
 - Skills: `doc`, `pdf`, `spreadsheet`, `notion-*` حسب artifact المطلوب.
 
 ## 3) ربط خاص بـ DPM (DPM-Specific Mapping)

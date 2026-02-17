@@ -9,9 +9,10 @@
 
 ## الاختبارات المنفذة (Tests Run)
 - [ ] `cd CRM/backend && python -m pytest -q` (if backend touched)
-- [ ] `cd CRM/frontend && npm ci && npm test --if-present && npm run build` (if frontend touched)
+- [ ] `cd CRM/frontend && npm ci && npm test && npm run build` (if frontend touched)
 - [ ] `cd CRM/frontend && npm audit --omit=dev --audit-level=high` (if frontend touched)
-- [ ] `pwsh -File scripts/windows_safe_npm_ci.ps1 -AppPath ALQASEER-PWA -AppName ALQASEER-PWA -RunDir <run_dir> -LogsDir <run_logs> -AdditionalNpmCommands @('npm audit --omit=dev --audit-level=high')` (if PWA touched on Windows)
+- [ ] `cd ALQASEER-PWA && npm ci && npm run test:vitest && npm run build` (if PWA touched on macOS/Linux)
+- [ ] `pwsh -File scripts/windows_safe_npm_ci.ps1 -AppPath ALQASEER-PWA -AppName ALQASEER-PWA -RunDir <run_dir> -LogsDir <run_logs> -AdditionalNpmCommands @('npm audit --omit=dev --audit-level=high','npm run test:vitest')` (if PWA touched on Windows)
 - [ ] Additional manual checks:
 
 ## التحقق من المسارات الحرجة (Critical Flow Verification)
@@ -29,6 +30,8 @@
 
 ## Deployment and Run Artifacts
 - docs/_runs current reference (must remain stable unless owner-approved): `docs/_runs/LATEST.txt`
+- run outputs path: `docs/_runs/run_<YYYYMMDD_HHMMSS>/`
+- zipped artifact created under run folder (e.g. `artifacts.zip`)
 - Run/report helper docs reviewed:
   - [ ] `docs/_runs/README.md`
   - [ ] `docs/_runs/REPORT_ROTATION_POLICY.txt`

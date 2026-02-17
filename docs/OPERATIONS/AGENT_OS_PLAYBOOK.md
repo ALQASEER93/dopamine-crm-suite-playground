@@ -1,19 +1,28 @@
-# دليل التشغيل (Agent OS Playbook) — DPM Monorepo
+# دليل التشغيل (Agent OS Playbook) — مستودع DPM (DPM Monorepo)
 
 ## 1) الهدف (Purpose)
 هذا الدليل يوضح كيفية تنسيق `agent threads` و `sub-agents` و `MCP` و `skills` و `apps` لضمان تسليم متوقع وآمن.
 
 الأهداف:
-- منع خلط السياق بين backend/frontend/PWA.
+- منع خلط السياق بين الواجهة الخلفية (backend) / الواجهة الأمامية (frontend) / تطبيق الويب التقدمي (PWA).
 - رفع سرعة التنفيذ مع ملكية واضحة.
-- فرض بوابات جودة لمسارات visits/GPS/offline/RBAC/reports.
+- فرض بوابات جودة لمسارات الزيارات (visits) / نظام التموضع (GPS) / العمل دون اتصال (offline) / الصلاحيات (RBAC) / التقارير (reports).
 
 قيود إلزامية (Authoritative Constraints):
 - الالتزام بأقرب `AGENTS.md` (closest file wins).
 - العمل عبر Branch + PR فقط.
 - ممنوع العمليات التدميرية.
-- واجهات Arabic-first مع Dark Mode افتراضي في frontend/PWA.
-- ممنوع أي تراجع في visits/GPS/offline queue/exports.
+- واجهات عربية أولاً (Arabic-first) مع الوضع الداكن الافتراضي (Dark Mode) في frontend/PWA.
+- ممنوع أي تراجع (no regression) في الزيارات (Visits) / GPS / Offline / PWA / التصدير (Exports).
+
+## 1.1) قواعد ثابتة غير قابلة للتغيير (Fixed Non-Negotiable Rules)
+- واجهة عربية أولاً (Arabic-first UI) مع وضع داكن افتراضي (default dark mode).
+- ممنوع التراجع (no regression) في: Visits / GPS / Offline / PWA / Exports.
+- العمل عبر Branch + PR فقط (Branch+PR only).
+- قيمة بوابة الإصدار الافتراضية دائمًا: `APPROVE_RELEASE=NO`.
+- عناصر `OWNER_ACTIONS` تكون واجهة مستخدم فقط (UI-only).
+- كل مخرجات التشغيل (outputs) يجب أن تكون داخل `docs/_runs/run_<YYYYMMDD_HHMMSS>/`.
+- يجب ضغط المخرجات كأرشيف `zip` داخل نفس مجلد التشغيل.
 
 ## 2) المفاهيم الأساسية (Core Concepts)
 - `Agent Thread`: مسار عمل بهدف واحد وفرع واحد.
@@ -22,7 +31,7 @@
 - `App`: تكامل خارجي عبر MCP (GitHub, Slack, Linear, ...).
 - `Skill`: حزمة سير عمل محلية يجب استخدامها عند تطابق السياق.
 
-## 3) أنواع الـ Thread
+## 3) أنواع الـ Thread (Thread Types)
 1. `Feature Thread`: سلوك جديد.
 2. `Bugfix Thread`: إصلاح خلل.
 3. `Hotfix Thread`: إصلاح عاجل للإنتاج/CI.
@@ -44,10 +53,10 @@
 6. PR: تطبيق `docs/OPERATIONS/PR_EXECUTION_CHECKLIST.md`.
 7. Handoff/Close: تلخيص التغييرات وما تبقى.
 
-## 6) نموذج تشغيل Sub-agents
+## 6) نموذج تشغيل الوكلاء الفرعيين (Sub-agents)
 استخدم sub-agents عند وجود مسارين مستقلين أو أكثر.
 
-تقسيم أساسي مقترح:
+تقسيم أساسي مقترح (Recommended Baseline Split):
 - Backend owner: `CRM/backend/**`
 - Frontend owner: `CRM/frontend/**`
 - PWA owner: `ALQASEER-PWA/**`
@@ -75,15 +84,17 @@
 أمثلة عالية القيمة:
 - `gh-fix-ci`, `gh-address-comments`, `playwright`, `openai-docs`, `vercel-deploy`, `security-*`, `sentry`.
 
-## 9) بوابات الجودة (DoD by Touched Area)
+## 9) بوابات الجودة (Definition of Done by Touched Area)
 Backend touched:
 - `cd CRM/backend && python -m pytest -q`
 
 Frontend touched:
-- `cd CRM/frontend && npm ci && npm test && npm run build`
+- `cd CRM/frontend && npm ci && npm test --if-present && npm run build`
+- `cd CRM/frontend && npm audit --omit=dev --audit-level=high`
 
 PWA touched:
-- `cd ALQASEER-PWA && npm ci && npm test --if-present && npm run build`
+- على Windows: `pwsh -File scripts/windows_safe_npm_ci.ps1 -AppPath ALQASEER-PWA -AppName ALQASEER-PWA -RunDir <run_dir> -LogsDir <run_logs> -AdditionalNpmCommands @('npm audit --omit=dev --audit-level=high')`
+- بديل مباشر عند الحاجة: `cd ALQASEER-PWA && npm run build && npm audit --omit=dev --audit-level=high`
 
 يجب أن يتضمن PR دائمًا:
 - الملفات المتغيرة.
@@ -95,6 +106,16 @@ PWA touched:
 - أي إجراء ضمن `OWNER_ACTIONS` يتم عبر UI فقط (لا shell يدوي).
 - لا نطلب من المستخدم تشغيل أوامر shell يدويًا؛ نعتمد سكربتات الريبو والأتمتة.
 - مرجع run النشط يجب أن يبقى `docs/_runs/LATEST.txt` ومتوافقًا مع بنية `docs/_runs/run_<YYYYMMDD_HHMMSS>/`.
+- كل run يجب أن يحتوي حزمة مضغوطة (`.zip`) لنتائج التنفيذ ضمن نفس المجلد.
+
+## 10.1) توصية حوكمة الملكية (CODEOWNERS Recommendation)
+- توصية فقط: إضافة/تحديث ملف `CODEOWNERS` لضبط مراجعة المسارات الحرجة.
+- هذه التوصية لا تعني أي تغيير تلقائي في إعدادات GitHub.
+- يفضل ربط المالكين على الأقل بالمسارات:
+  - `CRM/backend/**`
+  - `CRM/frontend/**`
+  - `ALQASEER-PWA/**`
+  - `docs/OPERATIONS/**`
 
 ## 11) تصنيف المخاطر (Risk Classification)
 - `P0`: أمن/RBAC/تسريب بيانات/كسر visit lifecycle/GPS/offline/export.

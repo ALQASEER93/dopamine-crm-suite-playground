@@ -54,28 +54,16 @@ For non-local environments (field/staging/production), set `VITE_API_BASE_URL` t
 If using Next-based PWA routes/utilities, the configured API base is read from `NEXT_PUBLIC_CRM2_API_BASE` (fallback `NEXT_PUBLIC_API_BASE`).
 Map mode: set `VITE_MAP_MODE=links` (default, no API key) or `VITE_MAP_MODE=google` with `VITE_GOOGLE_MAPS_API_KEY`.
 
-## Credentials (Dev-only placeholders)
+## Dev Credentials Policy
 `SEED_DEFAULT_USERS` is for development only. Never use seeded/default credentials in staging or production.
 
-Use placeholders only in docs and local scripts:
-- Admin: `<ADMIN_EMAIL>` / `<ADMIN_PASSWORD_PLACEHOLDER>`
-- Sales manager: `<SALES_MANAGER_EMAIL>` / `<SALES_MANAGER_PASSWORD_PLACEHOLDER>`
-- Medical rep: `<REP1_EMAIL>` / `<REP1_PASSWORD_PLACEHOLDER>`
-- Medical rep: `<REP2_EMAIL>` / `<REP2_PASSWORD_PLACEHOLDER>`
-- Medical rep: `<REP3_EMAIL>` / `<REP3_PASSWORD_PLACEHOLDER>`
+Allowed placeholder format in docs:
+- `admin@example.com / <set via SEED in dev>`
+- Or: `run seed to print dev creds locally` (no credential secret text in docs)
 
 Bootstrap admin (when seed users are disabled):
 - Set `BOOTSTRAP_CODE` in `CRM/backend/.env`.
-- Call `POST /api/v1/auth/bootstrap` with `code`, `email`, `name`, `password`.
-Example:
-```powershell
-Invoke-RestMethod http://127.0.0.1:8000/api/v1/auth/bootstrap -Method Post -ContentType "application/json" -Body '{
-  "code": "your-bootstrap-code",
-  "email": "<ADMIN_EMAIL>",
-  "name": "Admin User",
-  "password": "<ADMIN_PASSWORD_PLACEHOLDER>"
-}'
-```
+- Call `POST /api/v1/auth/bootstrap` using local values only; do not place credential values in docs.
 
 ## Reset database (local)
 Stop the backend, then remove the local SQLite file:

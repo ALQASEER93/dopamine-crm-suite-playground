@@ -7,14 +7,11 @@ Use deployed HTTPS API hosts via app env vars:
 - ALQASEER-PWA (Next-based paths/utilities): `NEXT_PUBLIC_CRM2_API_BASE` (fallback `NEXT_PUBLIC_API_BASE`)
 
 ## Seeded Credentials Policy (Dev-only)
-`SEED_DEFAULT_USERS` is dev-only. Never keep or share real seeded passwords in docs.
+`SEED_DEFAULT_USERS` is dev-only. Never keep or share real seeded credential values in docs.
 
 Use placeholders only:
-- Admin: `<ADMIN_EMAIL>` / `<ADMIN_PASSWORD_PLACEHOLDER>`
-- Sales manager: `<SALES_MANAGER_EMAIL>` / `<SALES_MANAGER_PASSWORD_PLACEHOLDER>`
-- Medical rep: `<REP1_EMAIL>` / `<REP1_PASSWORD_PLACEHOLDER>`
-- Medical rep: `<REP2_EMAIL>` / `<REP2_PASSWORD_PLACEHOLDER>`
-- Medical rep: `<REP3_EMAIL>` / `<REP3_PASSWORD_PLACEHOLDER>`
+- `admin@example.com / <set via SEED in dev>`
+- Or: `run seed to print dev creds locally` (no credential secret text in docs)
 
 ## Team Workflow References
 - `docs/OPERATIONS/AGENT_OS_PLAYBOOK.md`

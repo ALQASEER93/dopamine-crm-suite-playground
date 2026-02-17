@@ -1,4 +1,4 @@
-# قائمة تنفيذ PR (PR Execution Checklist) — Strict Production
+# قائمة تنفيذ طلب الدمج (PR Execution Checklist) — إنتاج صارم (Strict Production)
 
 استخدم هذه القائمة قبل فتح أو تحديث أي PR.
 
@@ -7,7 +7,7 @@
 - [ ] النطاق ما زال ضمن المعتمد (no unapproved expansion).
 - [ ] حدود الملكية (ownership boundaries) تم احترامها.
 
-## B) الحواجز الأساسية (Guardrails)
+## B) حواجز العمل الأساسية (Guardrails)
 - [ ] عمليات غير تدميرية فقط.
 - [ ] الالتزام بـ Branch + PR workflow.
 - [ ] لا يوجد تراجع مقصود في visits/GPS/offline/exports/RBAC.
@@ -24,6 +24,7 @@ Frontend (`CRM/frontend` touched):
 
 PWA (`ALQASEER-PWA` touched):
 - [ ] على Windows استخدم `scripts/windows_safe_npm_ci.ps1` بدل `npm ci` داخل المصدر.
+- [ ] على macOS/Linux: `npm ci && npm run test:vitest && npm run build`.
 - [ ] ضمن نفس المسار الآمن شغّل `npm audit --omit=dev --audit-level=high`.
 
 ## D) تحقق يدوي للمسارات الحرجة (Manual Critical Checks)
