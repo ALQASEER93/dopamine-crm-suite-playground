@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
+import api.v1.visits as visits_api
+
 
 def test_create_visit(client, auth_headers):
     doctors = client.get("/api/v1/doctors", headers=auth_headers).json()["data"]
@@ -82,3 +84,280 @@ def test_start_and_end_visit(client, auth_headers):
     assert ended["status"] == "completed"
     assert ended["end_lat"] == 31.9504
     assert ended["duration_seconds"] is not None and ended["duration_seconds"] >= 0
+
+
+def test_start_visit_is_idempotent(client, auth_headers):
+    doctors = client.get("/api/v1/doctors", headers=auth_headers).json()["data"]
+    doctor_id = doctors[0]["id"] if doctors else None
+    if not doctor_id:
+        doctor_resp = client.post(
+            "/api/v1/doctors",
+            headers=auth_headers,
+            json={"name": "Dr. GPS ID", "specialty": "Internal", "area": "Central"},
+        )
+        doctor_id = doctor_resp.json()["id"]
+
+    rep_id = client.get("/api/v1/reps", headers=auth_headers).json()[0]["id"]
+
+    visit_resp = client.post(
+        "/api/v1/visits",
+        headers=auth_headers,
+        json={
+            "visit_date": date.today().isoformat(),
+            "rep_id": rep_id,
+            "doctor_id": doctor_id,
+        },
+    )
+    visit_id = visit_resp.json()["id"]
+
+    first = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"lat": 31.95, "lng": 35.91, "accuracy": 10.0},
+    )
+    assert first.status_code == 200, first.text
+    first_started = first.json()
+    assert first_started["status"] == "in_progress"
+    assert first_started["start_lat"] == 31.95
+
+    second = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"lat": 32.0, "lng": 36.0, "accuracy": 5.0},
+    )
+    assert second.status_code == 200, second.text
+    second_started = second.json()
+    assert second_started["status"] == "in_progress"
+    assert second_started["start_lat"] == 31.95
+    assert second_started["started_at"] == first_started["started_at"]
+
+
+def test_end_visit_is_idempotent(client, auth_headers):
+    doctors = client.get("/api/v1/doctors", headers=auth_headers).json()["data"]
+    doctor_id = doctors[0]["id"] if doctors else None
+    if not doctor_id:
+        doctor_resp = client.post(
+            "/api/v1/doctors",
+            headers=auth_headers,
+            json={"name": "Dr. GPS ID End", "specialty": "Internal", "area": "Central"},
+        )
+        doctor_id = doctor_resp.json()["id"]
+
+    rep_id = client.get("/api/v1/reps", headers=auth_headers).json()[0]["id"]
+
+    visit_resp = client.post(
+        "/api/v1/visits",
+        headers=auth_headers,
+        json={
+            "visit_date": date.today().isoformat(),
+            "rep_id": rep_id,
+            "doctor_id": doctor_id,
+        },
+    )
+    visit_id = visit_resp.json()["id"]
+
+    start_resp = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"lat": 31.95, "lng": 35.91, "accuracy": 10.0},
+    )
+    assert start_resp.status_code == 200, start_resp.text
+
+    first_end = client.post(
+        f"/api/v1/visits/{visit_id}/end",
+        headers=auth_headers,
+        json={"lat": 31.9504, "lng": 35.9104, "accuracy": 10.0},
+    )
+    assert first_end.status_code == 200, first_end.text
+    first_data = first_end.json()
+    assert first_data["status"] == "completed"
+
+    second_end = client.post(
+        f"/api/v1/visits/{visit_id}/end",
+        headers=auth_headers,
+        json={"lat": 32.0, "lng": 36.0, "accuracy": 10.0},
+    )
+    assert second_end.status_code == 200, second_end.text
+    second_data = second_end.json()
+    assert second_data["ended_at"] == first_data["ended_at"]
+    assert second_data["status"] == "completed"
+    assert second_data["end_lat"] == first_data["end_lat"]
+
+
+def test_start_visit_retry_skips_gps_revalidation(client, auth_headers, monkeypatch):
+    doctors = client.get("/api/v1/doctors", headers=auth_headers).json()["data"]
+    doctor_id = doctors[0]["id"] if doctors else None
+    if not doctor_id:
+        doctor_resp = client.post(
+            "/api/v1/doctors",
+            headers=auth_headers,
+            json={"name": "Dr. Start Retry", "specialty": "Internal", "area": "Central"},
+        )
+        doctor_id = doctor_resp.json()["id"]
+
+    rep_id = client.get("/api/v1/reps", headers=auth_headers).json()[0]["id"]
+    visit_id = client.post(
+        "/api/v1/visits",
+        headers=auth_headers,
+        json={
+            "visit_date": date.today().isoformat(),
+            "rep_id": rep_id,
+            "doctor_id": doctor_id,
+        },
+    ).json()["id"]
+
+    first = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"lat": 31.95, "lng": 35.91, "accuracy": 8.0},
+    )
+    assert first.status_code == 200, first.text
+    first_data = first.json()
+
+    monkeypatch.setattr(
+        visits_api,
+        "validate_accuracy",
+        lambda _accuracy: (_ for _ in ()).throw(AssertionError("validate_accuracy should not run on retry")),
+    )
+    monkeypatch.setattr(
+        visits_api,
+        "validate_geofence",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("validate_geofence should not run on retry")),
+    )
+
+    second = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"lat": 99.99, "lng": 99.99, "accuracy": 9999},
+    )
+    assert second.status_code == 200, second.text
+    second_data = second.json()
+    assert second_data["started_at"] == first_data["started_at"]
+    assert second_data["start_lat"] == first_data["start_lat"]
+
+
+def test_end_visit_retry_skips_gps_revalidation(client, auth_headers, monkeypatch):
+    doctors = client.get("/api/v1/doctors", headers=auth_headers).json()["data"]
+    doctor_id = doctors[0]["id"] if doctors else None
+    if not doctor_id:
+        doctor_resp = client.post(
+            "/api/v1/doctors",
+            headers=auth_headers,
+            json={"name": "Dr. End Retry", "specialty": "Internal", "area": "Central"},
+        )
+        doctor_id = doctor_resp.json()["id"]
+
+    rep_id = client.get("/api/v1/reps", headers=auth_headers).json()[0]["id"]
+    visit_id = client.post(
+        "/api/v1/visits",
+        headers=auth_headers,
+        json={
+            "visit_date": date.today().isoformat(),
+            "rep_id": rep_id,
+            "doctor_id": doctor_id,
+        },
+    ).json()["id"]
+
+    started = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"lat": 31.95, "lng": 35.91, "accuracy": 8.0},
+    )
+    assert started.status_code == 200, started.text
+
+    first_end = client.post(
+        f"/api/v1/visits/{visit_id}/end",
+        headers=auth_headers,
+        json={"lat": 31.9502, "lng": 35.9102, "accuracy": 9.0},
+    )
+    assert first_end.status_code == 200, first_end.text
+    first_data = first_end.json()
+
+    monkeypatch.setattr(
+        visits_api,
+        "validate_accuracy",
+        lambda _accuracy: (_ for _ in ()).throw(AssertionError("validate_accuracy should not run on retry")),
+    )
+    monkeypatch.setattr(
+        visits_api,
+        "validate_max_distance",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("validate_max_distance should not run on retry")
+        ),
+    )
+
+    second_end = client.post(
+        f"/api/v1/visits/{visit_id}/end",
+        headers=auth_headers,
+        json={"lat": 10.0, "lng": 10.0, "accuracy": 9999},
+    )
+    assert second_end.status_code == 200, second_end.text
+    second_data = second_end.json()
+    assert second_data["ended_at"] == first_data["ended_at"]
+    assert second_data["end_lat"] == first_data["end_lat"]
+
+
+def test_update_visit_rejects_lifecycle_fields(client, auth_headers):
+    doctors = client.get("/api/v1/doctors", headers=auth_headers).json()["data"]
+    doctor_id = doctors[0]["id"] if doctors else None
+    if not doctor_id:
+        doctor_resp = client.post(
+            "/api/v1/doctors",
+            headers=auth_headers,
+            json={"name": "Dr. Integrity", "specialty": "Internal", "area": "Central"},
+        )
+        doctor_id = doctor_resp.json()["id"]
+
+    rep_id = client.get("/api/v1/reps", headers=auth_headers).json()[0]["id"]
+    visit_resp = client.post(
+        "/api/v1/visits",
+        headers=auth_headers,
+        json={
+            "visit_date": date.today().isoformat(),
+            "rep_id": rep_id,
+            "doctor_id": doctor_id,
+        },
+    )
+    assert visit_resp.status_code == 201, visit_resp.text
+    visit_id = visit_resp.json()["id"]
+
+    mutate_status = client.put(
+        f"/api/v1/visits/{visit_id}",
+        headers=auth_headers,
+        json={"status": "completed"},
+    )
+    assert mutate_status.status_code == 422, mutate_status.text
+
+    mutate_timestamps = client.put(
+        f"/api/v1/visits/{visit_id}",
+        headers=auth_headers,
+        json={"started_at": date.today().isoformat()},
+    )
+    assert mutate_timestamps.status_code == 422, mutate_timestamps.text
+
+
+def test_medical_rep_cannot_create_visit_with_lifecycle_status(client, rep_headers):
+    doctors = client.get("/api/v1/doctors", headers=rep_headers).json()["data"]
+    doctor_id = doctors[0]["id"] if doctors else None
+    if not doctor_id:
+        doctor_resp = client.post(
+            "/api/v1/doctors",
+            headers=rep_headers,
+            json={"name": "Dr. Rep Lifecycle", "specialty": "GP", "area": "Central"},
+        )
+        assert doctor_resp.status_code in (200, 201), doctor_resp.text
+        doctor_id = doctor_resp.json()["id"]
+
+    rep_id = client.get("/api/v1/reps", headers=rep_headers).json()[0]["id"]
+    resp = client.post(
+        "/api/v1/visits",
+        headers=rep_headers,
+        json={
+            "visit_date": date.today().isoformat(),
+            "rep_id": rep_id,
+            "doctor_id": doctor_id,
+            "status": "completed",
+        },
+    )
+    assert resp.status_code == 400, resp.text
+    assert "lifecycle" in resp.json()["detail"].lower()

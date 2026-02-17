@@ -44,18 +44,27 @@ def test_visits_export_excel_sanitizes_formula_like_text(
     reps_resp = client.get("/api/v1/reps", headers=auth_headers)
     rep_id = reps_resp.json()[0]["id"]
 
-    create_visit_resp = client.post(
-        "/api/v1/visits",
-        headers=auth_headers,
-        json={
-            "visit_date": date.today().isoformat(),
-            "rep_id": rep_id,
-            "doctor_id": doctor_id,
-            "notes": "=HYPERLINK(\"http://malicious\")",
-        },
-    )
-    assert create_visit_resp.status_code in (200, 201), create_visit_resp.text
-    visit_id = create_visit_resp.json()["id"]
+    payloads = [
+        "=HYPERLINK(\"http://malicious\")",
+        "   =1+1",
+        "'   +SUM(1,2)",
+        "\"   -2+3",
+        "  '@cmd",
+    ]
+    visit_ids: list[int] = []
+    for note in payloads:
+        create_visit_resp = client.post(
+            "/api/v1/visits",
+            headers=auth_headers,
+            json={
+                "visit_date": date.today().isoformat(),
+                "rep_id": rep_id,
+                "doctor_id": doctor_id,
+                "notes": note,
+            },
+        )
+        assert create_visit_resp.status_code in (200, 201), create_visit_resp.text
+        visit_ids.append(create_visit_resp.json()["id"])
 
     export_resp = client.get(f"/api/v1/visits/export/excel?rep_id={rep_id}", headers=auth_headers)
     assert export_resp.status_code == 200, export_resp.text
@@ -72,9 +81,13 @@ def test_visits_export_excel_sanitizes_formula_like_text(
             break
     assert notes_col_idx is not None
 
-    found_note = None
+    notes_by_visit: dict[int, object] = {}
     for row in ws.iter_rows(min_row=2):
-        if row[0].value == visit_id:
-            found_note = row[notes_col_idx - 1].value
-            break
-    assert found_note == "'=HYPERLINK(\"http://malicious\")"
+        visit_id = row[0].value
+        if visit_id in visit_ids:
+            notes_by_visit[visit_id] = row[notes_col_idx - 1].value
+
+    assert len(notes_by_visit) == len(visit_ids)
+    for idx, note in enumerate(payloads):
+        stored_note = notes_by_visit[visit_ids[idx]]
+        assert stored_note == f"'{note}"

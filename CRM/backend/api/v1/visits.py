@@ -65,7 +65,10 @@ def _sync_duration(visit: Visit) -> None:
 def _sanitize_excel_text(value: object | None) -> object | None:
     if not isinstance(value, str) or not value:
         return value
-    if value.startswith(FORMULA_PREFIXES):
+    candidate = value.lstrip()
+    while candidate.startswith(("'", '"')):
+        candidate = candidate[1:].lstrip()
+    if candidate.startswith(FORMULA_PREFIXES):
         return f"'{value}"
     return value
 
@@ -358,6 +361,11 @@ def create_visit(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Visit:
+    if payload.status != "scheduled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Visit lifecycle fields can only be changed through start/end endpoints.",
+        )
     if payload.doctor_id and not db.get(Doctor, payload.doctor_id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Doctor not found.")
     if payload.pharmacy_id and not db.get(Pharmacy, payload.pharmacy_id):
@@ -663,11 +671,11 @@ def start_visit(
     visit = _get_visit(db, visit_id)
     if has_any_role(current_user, ["medical_rep"]) and visit.rep_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
-    if visit.status == "completed":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already completed.")
     if visit.started_at:
         logger.info("Start visit called for already-started visit (visit_id=%s user_id=%s).", visit.id, current_user.id)
         return visit
+    if visit.status == "completed":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already completed.")
 
     allow_override = (
         gps_override
@@ -723,11 +731,11 @@ def end_visit(
     visit = _get_visit(db, visit_id)
     if has_any_role(current_user, ["medical_rep"]) and visit.rep_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
-    if visit.status == "cancelled":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cancelled visits cannot be completed.")
     if visit.ended_at:
         logger.info("End visit called for already-ended visit (visit_id=%s user_id=%s).", visit.id, current_user.id)
         return visit
+    if visit.status == "cancelled":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cancelled visits cannot be completed.")
 
     try:
         validate_accuracy(payload.accuracy)
