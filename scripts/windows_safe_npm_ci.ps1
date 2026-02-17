@@ -10,6 +10,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# In PowerShell 7+, native stderr can be promoted to terminating errors when this
+# preference is enabled globally. Keep npm warnings non-fatal and rely on exit codes.
+if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+  $PSNativeCommandUseErrorActionPreference = $false
+}
 
 function Resolve-FullPath {
   param([string]$PathValue)
