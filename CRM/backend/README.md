@@ -62,8 +62,12 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
 
 - Entry: `main.py` (run with `python -m uvicorn main:app --reload --port 8000` or `.\run-backend-dev.ps1`).
 - Uses SQLite by default (`data/fastapi.db` unless `DATABASE_URL` is set).
-- For PostgreSQL production, set `APP_ENV=production` and provide `PROD_DATABASE_URL` (SQLAlchemy DSN such as `postgresql+psycopg://user:pass@host:5432/db`); optional `PROD_ECHO_SQL=false` keeps logs quiet.
+- For PostgreSQL production, set `APP_ENV=production` and provide `PROD_DATABASE_URL` (SQLAlchemy DSN such as `postgresql+psycopg://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>`); optional `PROD_ECHO_SQL=false` keeps logs quiet.
 - Auth/roles: validates JWT signed with `JWT_SECRET`; when `DPM_ENV=production`, startup fails if `JWT_SECRET` is missing/weak (short/default secrets are rejected).
+- GPS guardrails:
+  - `ALLOW_GPS_OVERRIDE` controls `gpsOverride=true` usage in visit start. Defaults to `true` in non-production and `false` in production when unset.
+  - `GEOFENCE_REQUIRE_TARGET_COORDS` controls strict geofence target enforcement. Defaults to `false` in non-production and `true` in production when unset.
+  - Override execution is still role-restricted to `admin`/`sales_manager`, and override logs include visit/user/location metadata.
 - If the project drive blocks SQLite writes, the app falls back to `%TEMP%\crm_fastapi_fallback.sqlite`; set `DATABASE_URL` to an accessible path to persist data.
 
 ## API Overview
