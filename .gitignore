@@ -31,13 +31,13 @@ PR_BLOCKER_ANALYSIS.md
 /_runs/
 
 # docs/_runs hygiene
+docs/_runs/*
+!docs/_runs/README.md
 docs/_runs/run_*/
 docs/_runs/*.zip
-docs/_runs/report.md
-docs/_runs/master_audit.md
-docs/_runs/size_breakdown.md
-!docs/_runs/README.md
-!docs/_runs/LATEST.txt
+docs/_runs/*.log
+docs/_runs/*.json
+docs/_runs/LATEST.txt
 
 CRM/backend/data/
 
