@@ -3,6 +3,10 @@
 This plan runs the stack on a Windows office PC and exposes it securely with a free Cloudflare Tunnel.
 It avoids Google Maps costs by using link-only map mode by default.
 
+Important TLS note:
+- TLS termination is handled by Cloudflare at the public edge.
+- Keep local origin services private (localhost/internal network only) and do not expose port `80` directly.
+
 ## 0) Prerequisites
 
 - Node.js 20+
