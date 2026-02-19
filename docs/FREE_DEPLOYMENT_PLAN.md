@@ -20,7 +20,8 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 $env:DPM_ENV="production"
-$env:JWT_SECRET="change_me_strong"
+# REQUIRED: generate a unique strong secret and store it securely (do not keep placeholders)
+$env:JWT_SECRET = [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 } | ForEach-Object {[byte]$_}))
 $env:PROD_DATABASE_URL="sqlite:///./data/fastapi.db"
 python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```

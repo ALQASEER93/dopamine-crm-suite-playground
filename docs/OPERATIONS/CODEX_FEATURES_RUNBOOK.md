@@ -7,6 +7,7 @@ Standardize how the team uses Codex features introduced in recent updates so res
 1. Use the shared template at `tools/codex/config.toml.example`.
 2. Keep `multi_agent` and `apps` enabled by default for contributor machines.
 3. Use `--enable multi_agent` and `--enable apps` in scripted runs (`tools/codex/RUN_CODEX.ps1` already does both by default).
+4. Apply the execution discipline in `docs/OPERATIONS/MCP_SKILLS_EXECUTION_PROTOCOL.md` for every cross-surface task.
 
 ## When to use Multi-agent
 Use multi-agent for tasks that naturally split into independent tracks.

@@ -7,6 +7,7 @@
 - `THREAD_CHARTER_TEMPLATE.md`: ميثاق التنفيذ قبل أي عمل متوسط/كبير.
 - `SUBAGENT_OWNERSHIP_TEMPLATE.md`: عقود الملكية بين الوكلاء المتوازيين.
 - `MCP_APPS_POLICY.md`: سياسات الوصول للأنظمة الخارجية عبر MCP/Apps.
+- `MCP_SKILLS_EXECUTION_PROTOCOL.md`: بروتوكول تشغيل إلزامي لتنسيق MCP + Skills + Multi-agent.
 - `CODEX_FEATURES_RUNBOOK.md`: تشغيل ميزات Codex الحديثة (Multi-agent + Apps) داخل المشروع.
 - `SKILLS_USAGE_MATRIX.md`: متى وكيف يتم تفعيل الـ Skills.
 - `PR_EXECUTION_CHECKLIST.md`: قائمة بوابة PR الإلزامية.

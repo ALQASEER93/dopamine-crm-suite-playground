@@ -13,6 +13,7 @@
 - نفّذ MCP tool discovery.
 - اختر أقل مجموعة أدوات لازمة.
 - سجّل الاختيار في thread notes.
+- عند توفر أداة MCP مناسبة، لا تستخدم shell/CLI كخيار أول لنفس العملية.
 
 ## 4) مستويات التطبيقات في هذا المشروع (App Tiers)
 Tier-1 (افتراضي للتسليم):
@@ -54,6 +55,7 @@ Tier-2 (عند الحاجة):
 - `action_taken`
 - `result`
 - `fallback_used`
+- `why_no_mcp` (إلزامي عند استخدام fallback رغم وجود نظام خارجي)
 
 ## 9) حظر الامتثال (Non-compliance Conditions)
 العمل يعتبر blocked إذا:
