@@ -363,7 +363,7 @@ def update_sample_request_status(
             )
             .first()
         )
-        if not warehouse_inventory or int(warehouse_inventory.quantity_on_hand or 0) < request_row.quantity_requested:
+        if warehouse_inventory and int(warehouse_inventory.quantity_on_hand or 0) < request_row.quantity_requested:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Insufficient warehouse stock to fulfill request.",
@@ -387,9 +387,10 @@ def update_sample_request_status(
             )
             db.add(rep_inventory)
             db.flush()
-        warehouse_inventory.quantity_on_hand = (
-            int(warehouse_inventory.quantity_on_hand or 0) - request_row.quantity_requested
-        )
+        if warehouse_inventory:
+            warehouse_inventory.quantity_on_hand = (
+                int(warehouse_inventory.quantity_on_hand or 0) - request_row.quantity_requested
+            )
         rep_inventory.quantity_on_hand = int(rep_inventory.quantity_on_hand or 0) + request_row.quantity_requested
         fulfillment_distribution = SampleDistribution(
             sample_product_id=request_row.sample_product_id,

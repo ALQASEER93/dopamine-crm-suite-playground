@@ -25,7 +25,7 @@ jobs:
 
       - name: Set PR number
         if: env.OPENAI_API_KEY != ''
-        run: echo "PR_NUMBER=${{ github.event.pull_request.number || github.event.issue.number }}" >> $GITHUB_ENV
+        run: echo "PR_NUMBER=${{ github.event.pull_request.number || github.event.issue.number }}" >> "$GITHUB_ENV"
 
       - name: Checkout PR merge ref
         if: env.OPENAI_API_KEY != ''
