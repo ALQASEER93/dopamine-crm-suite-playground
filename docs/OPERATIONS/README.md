@@ -1,6 +1,7 @@
 # دليل التشغيل (Operations Docs Index)
 
 هذا المجلد هو مرجع التشغيل الرسمي للعمل عبر Codex داخل هذا الـ monorepo وفق حوكمة إنتاج صارمة (strict production governance).
+للوصول السريع لكل ملفات `docs/` استخدم: `docs/READING_INDEX.md`.
 
 ## المستندات الإلزامية (Required Workflow Docs)
 - `AGENT_OS_PLAYBOOK.md`: نموذج التشغيل الكامل (Operating Model).
