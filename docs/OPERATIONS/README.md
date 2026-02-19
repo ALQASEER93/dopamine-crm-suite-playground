@@ -9,6 +9,7 @@
 - `MCP_APPS_POLICY.md`: سياسات الوصول للأنظمة الخارجية عبر MCP/Apps.
 - `MCP_SKILLS_EXECUTION_PROTOCOL.md`: بروتوكول تشغيل إلزامي لتنسيق MCP + Skills + Multi-agent.
 - `CODEX_FEATURES_RUNBOOK.md`: تشغيل ميزات Codex الحديثة (Multi-agent + Apps) داخل المشروع.
+- `CODEX_STACK_AUDIT_20260219.md`: تقرير تحقق فعلي لتبنّي الميزات والتحديثات وأثرها على المشروع.
 - `SKILLS_USAGE_MATRIX.md`: متى وكيف يتم تفعيل الـ Skills.
 - `PR_EXECUTION_CHECKLIST.md`: قائمة بوابة PR الإلزامية.
 - `INCIDENT_RUNBOOK.md`: آلية التعامل مع الحوادث (CI/Runtime/Deploy).

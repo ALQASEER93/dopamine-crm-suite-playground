@@ -27,6 +27,11 @@
 - Apps used (GitHub/Linear/Slack/Vercel/etc.):
 - Skills used:
 - Connector gaps/fallbacks:
+- [ ] `Skills` were used for matching tasks (or explicit reason documented)
+- [ ] `MCP` discovery/results were logged for external-system actions
+- [ ] `Multi-agent` was used for cross-surface changes (or reason documented)
+- [ ] `Apps` were used when connectors were available (or reason documented)
+- [ ] `why_no_mcp` documented for any fallback path
 
 ## Deployment and Run Artifacts
 - docs/_runs current reference (must remain stable unless owner-approved): `docs/_runs/LATEST.txt`
