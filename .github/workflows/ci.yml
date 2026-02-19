@@ -16,8 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install actionlint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash \
+            | bash -s -- -b /usr/local/bin latest
       - name: Validate GitHub workflows
-        uses: rhysd/actionlint@v1
+        run: actionlint -color
 
   ai-orchestrator:
     name: AI Orchestrator
