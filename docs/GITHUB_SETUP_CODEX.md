@@ -3,6 +3,7 @@
 ## Required secrets
 - `OPENAI_API_KEY`: API key for Codex review bot and auto-fix workflows.
 - (Optional) `OPENAI_BASE_URL`, `OPENAI_MODEL`: use if routing through a compatible provider.
+- (Optional) `WS_PROXY`, `WSS_PROXY`: set in CI environments when websocket proxying is required.
 
 ## Actions permissions
 1. In **Settings → Actions → General**, set **Workflow permissions** to **Read and write** (required for auto-fix PRs).
@@ -15,8 +16,13 @@
 - Add `CODEOWNERS` with leads for backend, frontend, and PWA scopes to enforce approvals.
 
 ## How Codex workflows behave
-- **codex-review-bot.yml**: triggers on PR open/sync or `@codex review` comment; read AGENTS.md; comments P0/P1 risks.
+- **codex-review-bot.yml**: triggers on PR open/sync or `@codex review` comment; read AGENTS.md; comments P0/P1 risks; safely skips if `OPENAI_API_KEY` is missing.
 - **codex-auto-fix.yml**: triggers when CI fails; if `OPENAI_API_KEY` is missing it exits gracefully; otherwise Codex applies minimal fixes, reruns CI steps, and opens a PR.
+
+## Team Codex configuration baseline
+- Use `tools/codex/config.toml.example` as the shared baseline.
+- Keep `multi_agent` and `apps` enabled for contributor environments.
+- Use `tools/codex/RUN_CODEX.ps1` for local scripted runs (multi-agent enabled by default).
 
 ## Local verification
 - Mirror CI locally before pushing:
