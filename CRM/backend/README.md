@@ -63,7 +63,8 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
 - Entry: `main.py` (run with `python -m uvicorn main:app --reload --port 8000` or `.\run-backend-dev.ps1`).
 - Uses SQLite by default (`data/fastapi.db` unless `DATABASE_URL` is set).
 - For PostgreSQL production, set `APP_ENV=production` and provide `PROD_DATABASE_URL` (SQLAlchemy DSN such as `postgresql+psycopg://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>`); optional `PROD_ECHO_SQL=false` keeps logs quiet.
-- Auth/roles: validates JWT signed with `JWT_SECRET`; when `DPM_ENV=production`, startup fails if `JWT_SECRET` is missing/weak (short/default secrets are rejected).
+- Auth/roles: validates JWT signed with `JWT_SECRET`; when `DPM_ENV=production`, startup fails if `JWT_SECRET` is missing/weak (short/default secrets are rejected), `SEED_DEFAULT_USERS=true`, or `ALLOWED_ORIGINS` contains insecure entries (non-HTTPS, wildcard, localhost).
+- One-time production bootstrap: set `DPM_BOOTSTRAP_ADMIN_ONCE=true` plus `DPM_BOOTSTRAP_ADMIN_EMAIL` and `DPM_BOOTSTRAP_ADMIN_PASSWORD` (optional `DPM_BOOTSTRAP_ADMIN_NAME`) to create the first admin only when the users table is empty.
 - GPS guardrails:
   - `ALLOW_GPS_OVERRIDE` controls `gpsOverride=true` usage in visit start. Defaults to `true` in non-production and `false` in production when unset.
   - `GEOFENCE_REQUIRE_TARGET_COORDS` controls strict geofence target enforcement. Defaults to `false` in non-production and `true` in production when unset.
