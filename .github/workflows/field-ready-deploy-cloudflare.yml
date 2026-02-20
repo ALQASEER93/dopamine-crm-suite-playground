@@ -87,7 +87,7 @@ jobs:
           projects_json_file="$RUNNER_TEMP/pages-projects.json"
           projects_err_file="$RUNNER_TEMP/pages-projects.err"
           if ! $wrangler_cmd pages project list --json >"$projects_json_file" 2>"$projects_err_file"; then
-            cat "$projects_err_file" | tee "$log_file"
+            tee "$log_file" < "$projects_err_file"
             echo "Failed to list Cloudflare Pages projects."
             exit 1
           fi

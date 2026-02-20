@@ -20,7 +20,43 @@ const {
 const router = express.Router();
 
 const REP_SCOPED_ROLES = new Set(['sales_rep', 'medical-sales-rep', 'salesman']);
-const VISIT_CREATOR_ROLES = new Set([...REP_SCOPED_ROLES, 'sales_manager']);
+const VISIT_CREATOR_ROLES = new Set([...REP_SCOPED_ROLES, 'sales_manager', 'admin']);
+const VISIT_MUTATION_ROLES = new Set([...VISIT_CREATOR_ROLES]);
+const PROTECTED_LIFECYCLE_FIELDS = new Set([
+  'status',
+  'durationMinutes',
+  'elapsedSeconds',
+  'startLocation',
+  'endLocation',
+  'location',
+  'startedAt',
+  'endedAt',
+  'startLat',
+  'startLng',
+  'startAccuracy',
+  'endLat',
+  'endLng',
+  'endAccuracy',
+]);
+
+const roleSlugOf = user => user?.role?.slug;
+
+const hasVisitMutationRole = user => {
+  const roleSlug = roleSlugOf(user);
+  return Boolean(roleSlug && VISIT_MUTATION_ROLES.has(roleSlug));
+};
+
+const rejectProtectedLifecycleMutation = body => {
+  if (!body || typeof body !== 'object') {
+    return null;
+  }
+  for (const key of Object.keys(body)) {
+    if (PROTECTED_LIFECYCLE_FIELDS.has(key)) {
+      return key;
+    }
+  }
+  return null;
+};
 
 const normalizeToArray = value => {
   if (Array.isArray(value)) {
@@ -616,17 +652,17 @@ router.post('/', async (req, res, next) => {
 
   const payload = { ...(req.body || {}) };
 
-  // Map common external payloads to supported enums/fields (e.g., PWA sends "pending" status, elapsedSeconds)
-  if (payload.status === 'pending') {
+  // Lifecycle state is controlled by dedicated start/end flows, not generic create/update.
+  if (payload.status === undefined || payload.status === null || payload.status === '' || payload.status === 'pending') {
     payload.status = 'scheduled';
   }
-
-  if (payload.durationMinutes === undefined && payload.elapsedSeconds !== undefined) {
-    const seconds = Number(payload.elapsedSeconds);
-    if (Number.isFinite(seconds) && seconds >= 0) {
-      payload.durationMinutes = Math.max(0, Math.round(seconds / 60));
-    }
+  if (payload.status !== 'scheduled') {
+    return res.status(400).json({
+      message: 'Invalid request body.',
+      errors: ['Visit lifecycle fields can only be changed through start/end endpoints.'],
+    });
   }
+  payload.durationMinutes = 0;
 
   if (payload.accountType && payload.accountId) {
     if (payload.accountType === 'hcp') {
@@ -636,13 +672,6 @@ router.post('/', async (req, res, next) => {
       payload.pharmacyId = payload.accountId;
       payload.hcpId = undefined;
     }
-  }
-
-  if (!payload.startLocation && payload.location?.start) {
-    payload.startLocation = payload.location.start;
-  }
-  if (!payload.endLocation && payload.location?.end) {
-    payload.endLocation = payload.location.end;
   }
 
   if (!payload.territoryId && repContext && repContext.territoryId) {
@@ -742,6 +771,10 @@ router.post('/', async (req, res, next) => {
 });
 
 router.put('/:id', async (req, res, next) => {
+  if (!hasVisitMutationRole(req.user)) {
+    return res.status(403).json({ message: 'Insufficient permissions.' });
+  }
+
   let repContext;
   try {
     repContext = await resolveRepForUser(req.user);
@@ -756,6 +789,14 @@ router.put('/:id', async (req, res, next) => {
 
   if (repContext && visit.repId !== repContext.id) {
     return res.status(403).json({ message: 'Insufficient permissions.' });
+  }
+
+  const lifecycleField = rejectProtectedLifecycleMutation(req.body);
+  if (lifecycleField) {
+    return res.status(400).json({
+      message: 'Invalid request body.',
+      errors: ['Visit lifecycle fields can only be changed through start/end endpoints.'],
+    });
   }
 
   const { data, errors, hasUpdates } = validateVisitPayload(req.body || {}, { partial: true });
@@ -788,6 +829,10 @@ router.put('/:id', async (req, res, next) => {
 });
 
 router.delete('/:id', async (req, res, next) => {
+  if (!hasVisitMutationRole(req.user)) {
+    return res.status(403).json({ message: 'Insufficient permissions.' });
+  }
+
   let repContext;
   try {
     repContext = await resolveRepForUser(req.user);

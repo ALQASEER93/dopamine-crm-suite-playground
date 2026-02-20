@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from schemas.user import RoleOut, UserOut
 
@@ -19,6 +19,8 @@ class DoctorBase(BaseModel):
     phone: Optional[str] = None
     mobile: Optional[str] = None
     email: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
     notes: Optional[str] = None
 
 
@@ -36,6 +38,8 @@ class DoctorUpdate(BaseModel):
     phone: Optional[str] = None
     mobile: Optional[str] = None
     email: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
     notes: Optional[str] = None
 
 
@@ -56,6 +60,8 @@ class PharmacyBase(BaseModel):
     payment_terms: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
 
 
 class PharmacyCreate(PharmacyBase):
@@ -71,6 +77,8 @@ class PharmacyUpdate(BaseModel):
     payment_terms: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
 
 
 class PharmacyOut(PharmacyBase):
@@ -159,16 +167,7 @@ class VisitUpdate(BaseModel):
     samples_given: Optional[str] = None
     next_action: Optional[str] = None
     next_action_date: Optional[date] = None
-    status: Optional[Literal["scheduled", "in_progress", "completed", "cancelled"]] = None
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
-    start_lat: Optional[float] = None
-    start_lng: Optional[float] = None
-    start_accuracy: Optional[float] = None
-    end_lat: Optional[float] = None
-    end_lng: Optional[float] = None
-    end_accuracy: Optional[float] = None
-    duration_seconds: Optional[int] = Field(default=None, ge=0)
+    model_config = ConfigDict(extra="forbid")
 
     @field_validator("pharmacy_id")
     @classmethod
@@ -317,6 +316,7 @@ class OrderLineOut(OrderLineBase):
 
 class OrderBase(BaseModel):
     order_date: date
+    rep_id: Optional[int] = None
     status: str = "draft"
     payment_status: str = "pending"
     doctor_id: Optional[int] = None
@@ -344,6 +344,7 @@ class OrderCreate(OrderBase):
 class OrderOut(OrderBase):
     id: int
     total_amount: Decimal
+    rep: Optional[UserOut] = None
     doctor: Optional[DoctorOut] = None
     pharmacy: Optional[PharmacyOut] = None
     lines: List[OrderLineOut] = []
@@ -407,6 +408,7 @@ class TargetOut(TargetBase):
 
 class CollectionBase(BaseModel):
     collection_date: date
+    rep_id: Optional[int] = None
     amount: Decimal
     method: str
     reference: Optional[str] = None
@@ -433,5 +435,306 @@ class CollectionCreate(CollectionBase):
 
 class CollectionOut(CollectionBase):
     id: int
+    rep: Optional[UserOut] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SampleProductBase(BaseModel):
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=2, max_length=150)
+    unit: str = Field(default="unit", min_length=1, max_length=50)
+    therapeutic_area: Optional[str] = Field(default=None, max_length=150)
+    is_active: bool = True
+
+
+class SampleProductCreate(SampleProductBase):
+    ...
+
+
+class SampleProductOut(SampleProductBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SampleInventoryAdjust(BaseModel):
+    sample_product_id: int
+    location_type: Literal["warehouse", "rep"] = "warehouse"
+    rep_id: Optional[int] = None
+    delta: int
+    reorder_level: Optional[int] = Field(default=None, ge=0)
+    notes: Optional[str] = None
+
+    @field_validator("rep_id")
+    @classmethod
+    def validate_rep_location(cls, value, info):  # noqa: D401
+        """Ensure rep_id exists only for rep location rows."""
+        location_type = info.data.get("location_type")
+        if location_type == "rep" and not value:
+            raise ValueError("rep_id is required for rep location.")
+        if location_type == "warehouse" and value is not None:
+            raise ValueError("rep_id must be empty for warehouse location.")
+        return value
+
+    @field_validator("delta")
+    @classmethod
+    def validate_delta_non_zero(cls, value: int) -> int:
+        if value == 0:
+            raise ValueError("delta cannot be zero.")
+        return value
+
+
+class SampleInventoryOut(BaseModel):
+    id: int
+    sample_product_id: int
+    location_type: Literal["warehouse", "rep"]
+    rep_id: Optional[int] = None
+    quantity_on_hand: int
+    reorder_level: int
+    updated_at: datetime
+    sample_product: Optional[SampleProductOut] = None
+    rep: Optional[UserOut] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SampleDistributionBase(BaseModel):
+    sample_product_id: int
+    rep_id: Optional[int] = None
+    doctor_id: Optional[int] = None
+    pharmacy_id: Optional[int] = None
+    quantity: int = Field(..., ge=1)
+    channel: Literal["in_person", "event", "request_fulfillment"] = "in_person"
+    notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_customer(self):  # noqa: D401
+        """Ensure customer target rules based on channel."""
+        if self.channel == "request_fulfillment":
+            if self.doctor_id or self.pharmacy_id:
+                raise ValueError("request_fulfillment must not include doctor_id or pharmacy_id.")
+            return self
+        if self.doctor_id and self.pharmacy_id:
+            raise ValueError("Provide only one of doctor_id or pharmacy_id.")
+        if not self.doctor_id and not self.pharmacy_id:
+            raise ValueError("Either doctor_id or pharmacy_id is required.")
+        return self
+
+
+class SampleDistributionCreate(SampleDistributionBase):
+    ...
+
+
+class SampleDistributionOut(SampleDistributionBase):
+    id: int
+    distributed_at: datetime
+    sample_product: Optional[SampleProductOut] = None
+    rep: Optional[UserOut] = None
+    doctor: Optional[DoctorOut] = None
+    pharmacy: Optional[PharmacyMini] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SampleRequestCreate(BaseModel):
+    sample_product_id: int
+    quantity_requested: int = Field(..., ge=1)
+    notes: Optional[str] = None
+
+
+class SampleRequestStatusUpdate(BaseModel):
+    status: Literal["approved", "rejected", "fulfilled"]
+    decision_notes: Optional[str] = None
+
+
+class SampleRequestOut(BaseModel):
+    id: int
+    rep_id: int
+    sample_product_id: int
+    quantity_requested: int
+    status: Literal["pending", "approved", "rejected", "fulfilled"]
+    requested_at: datetime
+    decided_at: Optional[datetime] = None
+    approver_id: Optional[int] = None
+    notes: Optional[str] = None
+    decision_notes: Optional[str] = None
+    fulfillment_distribution_id: Optional[int] = None
+    rep: Optional[UserOut] = None
+    approver: Optional[UserOut] = None
+    sample_product: Optional[SampleProductOut] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class KOLBase(BaseModel):
+    name: str = Field(..., min_length=2, max_length=150)
+    specialty: Optional[str] = Field(default=None, max_length=150)
+    institution: Optional[str] = Field(default=None, max_length=255)
+    city: Optional[str] = Field(default=None, max_length=100)
+    phone: Optional[str] = Field(default=None, max_length=50)
+    email: Optional[str] = Field(default=None, max_length=255)
+    influence_level: Literal["A", "B", "C"] = "B"
+    engagement_score: float = Field(default=0, ge=0)
+    notes: Optional[str] = None
+
+
+class KOLCreate(KOLBase):
+    ...
+
+
+class KOLUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=2, max_length=150)
+    specialty: Optional[str] = Field(default=None, max_length=150)
+    institution: Optional[str] = Field(default=None, max_length=255)
+    city: Optional[str] = Field(default=None, max_length=100)
+    phone: Optional[str] = Field(default=None, max_length=50)
+    email: Optional[str] = Field(default=None, max_length=255)
+    influence_level: Optional[Literal["A", "B", "C"]] = None
+    engagement_score: Optional[float] = Field(default=None, ge=0)
+    notes: Optional[str] = None
+
+
+class KOLOut(KOLBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ScientificMaterialBase(BaseModel):
+    title: str = Field(..., min_length=2, max_length=200)
+    material_type: Literal["presentation", "pdf", "video", "link", "other"]
+    language: str = Field(default="ar", min_length=2, max_length=10)
+    therapeutic_area: Optional[str] = Field(default=None, max_length=150)
+    url: Optional[str] = None
+    is_active: bool = True
+
+
+class ScientificMaterialCreate(ScientificMaterialBase):
+    ...
+
+
+class ScientificMaterialUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    material_type: Optional[Literal["presentation", "pdf", "video", "link", "other"]] = None
+    language: Optional[str] = Field(default=None, min_length=2, max_length=10)
+    therapeutic_area: Optional[str] = Field(default=None, max_length=150)
+    url: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ScientificMaterialOut(ScientificMaterialBase):
+    id: int
+    created_by_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MedicalEventBase(BaseModel):
+    title: str = Field(..., min_length=2, max_length=200)
+    event_type: Literal["conference", "roundtable", "webinar", "cme", "internal"]
+    status: Literal["planned", "ongoing", "completed", "cancelled"] = "planned"
+    starts_at: datetime
+    ends_at: datetime
+    location: Optional[str] = Field(default=None, max_length=255)
+    organizer: Optional[str] = Field(default=None, max_length=150)
+    budget: Optional[Decimal] = Field(default=None, ge=0)
+    actual_cost: Optional[Decimal] = Field(default=None, ge=0)
+    revenue_impact: Optional[Decimal] = None
+    notes: Optional[str] = None
+
+
+class MedicalEventCreate(MedicalEventBase):
+    ...
+
+
+class MedicalEventUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    event_type: Optional[Literal["conference", "roundtable", "webinar", "cme", "internal"]] = None
+    status: Optional[Literal["planned", "ongoing", "completed", "cancelled"]] = None
+    starts_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+    location: Optional[str] = Field(default=None, max_length=255)
+    organizer: Optional[str] = Field(default=None, max_length=150)
+    budget: Optional[Decimal] = Field(default=None, ge=0)
+    actual_cost: Optional[Decimal] = Field(default=None, ge=0)
+    revenue_impact: Optional[Decimal] = None
+    notes: Optional[str] = None
+
+
+class EventAttendeeCreate(BaseModel):
+    doctor_id: Optional[int] = None
+    kol_id: Optional[int] = None
+    attendee_role: str = Field(default="attendee", min_length=2, max_length=50)
+    attended: bool = False
+    feedback_score: Optional[float] = Field(default=None, ge=0, le=5)
+    notes: Optional[str] = None
+
+    @field_validator("kol_id")
+    @classmethod
+    def validate_attendee_link(cls, value, info):  # noqa: D401
+        """Ensure attendee maps to either doctor or KOL."""
+        doctor_id = info.data.get("doctor_id")
+        if doctor_id and value:
+            raise ValueError("Provide only one of doctor_id or kol_id.")
+        if not doctor_id and not value:
+            raise ValueError("Either doctor_id or kol_id is required.")
+        return value
+
+
+class EventAttendeeUpdate(BaseModel):
+    attendee_role: Optional[str] = Field(default=None, min_length=2, max_length=50)
+    attended: Optional[bool] = None
+    feedback_score: Optional[float] = Field(default=None, ge=0, le=5)
+    notes: Optional[str] = None
+
+
+class EventAttendeeOut(BaseModel):
+    id: int
+    event_id: int
+    doctor_id: Optional[int] = None
+    kol_id: Optional[int] = None
+    attendee_role: str
+    attended: bool
+    feedback_score: Optional[float] = None
+    notes: Optional[str] = None
+    doctor: Optional[DoctorOut] = None
+    kol: Optional[KOLOut] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MedicalEventOut(MedicalEventBase):
+    id: int
+    created_by_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+    attendees: list[EventAttendeeOut] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MedicalEventROIOut(BaseModel):
+    event_id: int
+    title: str
+    starts_at: datetime
+    attendees_count: int
+    budget: float
+    actual_cost: float
+    revenue_impact: float
+    roi_value: float
+    roi_percent: Optional[float] = None
+
+
+class KOLEngagementOut(BaseModel):
+    kol_id: int
+    kol_name: str
+    events_count: int
+    attended_count: int
+    avg_feedback_score: Optional[float] = None

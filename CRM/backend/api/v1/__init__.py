@@ -4,12 +4,14 @@ from api.v1 import (
     auth,
     collections,
     gps_policy,
+    medical_affairs,
     hcps,
     doctors,
     health,
     orders,
     pharmacies,
     products,
+    samples,
     reports,
     reps,
     stock,
@@ -39,3 +41,5 @@ router.include_router(reports.router)
 router.include_router(territories.router)
 router.include_router(admin_users.router)
 router.include_router(pwa.router)
+router.include_router(samples.router)
+router.include_router(medical_affairs.router)

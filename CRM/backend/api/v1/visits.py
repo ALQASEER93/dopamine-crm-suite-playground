@@ -1,20 +1,25 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+import logging
 import csv
 import io
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
-from api.v1.utils_gps import GPSValidationError, validate_accuracy, validate_max_distance
+from api.v1.utils_gps import GPSValidationError, validate_accuracy, validate_geofence, validate_max_distance
+from core.config import settings
 from core.db import get_db
 from core.security import get_current_user, has_any_role, require_roles
 from models.crm import Doctor, Pharmacy, User, Visit
 from schemas.common import PaginatedResponse
 from schemas.crm import VisitCreate, VisitEnd, VisitOut, VisitStart, VisitUpdate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/visits",
@@ -23,6 +28,7 @@ router = APIRouter(
 )
 
 VISIT_STATUSES = {"scheduled", "in_progress", "completed", "cancelled"}
+FORMULA_PREFIXES = ("=", "+", "-", "@")
 
 
 def _calculate_duration_seconds(started_at: datetime | None, ended_at: datetime | None) -> int | None:
@@ -54,6 +60,17 @@ def _sync_duration(visit: Visit) -> None:
     duration = _calculate_duration_seconds(visit.started_at, visit.ended_at)
     if duration is not None:
         visit.duration_seconds = duration
+
+
+def _sanitize_excel_text(value: object | None) -> object | None:
+    if not isinstance(value, str) or not value:
+        return value
+    candidate = value.lstrip()
+    while candidate.startswith(("'", '"')):
+        candidate = candidate[1:].lstrip()
+    if candidate.startswith(FORMULA_PREFIXES):
+        return f"'{value}"
+    return value
 
 
 @router.get("/", response_model=PaginatedResponse[VisitOut])
@@ -202,6 +219,137 @@ def export_visits(
     return Response(content=buffer.getvalue(), media_type="text/csv", headers=headers)
 
 
+@router.get("/export/excel", dependencies=[Depends(require_roles("sales_manager", "admin"))])
+def export_visits_excel(
+    rep_ids: list[int] | None = Query(default=None, alias="rep_id"),
+    doctor_id: int | None = None,
+    pharmacy_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    status_filter: list[str] | None = Query(default=None, alias="status"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """Export visits to Excel (Arabic RTL headers)."""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.cell import WriteOnlyCell
+        from openpyxl.styles import Alignment, Font
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Excel export requires openpyxl. Install with: pip install openpyxl"
+        )
+
+    query = (
+        db.query(Visit)
+        .options(selectinload(Visit.doctor), selectinload(Visit.pharmacy), selectinload(Visit.rep))
+        .filter(Visit.is_deleted.is_(False))
+    )
+
+    effective_rep_ids = rep_ids or []
+    if has_any_role(current_user, ["medical_rep"]):
+        effective_rep_ids = [current_user.id]
+
+    if effective_rep_ids:
+        query = query.filter(Visit.rep_id.in_(effective_rep_ids))
+    if doctor_id:
+        query = query.filter(Visit.doctor_id == doctor_id)
+    if pharmacy_id:
+        query = query.filter(Visit.pharmacy_id == pharmacy_id)
+    if date_from:
+        query = query.filter(Visit.visit_date >= date_from)
+    if date_to:
+        query = query.filter(Visit.visit_date <= date_to)
+    allowed_statuses = _normalize_status_filters(status_filter)
+    if allowed_statuses:
+        query = query.filter(Visit.status.in_(allowed_statuses))
+
+    query = query.order_by(
+        Visit.started_at.desc().nullslast(),
+        Visit.visit_date.desc(),
+        Visit.id.desc(),
+    )
+
+    def _iso(dt: datetime | None) -> str:
+        return dt.isoformat() if dt else ""
+
+    def _safe_str(value: object | None) -> str:
+        if value is None:
+            return ""
+        return str(value)
+
+    columns = [
+        ("رقم الزيارة", lambda v: v.id),
+        ("تاريخ الزيارة", lambda v: v.visit_date.isoformat() if v.visit_date else ""),
+        ("الحالة", lambda v: v.status),
+        ("رقم المندوب", lambda v: v.rep_id),
+        ("اسم المندوب", lambda v: v.rep.name if v.rep else ""),
+        ("بريد المندوب", lambda v: v.rep.email if v.rep else ""),
+        ("رقم الطبيب", lambda v: v.doctor_id or ""),
+        ("اسم الطبيب", lambda v: v.doctor.name if v.doctor else ""),
+        ("رقم الصيدلية", lambda v: v.pharmacy_id or ""),
+        ("اسم الصيدلية", lambda v: v.pharmacy.name if v.pharmacy else ""),
+        ("ملاحظات", lambda v: v.notes or ""),
+        ("عينات", lambda v: v.samples_given or ""),
+        ("إجراء لاحق", lambda v: v.next_action or ""),
+        ("تاريخ الإجراء التالي", lambda v: v.next_action_date.isoformat() if v.next_action_date else ""),
+        ("بدء الزيارة", lambda v: _iso(v.started_at)),
+        ("نهاية الزيارة", lambda v: _iso(v.ended_at)),
+        ("المدة (ثانية)", lambda v: v.duration_seconds or ""),
+        ("المدة (دقيقة)", lambda v: round(v.duration_seconds / 60, 2) if v.duration_seconds is not None else ""),
+        ("خط العرض (بداية)", lambda v: v.start_lat if v.start_lat is not None else ""),
+        ("خط الطول (بداية)", lambda v: v.start_lng if v.start_lng is not None else ""),
+        ("دقة GPS (بداية-م)", lambda v: v.start_accuracy if v.start_accuracy is not None else ""),
+        ("خط العرض (نهاية)", lambda v: v.end_lat if v.end_lat is not None else ""),
+        ("خط الطول (نهاية)", lambda v: v.end_lng if v.end_lng is not None else ""),
+        ("دقة GPS (نهاية-م)", lambda v: v.end_accuracy if v.end_accuracy is not None else ""),
+        ("تاريخ الإنشاء", lambda v: _iso(v.created_at)),
+        ("آخر تحديث", lambda v: _iso(v.updated_at)),
+    ]
+
+    wb = Workbook(write_only=True)
+    ws = wb.create_sheet(title="Visits")
+    try:
+        ws.sheet_view.rightToLeft = True
+    except Exception:  # noqa: BLE001
+        pass
+
+    header_font = Font(bold=True)
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    max_widths = [len(header) for header, _ in columns]
+
+    header_row: list[WriteOnlyCell] = []
+    for header, _getter in columns:
+        cell = WriteOnlyCell(ws, value=header)
+        cell.font = header_font
+        cell.alignment = header_alignment
+        header_row.append(cell)
+    ws.append(header_row)
+
+    for visit in query.yield_per(1000):
+        row: list[object] = []
+        for idx, (_header, getter) in enumerate(columns):
+            value = _sanitize_excel_text(getter(visit))
+            row.append(value)
+            width = len(_safe_str(value))
+            if width > max_widths[idx]:
+                max_widths[idx] = min(width, 80)
+        ws.append(row)
+
+    for idx, width in enumerate(max_widths, 1):
+        ws.column_dimensions[get_column_letter(idx)].width = min(max(width + 2, 12), 60)
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    filename = f"visits_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(buffer, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers=headers)
+
+
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
@@ -213,6 +361,11 @@ def create_visit(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Visit:
+    if payload.status != "scheduled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Visit lifecycle fields can only be changed through start/end endpoints.",
+        )
     if payload.doctor_id and not db.get(Doctor, payload.doctor_id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Doctor not found.")
     if payload.pharmacy_id and not db.get(Pharmacy, payload.pharmacy_id):
@@ -453,6 +606,12 @@ def update_visit(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
 
     updates = payload.model_dump(exclude_unset=True)
+    forbidden = {"status", "started_at", "ended_at", "start_lat", "start_lng", "start_accuracy", "end_lat", "end_lng", "end_accuracy", "duration_seconds"}
+    if forbidden.intersection(updates.keys()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Visit lifecycle fields can only be changed through start/end endpoints.",
+        )
     if "notes" in updates:
         is_active_window = (
             visit.status == "in_progress"
@@ -480,13 +639,6 @@ def update_visit(
     for key, value in updates.items():
         setattr(visit, key, value)
 
-    if updates.get("status") == "completed" and not visit.ended_at:
-        visit.ended_at = datetime.now(timezone.utc)
-    if updates.get("status") == "in_progress" and not visit.started_at:
-        visit.started_at = datetime.now(timezone.utc)
-    if any(field in updates for field in ("started_at", "ended_at", "duration_seconds", "status")):
-        _sync_duration(visit)
-
     if not visit.doctor_id and not visit.pharmacy_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -511,21 +663,46 @@ def update_visit(
 def start_visit(
     visit_id: int,
     payload: VisitStart,
+    gps_override: bool = Query(default=False, alias="gpsOverride"),
+    gps_override_reason: str | None = Query(default=None, alias="gpsOverrideReason"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Visit:
     visit = _get_visit(db, visit_id)
     if has_any_role(current_user, ["medical_rep"]) and visit.rep_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
+    if visit.started_at:
+        logger.info("Start visit called for already-started visit (visit_id=%s user_id=%s).", visit.id, current_user.id)
+        return visit
     if visit.status == "completed":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already completed.")
-    if visit.started_at:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already started.")
 
-    try:
-        validate_accuracy(payload.accuracy)
-    except GPSValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    allow_override = (
+        gps_override
+        and bool(settings.allow_gps_override)
+        and has_any_role(current_user, ["admin", "sales_manager"])
+    )
+    if allow_override:
+        normalized_reason = (gps_override_reason or "").strip() or None
+        logger.warning(
+            "GPS override used for visit start (visit_id=%s user_id=%s lat=%s lng=%s accuracy=%s reason=%s).",
+            visit.id,
+            current_user.id,
+            payload.lat,
+            payload.lng,
+            payload.accuracy,
+            normalized_reason,
+        )
+    else:
+        try:
+            validate_accuracy(payload.accuracy)
+            # Geofencing validation: ensure rep is near the doctor/pharmacy (feature-flagged in settings).
+            if visit.doctor_id and visit.doctor:
+                validate_geofence(payload.lat, payload.lng, visit.doctor.latitude, visit.doctor.longitude)
+            elif visit.pharmacy_id and visit.pharmacy:
+                validate_geofence(payload.lat, payload.lng, visit.pharmacy.latitude, visit.pharmacy.longitude)
+        except GPSValidationError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     started_at = payload.started_at or datetime.now(timezone.utc)
     visit.started_at = started_at
@@ -554,10 +731,11 @@ def end_visit(
     visit = _get_visit(db, visit_id)
     if has_any_role(current_user, ["medical_rep"]) and visit.rep_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
+    if visit.ended_at:
+        logger.info("End visit called for already-ended visit (visit_id=%s user_id=%s).", visit.id, current_user.id)
+        return visit
     if visit.status == "cancelled":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cancelled visits cannot be completed.")
-    if visit.ended_at:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already ended.")
 
     try:
         validate_accuracy(payload.accuracy)

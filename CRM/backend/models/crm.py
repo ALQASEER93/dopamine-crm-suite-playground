@@ -12,6 +12,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -88,6 +89,8 @@ class Doctor(Base):
     phone = Column(String(50), nullable=True)
     mobile = Column(String(50), nullable=True)
     email = Column(String(255), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
@@ -96,6 +99,7 @@ class Doctor(Base):
 
     __table_args__ = (
         UniqueConstraint("name", "clinic", "area", name="uq_doctor_identity"),
+        Index("idx_doctor_location", "latitude", "longitude"),
     )
 
     visits = relationship("Visit", back_populates="doctor")
@@ -115,6 +119,8 @@ class Pharmacy(Base):
     payment_terms = Column(String(100), nullable=True)
     phone = Column(String(50), nullable=True)
     email = Column(String(255), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
@@ -122,6 +128,7 @@ class Pharmacy(Base):
 
     __table_args__ = (
         UniqueConstraint("name", "city", "area", name="uq_pharmacy_identity"),
+        Index("idx_pharmacy_location", "latitude", "longitude"),
     )
 
     visits = relationship("Visit", back_populates="pharmacy")
@@ -229,6 +236,11 @@ class Visit(Base):
             "(pharmacy_id IS NOT NULL AND doctor_id IS NULL)",
             name="ck_visit_account_link",
         ),
+        Index("idx_visit_date", "visit_date"),
+        Index("idx_visit_rep_id", "rep_id"),
+        Index("idx_visit_doctor_id", "doctor_id"),
+        Index("idx_visit_status", "status"),
+        Index("idx_visit_is_deleted", "is_deleted"),
     )
 
     rep = relationship(User)
@@ -241,6 +253,7 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True)
     order_date = Column(Date, nullable=False, default=date.today)
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     status = Column(String(50), nullable=False, default="draft")
     payment_status = Column(String(50), nullable=False, default="pending")
     total_amount = Column(Numeric(12, 2), nullable=False, default=0)
@@ -260,6 +273,7 @@ class Order(Base):
         ),
     )
 
+    rep = relationship(User)
     doctor = relationship(Doctor, back_populates="orders")
     pharmacy = relationship(Pharmacy, back_populates="orders")
     lines = relationship("OrderLine", back_populates="order", cascade="all, delete-orphan")
@@ -352,6 +366,7 @@ class Collection(Base):
 
     id = Column(Integer, primary_key=True)
     collection_date = Column(Date, nullable=False)
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     amount = Column(Numeric(12, 2), nullable=False)
     method = Column(String(50), nullable=False)
     reference = Column(String(100), nullable=True)
@@ -371,5 +386,249 @@ class Collection(Base):
         ),
     )
 
+    rep = relationship(User)
     doctor = relationship(Doctor, back_populates="collections")
     pharmacy = relationship(Pharmacy, back_populates="collections")
+
+
+class SampleProduct(Base):
+    __tablename__ = "sample_products"
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String(50), nullable=False, unique=True)
+    name = Column(String(150), nullable=False)
+    unit = Column(String(50), nullable=False, default="unit", server_default="unit")
+    therapeutic_area = Column(String(150), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    inventories = relationship("SampleInventory", back_populates="sample_product")
+    distributions = relationship("SampleDistribution", back_populates="sample_product")
+    requests = relationship("SampleRequest", back_populates="sample_product")
+
+
+class SampleInventory(Base):
+    __tablename__ = "sample_inventory"
+
+    id = Column(Integer, primary_key=True)
+    sample_product_id = Column(Integer, ForeignKey("sample_products.id"), nullable=False)
+    location_type = Column(
+        Enum("warehouse", "rep", name="sample_inventory_location_type"),
+        nullable=False,
+        default="warehouse",
+        server_default="warehouse",
+    )
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    quantity_on_hand = Column(Integer, nullable=False, default=0, server_default="0")
+    reorder_level = Column(Integer, nullable=False, default=0, server_default="0")
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "(location_type = 'warehouse' AND rep_id IS NULL) OR "
+            "(location_type = 'rep' AND rep_id IS NOT NULL)",
+            name="ck_sample_inventory_location",
+        ),
+        UniqueConstraint(
+            "sample_product_id",
+            "location_type",
+            "rep_id",
+            name="uq_sample_inventory_location",
+        ),
+        Index("idx_sample_inventory_rep", "rep_id"),
+    )
+
+    sample_product = relationship("SampleProduct", back_populates="inventories")
+    rep = relationship(User)
+
+
+class SampleDistribution(Base):
+    __tablename__ = "sample_distributions"
+
+    id = Column(Integer, primary_key=True)
+    sample_product_id = Column(Integer, ForeignKey("sample_products.id"), nullable=False)
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True)
+    pharmacy_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=True)
+    quantity = Column(Integer, nullable=False)
+    channel = Column(
+        Enum("in_person", "event", "request_fulfillment", name="sample_distribution_channel"),
+        nullable=False,
+        default="in_person",
+        server_default="in_person",
+    )
+    distributed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    notes = Column(Text, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "("
+            "(channel = 'request_fulfillment' AND doctor_id IS NULL AND pharmacy_id IS NULL)"
+            " OR "
+            "(channel != 'request_fulfillment' AND "
+            "((doctor_id IS NOT NULL AND pharmacy_id IS NULL) OR "
+            "(pharmacy_id IS NOT NULL AND doctor_id IS NULL)))"
+            ")",
+            name="ck_sample_distribution_customer_link",
+        ),
+        CheckConstraint("quantity > 0", name="ck_sample_distribution_quantity_positive"),
+        Index("idx_sample_distribution_distributed_at", "distributed_at"),
+    )
+
+    sample_product = relationship("SampleProduct", back_populates="distributions")
+    rep = relationship(User)
+    doctor = relationship(Doctor)
+    pharmacy = relationship(Pharmacy)
+
+
+class SampleRequest(Base):
+    __tablename__ = "sample_requests"
+
+    id = Column(Integer, primary_key=True)
+    rep_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    sample_product_id = Column(Integer, ForeignKey("sample_products.id"), nullable=False)
+    quantity_requested = Column(Integer, nullable=False)
+    status = Column(
+        Enum("pending", "approved", "rejected", "fulfilled", name="sample_request_status"),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+    )
+    requested_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    approver_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    notes = Column(Text, nullable=True)
+    decision_notes = Column(Text, nullable=True)
+    fulfillment_distribution_id = Column(
+        Integer,
+        ForeignKey("sample_distributions.id"),
+        nullable=True,
+    )
+
+    __table_args__ = (
+        CheckConstraint("quantity_requested > 0", name="ck_sample_request_quantity_positive"),
+        Index("idx_sample_request_status", "status"),
+        Index("idx_sample_request_requested_at", "requested_at"),
+    )
+
+    rep = relationship(User, foreign_keys=[rep_id])
+    sample_product = relationship("SampleProduct", back_populates="requests")
+    approver = relationship(User, foreign_keys=[approver_id])
+    fulfillment_distribution = relationship("SampleDistribution")
+
+
+class KOL(Base):
+    __tablename__ = "kols"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(150), nullable=False)
+    specialty = Column(String(150), nullable=True)
+    institution = Column(String(255), nullable=True)
+    city = Column(String(100), nullable=True)
+    phone = Column(String(50), nullable=True)
+    email = Column(String(255), nullable=True)
+    influence_level = Column(
+        Enum("A", "B", "C", name="kol_influence_level"),
+        nullable=False,
+        default="B",
+        server_default="B",
+    )
+    engagement_score = Column(Float, nullable=False, default=0, server_default="0")
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (Index("idx_kol_name", "name"),)
+
+    attendances = relationship("EventAttendee", back_populates="kol")
+
+
+class ScientificMaterial(Base):
+    __tablename__ = "scientific_materials"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(200), nullable=False)
+    material_type = Column(
+        Enum("presentation", "pdf", "video", "link", "other", name="scientific_material_type"),
+        nullable=False,
+    )
+    language = Column(String(10), nullable=False, default="ar", server_default="ar")
+    therapeutic_area = Column(String(150), nullable=True)
+    url = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    created_by = relationship(User)
+
+
+class MedicalEvent(Base):
+    __tablename__ = "medical_events"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(200), nullable=False)
+    event_type = Column(
+        Enum("conference", "roundtable", "webinar", "cme", "internal", name="medical_event_type"),
+        nullable=False,
+    )
+    status = Column(
+        Enum("planned", "ongoing", "completed", "cancelled", name="medical_event_status"),
+        nullable=False,
+        default="planned",
+        server_default="planned",
+    )
+    starts_at = Column(DateTime(timezone=True), nullable=False)
+    ends_at = Column(DateTime(timezone=True), nullable=False)
+    location = Column(String(255), nullable=True)
+    organizer = Column(String(150), nullable=True)
+    budget = Column(Numeric(12, 2), nullable=True)
+    actual_cost = Column(Numeric(12, 2), nullable=True)
+    revenue_impact = Column(Numeric(12, 2), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (Index("idx_medical_event_starts_at", "starts_at"),)
+
+    created_by = relationship(User)
+    attendees = relationship("EventAttendee", back_populates="event", cascade="all, delete-orphan")
+
+
+class EventAttendee(Base):
+    __tablename__ = "event_attendees"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("medical_events.id"), nullable=False)
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True)
+    kol_id = Column(Integer, ForeignKey("kols.id"), nullable=True)
+    attendee_role = Column(String(50), nullable=False, default="attendee", server_default="attendee")
+    attended = Column(Boolean, nullable=False, default=False, server_default="0")
+    feedback_score = Column(Float, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "(doctor_id IS NOT NULL AND kol_id IS NULL) OR (kol_id IS NOT NULL AND doctor_id IS NULL)",
+            name="ck_event_attendee_link",
+        ),
+        UniqueConstraint("event_id", "doctor_id", name="uq_event_attendee_doctor"),
+        UniqueConstraint("event_id", "kol_id", name="uq_event_attendee_kol"),
+        Index("idx_event_attendee_event_id", "event_id"),
+    )
+
+    event = relationship("MedicalEvent", back_populates="attendees")
+    doctor = relationship(Doctor)
+    kol = relationship("KOL", back_populates="attendances")

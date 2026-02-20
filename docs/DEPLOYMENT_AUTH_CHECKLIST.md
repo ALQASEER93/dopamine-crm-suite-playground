@@ -45,6 +45,7 @@ This repo includes an idempotent bootstrap script:
 - `CRM/backend/scripts/bootstrap_admin.py`
 
 It reads ONLY backend env vars (never use `VITE_*` for these):
+- `DPM_BOOTSTRAP_ADMIN_ON_STARTUP` (optional, default: false)
 - `DPM_BOOTSTRAP_ADMIN_EMAIL` (required)
 - `DPM_BOOTSTRAP_ADMIN_PASSWORD` (required)
 - `DPM_BOOTSTRAP_ADMIN_NAME` (optional)
@@ -54,6 +55,21 @@ Safety behavior:
 - If the given email exists but is not admin, it refuses to escalate role.
 - It never prints the password.
 
+### No-Manual-Command Path (Opt-In Startup Bootstrap)
+To eliminate manual backend commands for first-admin creation, you can opt in to running the same idempotent bootstrap logic automatically on backend startup.
+
+Set these backend environment variables, then restart your backend service:
+- `DPM_BOOTSTRAP_ADMIN_ON_STARTUP=true`
+- `DPM_BOOTSTRAP_ADMIN_EMAIL=you@example.com`
+- `DPM_BOOTSTRAP_ADMIN_PASSWORD=...`
+- `DPM_BOOTSTRAP_ADMIN_NAME=Admin` (optional)
+
+Notes:
+- Disabled unless explicitly enabled (safe-by-default).
+- If an admin already exists (or the same email is already an active admin): no changes.
+- If the email exists but is not admin: startup will refuse escalation (same safe behavior as the script).
+
+### Manual Command Path (Script)
 Run:
 ```bash
 cd CRM/backend

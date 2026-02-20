@@ -1,11 +1,19 @@
 # Local Runbook (Dev Only)
 
-## Seeded Credentials (Change for Production)
+This document is local-dev only. Do not use `127.0.0.1` or `localhost` for field/staging/production deployments.
+Use deployed HTTPS API hosts via app env vars:
+- CRM frontend: `VITE_API_BASE_URL` (fallback alias `VITE_API_URL`)
+- ALQASEER-PWA (Vite paths): `VITE_API_BASE_URL`
+- ALQASEER-PWA (Next-based paths/utilities): `NEXT_PUBLIC_CRM2_API_BASE` (fallback `NEXT_PUBLIC_API_BASE`)
 
-These accounts are seeded for local/dev convenience. Rotate or disable before any production use.
+## Seeded Credentials Policy (Dev-only)
+`SEED_DEFAULT_USERS` is dev-only. Never keep or share real seeded credential values in docs.
 
-- Admin: `admin@example.com` / `Admin12345!`
-- Sales manager: `sales_manager@example.com` / `Sales12345!`
-- Medical rep: `rep1@example.com` / `Rep12345!`
-- Medical rep: `rep2@example.com` / `Rep12345!`
-- Medical rep: `rep3@example.com` / `Rep12345!`
+Use placeholders only:
+- `admin@example.com / <set via SEED in dev>`
+- Or: `run seed to print dev creds locally` (no credential secret text in docs)
+
+## Team Workflow References
+- `docs/OPERATIONS/AGENT_OS_PLAYBOOK.md`
+- `docs/OPERATIONS/PR_EXECUTION_CHECKLIST.md`
+- `docs/OPERATIONS/INCIDENT_RUNBOOK.md`

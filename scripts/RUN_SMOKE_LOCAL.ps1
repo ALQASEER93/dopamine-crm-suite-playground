@@ -45,13 +45,20 @@ Invoke-Step "CRM frontend install + build" {
 }
 
 Invoke-Step "PWA install + build" {
-  Set-Location (Join-Path $RepoRoot "ALQASEER-PWA")
-  if (Test-Path "package-lock.json") {
-    npm ci
-  } else {
-    npm install --no-package-lock
+  $runStamp = Get-Date -Format "yyyyMMdd_HHmmss"
+  $runDir = Join-Path $RepoRoot ("docs/_runs/smoke_{0}" -f $runStamp)
+  New-Item -ItemType Directory -Force -Path $runDir | Out-Null
+  New-Item -ItemType Directory -Force -Path (Join-Path $runDir "logs"), (Join-Path $runDir "artifacts") | Out-Null
+
+  $safeScript = Join-Path $PSScriptRoot "windows_safe_npm_ci.ps1"
+  if (-not (Test-Path $safeScript)) {
+    throw "Missing script: $safeScript"
   }
-  npm run build
+
+  & $safeScript -AppPath (Join-Path $RepoRoot "ALQASEER-PWA") -AppName "ALQASEER-PWA" -RunDir $runDir -LogsDir (Join-Path $runDir "logs")
+  if ($LASTEXITCODE -ne 0) {
+    throw "PWA safe install/build/test failed."
+  }
 }
 
 Write-Host "== Health check"

@@ -1,178 +1,62 @@
 # Owner Actions: GitHub Settings Configuration
 
-This document provides **exact step-by-step instructions** for configuring GitHub branch protection and required checks to unblock PR merges.
-
----
+This document provides exact UI-only instructions for configuration and PR fallback actions.
+For deployment runbook actions and required production secrets, also follow `docs/OWNER_ACTIONS.md`.
 
 ## Prerequisites
-
-- You must have **admin access** to the repository
+- You must have admin or maintainer access to the repository.
 - Repository: `https://github.com/ALQASEER93/dopamine-crm-suite-playground.git`
 
----
-
-## Field-Ready Cloudflare Deploy (UI-only)
-
-1. In Cloudflare Dashboard, create a Pages project for `ALQASEER-PWA`.
-2. Create an API token with minimal Pages deploy permissions for the target account.
-3. In GitHub repository settings, add Actions secrets:
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ACCOUNT_ID`
-   - `CLOUDFLARE_PROJECT_NAME`
-4. Run workflow: **Field-Ready Deploy (Cloudflare)** using `workflow_dispatch`.
-5. Verify workflow summary shows deployed URL and smoke checks passed.
-
-Notes:
-- When secrets are missing, workflow skips safely without failing CI.
-- Existing Vercel workflow is optional; Vercel Hobby is non-commercial.
-
----
+## If GitHub Auto PR Is Not Available (UI-only fallback)
+1. Open GitHub repository -> **Pull requests** -> **New pull request**.
+2. Set `base` to `main` and `compare` to your working branch (for example `codex/feature-...` or `codex/fix-...`).
+3. Use title format: `type(scope): short summary`.
+4. Copy the full content from `artifacts/PR_DESCRIPTION.md` into the PR body.
+5. Ensure all required checkboxes in `.github/PULL_REQUEST_TEMPLATE.md` are completed before requesting review.
+6. Link issue/ticket and add deployment references if applicable.
 
 ## Step 1: Verify Workflows Are Enabled
-
-1. Go to your repository on GitHub
-2. Click **Actions** tab
-3. Verify these workflows are **enabled** (green toggle):
-   - ✅ `CI`
-   - ✅ `CodeQL`
-   - ✅ `Codex Review Bot` (optional, but recommended)
-
-If any are disabled, click the workflow name → click **"..." menu** → **"Enable workflow"**
-
----
+1. Go to repository -> **Actions**.
+2. Verify these workflows are enabled:
+- `CI`
+- `CodeQL`
+- `Codex Review Bot` (optional)
 
 ## Step 2: Configure Branch Protection Rules
+### Option A: Classic Branch Protection
+1. Go to **Settings** -> **Branches**.
+2. Create/update rule for `main`.
+3. Enable **Require status checks to pass before merging**.
+4. Require these checks:
+- `CI / CRM Backend (FastAPI)`
+- `CI / CRM Frontend (Vite/React)`
+- `CI / ALQASEER PWA`
+- `CodeQL / Analyze (python)`
+- `CodeQL / Analyze (javascript)`
+5. Remove stale check names and save.
 
-### Option A: Using Classic Branch Protection (Recommended)
+### Option B: GitHub Rulesets
+1. Go to **Settings** -> **Rules** -> **Rulesets**.
+2. Create/update ruleset for `main`.
+3. Add same required status checks listed above.
+4. Save ruleset.
 
-1. Go to **Settings** → **Branches**
-2. Under **Branch protection rules**, find or create a rule for `main`
-3. Enable **"Require status checks to pass before merging"**
-4. Under **"Status checks that are required"**, check these boxes:
-
-   ✅ **CI / CRM Backend (FastAPI)**  
-   ✅ **CI / CRM Frontend (Vite/React)**  
-   ✅ **CI / ALQASEER PWA**  
-   ✅ **CodeQL / Analyze (python)**  
-   ✅ **CodeQL / Analyze (javascript)**
-
-5. **Important**: Uncheck any old/stale checks that no longer appear in recent PRs (they will show in gray)
-6. Click **"Save changes"**
-
-### Option B: Using GitHub Rulesets (If Enabled)
-
-1. Go to **Settings** → **Rules** → **Rulesets**
-2. Find or create a ruleset for `main` branch
-3. Under **"Status checks"** or **"Code scanning"** section:
-   - Add rule for: `CI / CRM Backend (FastAPI)`
-   - Add rule for: `CI / CRM Frontend (Vite/React)`
-   - Add rule for: `CI / ALQASEER PWA`
-   - Add rule for: `CodeQL / Analyze (python)`
-   - Add rule for: `CodeQL / Analyze (javascript)`
-4. Remove any old/stale check names that don't match current workflow outputs
-5. Save the ruleset
-
----
-
-## Step 3: Verify Check Names Match
-
-After pushing a PR from `cursor/audit-stabilize` → `main`, verify the check names in the PR:
-
-1. Open the PR
-2. Scroll to **"Checks"** section
-3. Verify you see these exact names:
-   - `CI / CRM Backend (FastAPI)`
-   - `CI / CRM Frontend (Vite/React)`
-   - `CI / ALQASEER PWA`
-   - `CodeQL / Analyze (python)`
-   - `CodeQL / Analyze (javascript)`
-
-**If check names don't match**, update branch protection rules to use the exact names shown in the PR.
-
----
+## Step 3: Verify Check Name Matching
+1. Open PR checks panel.
+2. Confirm required checks match exact names shown in PR output.
+3. If mismatch exists, update branch protection names exactly.
 
 ## Step 4: Test Merge Readiness
+1. Wait for all required checks to pass.
+2. Attempt merge.
+3. If blocked by "Expected" or missing status, fix required-check naming/workflow execution.
 
-1. Create a test PR (or use `cursor/audit-stabilize` PR)
-2. Wait for all checks to complete (should show ✅ green)
-3. Try to merge the PR
-4. **Expected**: PR should merge successfully if all checks pass
-5. **If blocked**: Check the error message:
-   - **"Expected — Waiting for status to be reported"** → A required check name doesn't match; update branch protection rules
-   - **"Required status check is missing"** → The workflow didn't run; check Actions tab for errors
+## Optional: Merge Queue
+1. Enable **Require merge queue** in branch protection if your org uses it.
+2. Ensure workflows include merge-group trigger paths.
 
----
-
-## Step 5: Merge Queue (Optional)
-
-If you use GitHub Merge Queue:
-
-1. Go to **Settings** → **Branches** → **Branch protection rules** → `main`
-2. Enable **"Require merge queue"**
-3. The `merge_group` triggers added to workflows will ensure checks run in merge queue
-
-**Note**: Merge queue is optional; PRs will merge normally without it if all checks pass.
-
----
-
-## Troubleshooting
-
-### Problem: "Expected — Waiting for status to be reported"
-
-**Cause**: Branch protection requires a check name that doesn't match workflow output.
-
-**Solution**:
-1. Open a recent PR and note the **exact check names** shown
-2. Go to branch protection rules
-3. Remove the mismatched check name
-4. Add the correct check name from the PR
-
-### Problem: Checks don't run on PR
-
-**Cause**: Workflow may be disabled or has syntax errors.
-
-**Solution**:
-1. Go to **Actions** tab
-2. Check if workflow ran (look for failed/errored runs)
-3. If workflow didn't run, check workflow file syntax
-4. Enable workflow if disabled
-
-### Problem: CodeQL checks don't appear
-
-**Cause**: CodeQL may need initial setup or permissions.
-
-**Solution**:
-1. Go to **Security** → **Code scanning**
-2. Verify CodeQL is set up (may require initial run)
-3. Check workflow permissions in `.github/workflows/codeql.yml` (should have `security-events: write`)
-
----
-
-## Checklist
-
-Before marking this complete, verify:
-
-- [ ] All workflows are enabled in Actions tab
-- [ ] Branch protection rules require the 5 checks listed above
-- [ ] Test PR shows all checks passing
-- [ ] PR can be merged when checks pass
-- [ ] No "Expected — Waiting for status" errors
-
----
-
-## Quick Reference: Required Check Names
-
-Copy-paste these exact names into branch protection:
-
-```
-CI / CRM Backend (FastAPI)
-CI / CRM Frontend (Vite/React)
-CI / ALQASEER PWA
-CodeQL / Analyze (python)
-CodeQL / Analyze (javascript)
-```
-
----
-
-**End of Owner Actions Guide**
-
+## Quick checklist
+- [ ] Workflows enabled
+- [ ] Branch protection/ruleset requires all checks
+- [ ] Manual UI PR fallback steps verified
+- [ ] PR template and `artifacts/PR_DESCRIPTION.md` used for body content

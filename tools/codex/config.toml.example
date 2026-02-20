@@ -1,0 +1,15 @@
+# Codex team baseline (copy to your user Codex config.toml).
+# Keep this file in-repo as the shared source of truth.
+
+model = "gpt-5"
+model_reasoning_effort = "high"
+
+[features]
+multi_agent = true
+apps = true
+request_rule = true
+shell_tool = true
+powershell_utf8 = true
+
+[history]
+persistence = "save-all"

@@ -4,7 +4,9 @@ param(
   [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\\..")).Path,
   [string]$Sandbox = "workspace-write",
   [string]$ApprovalPolicy = "never",
-  [string]$NetworkAccess = "true"
+  [string]$NetworkAccess = "true",
+  [switch]$DisableMultiAgent,
+  [switch]$DisableApps
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,25 +34,32 @@ $lastMsg = Join-Path $runDir "LAST_MESSAGE.md"
 $stdoutLog = Join-Path $runDir "OUTPUT.log"
 $cmdLog = Join-Path $runDir "COMMAND.txt"
 
-$cmd = @(
-  "codex",
+$codexArgs = @(
   "--ask-for-approval", $ApprovalPolicy,
-  "--sandbox", $Sandbox,
+  "--sandbox", $Sandbox
+)
+
+if (-not $DisableMultiAgent) {
+  $codexArgs += @("--enable", "multi_agent")
+}
+if (-not $DisableApps) {
+  $codexArgs += @("--enable", "apps")
+}
+
+$codexArgs += @(
   "exec",
   "--cd", $RepoRoot,
   "--config", "sandbox_workspace_write.network_access=$NetworkAccess",
   "--output-last-message", $lastMsg,
   "-"
-) -join " "
+)
+
+$cmd = "codex " + ($codexArgs -join " ")
 
 Set-Content -Path $cmdLog -Value $cmd -Encoding UTF8
 
 Get-Content -Raw $promptFile |
-  & codex --ask-for-approval $ApprovalPolicy --sandbox $Sandbox exec `
-    --cd $RepoRoot `
-    --config "sandbox_workspace_write.network_access=$NetworkAccess" `
-    --output-last-message $lastMsg `
-    - 2>&1 | Tee-Object -FilePath $stdoutLog
+  & codex @codexArgs 2>&1 | Tee-Object -FilePath $stdoutLog
 
 Write-Host "Run logged to $runDir"
 
@@ -65,7 +74,13 @@ Task: summarize git status and recent commits
 2) File prompt:
 .\\tools\\codex\\RUN_CODEX.ps1 -PromptPath .\\prompts\\task.txt
 
-3) Quoting git refs in PowerShell:
+3) Disable multi-agent for a single run:
+.\\tools\\codex\\RUN_CODEX.ps1 -PromptPath .\\prompts\\task.txt -DisableMultiAgent
+
+4) Disable apps for a single run:
+.\\tools\\codex\\RUN_CODEX.ps1 -PromptPath .\\prompts\\task.txt -DisableApps
+
+5) Quoting git refs in PowerShell:
 git rev-parse "@{u}"
 git show "stash@{0}"
 #>

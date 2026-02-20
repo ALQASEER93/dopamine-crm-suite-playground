@@ -312,20 +312,32 @@ describe('Visits CRUD API', () => {
     expect(list.body.meta.total).toBe(5);
   });
 
-  it('updates a visit status and date', async () => {
+  it('updates mutable visit fields only', async () => {
     const target = fixtures.visits[0];
 
     const response = await request(app)
       .put(`/api/visits/${target.id}`)
       .set('X-Auth-Token', adminToken)
       .send({
-        status: 'cancelled',
         visitDate: '2024-05-15',
       })
       .expect(200);
 
-    expect(response.body.data.status).toBe('cancelled');
+    expect(response.body.data.status).toBe('completed');
     expect(response.body.data.visitDate).toBe('2024-05-15');
+  });
+
+  it('blocks lifecycle mutation fields via generic update', async () => {
+    const target = fixtures.visits[0];
+
+    const response = await request(app)
+      .put(`/api/visits/${target.id}`)
+      .set('X-Auth-Token', adminToken)
+      .send({ status: 'cancelled' })
+      .expect(400);
+
+    expect(response.body.message).toBe('Invalid request body.');
+    expect(response.body.errors[0]).toMatch(/lifecycle/i);
   });
 
   it('soft deletes a visit and hides it from listings', async () => {

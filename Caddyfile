@@ -1,7 +1,14 @@
 :80 {
   encode gzip
+  # Security posture:
+  # - This server is intended for private network / Cloudflare Tunnel origin use.
+  # - Do not expose :80 directly to the public internet.
+  # - When upstream proxy marks an HTTP request, force HTTPS redirect.
+  @insecure_proxy header X-Forwarded-Proto http
+  redir @insecure_proxy https://{host}{uri} permanent
 
-  handle_path /api/* {
+  # Preserve the /api prefix when proxying to FastAPI (FastAPI mounts routers under /api).
+  handle /api/* {
     reverse_proxy backend:8000
   }
 
