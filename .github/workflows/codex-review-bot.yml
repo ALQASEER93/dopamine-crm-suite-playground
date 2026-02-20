@@ -44,6 +44,8 @@ jobs:
         if: env.OPENAI_API_KEY != ''
         id: run_codex
         uses: openai/codex-action@v1
+        env:
+          PROXY_API_KEY: codex_proxy_${{ github.run_id }}_${{ github.run_attempt }}
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt: |
