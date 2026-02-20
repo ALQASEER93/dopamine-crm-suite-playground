@@ -104,21 +104,35 @@ const registerRoutes = () => {
 
   app.use(
     '/api/hcps',
+    apiRateLimiter,
     requireAuth,
     requireRole(['sales_manager', 'sales_rep']),
     hcpsRouter,
   );
-  app.use('/api/import', requireAuth, requireRole(['sales_manager']), importRouter);
-  app.use('/api/visits', requireAuth, visitsRouter);
-  app.use('/api/reports', requireAuth, reportsRouter);
+  app.use('/api/import', apiRateLimiter, requireAuth, requireRole(['sales_manager']), importRouter);
+  app.use('/api/visits', apiRateLimiter, requireAuth, visitsRouter);
+  app.use('/api/reports', apiRateLimiter, requireAuth, reportsRouter);
   app.use(
     '/api/pharmacies',
+    apiRateLimiter,
     requireAuth,
     requireRole(['sales_manager', 'sales_rep']),
     pharmaciesRouter,
   );
-  app.use('/api/sales-reps', requireAuth, requireRole(['sales_manager', 'sales_rep']), salesRepsRouter);
-  app.use('/api/territories', requireAuth, requireRole(['sales_manager', 'sales_rep']), territoriesRouter);
+  app.use(
+    '/api/sales-reps',
+    apiRateLimiter,
+    requireAuth,
+    requireRole(['sales_manager', 'sales_rep']),
+    salesRepsRouter,
+  );
+  app.use(
+    '/api/territories',
+    apiRateLimiter,
+    requireAuth,
+    requireRole(['sales_manager', 'sales_rep']),
+    territoriesRouter,
+  );
   const usersRouter = require('./routes/users');
   app.use(
     '/api/admin/users',
