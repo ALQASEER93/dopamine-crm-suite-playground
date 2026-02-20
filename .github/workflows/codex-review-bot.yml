@@ -43,6 +43,7 @@ jobs:
       - name: Run Codex review
         if: env.OPENAI_API_KEY != ''
         id: run_codex
+        continue-on-error: true
         uses: openai/codex-action@v1
         env:
           PROXY_API_KEY: codex_proxy_${{ github.run_id }}_${{ github.run_attempt }}
