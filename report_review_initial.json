@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-02-16T05:22:12.6819628+03:00",
+  "scope": ".",
+  "mode": "comprehensive",
+  "focus": [
+    "breaking changes",
+    "database migrations",
+    "security vulnerabilities"
+  ],
+  "summary": {
+    "status": "needs_attention",
+    "highlights": [
+      "Database schema changes detected (Doctor/Pharmacy latitude/longitude) without migrations.",
+      "Visit start geofencing enforcement added; behavior changes when account coordinates are present.",
+      "New Excel export endpoint added; currently loads all rows in memory."
+    ]
+  },
+  "findings": [
+    {
+      "severity": "P0",
+      "category": "database",
+      "title": "Schema changes without a migration (Doctor/Pharmacy latitude/longitude + indexes)",
+      "details": "SQLAlchemy models now include Doctor.latitude/longitude and Pharmacy.latitude/longitude plus location indexes. On an existing database, ORM queries may fail with missing-column errors unless a migration is applied.",
+      "files": [
+        "CRM/backend/models/crm.py"
+      ],
+      "suggested_fix": "Add an Alembic migration (or equivalent) to add these columns and indexes; ensure downgrade path is included. Consider backfilling nulls safely."
+    },
+    {
+      "severity": "P1",
+      "category": "gps",
+      "title": "Geofence validation added but missing edge-case handling and feature gating",
+      "details": "validate_geofence() does not handle disabling via radius=0 (uses `or`), does not log failures, and geofencing enforcement may cause operational friction when account coordinates are present but inaccurate. Current behavior is a no-op when target coordinates are null, so deployment impact depends on data quality.",
+      "files": [
+        "CRM/backend/api/v1/utils_gps.py",
+        "CRM/backend/api/v1/visits.py",
+        "CRM/backend/config/settings.py"
+      ],
+      "suggested_fix": "Use explicit None-check for radius overrides, add structured logging on failures, add an admin override/feature flag, and add tests covering within/outside radius and missing coords."
+    },
+    {
+      "severity": "P1",
+      "category": "reporting",
+      "title": "Excel export endpoint may be memory-heavy for large datasets",
+      "details": "The Excel export currently queries `.all()` and builds a standard Workbook in memory before returning a BytesIO. This can be slow and memory-heavy for large datasets. Column widths are fixed rather than auto-sized, and GPS columns use truthiness checks that drop legitimate 0.0 values.",
+      "files": [
+        "CRM/backend/api/v1/visits.py"
+      ],
+      "suggested_fix": "Consider openpyxl write-only mode for large exports, compute column widths based on observed max lengths, and use `is not None` checks for coordinate fields."
+    },
+    {
+      "severity": "P2",
+      "category": "pwa",
+      "title": "Offline queue implementation exists but is not integrated and may fail lint",
+      "details": "ALQASEER-PWA offline queue module is present but unreferenced. It imports unused helpers from idb-keyval and does not implement true exponential backoff delays or conflict handling as described in the manifest.",
+      "files": [
+        "ALQASEER-PWA/src/lib/offlineQueue.ts"
+      ],
+      "suggested_fix": "Integrate via a hook/component, remove unused imports, and implement backoff + conflict strategy. Add basic unit tests if the project uses vitest/jest."
+    }
+  ],
+  "notes": [
+    "RBAC protections appear present on key endpoints, but Phase 1 RBAC hardening requires an explicit audit of reports/collections/targets/stock routers and corresponding tests.",
+    "No destructive operations were performed; a lightweight snapshot of current changes was captured under artifacts/snapshots/."
+  ]
+}
+

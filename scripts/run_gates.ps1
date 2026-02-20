@@ -34,6 +34,17 @@ function Replace-PythonCommand {
   return $Line
 }
 
+function Test-IsPwaNpmCheckCommand {
+  param(
+    [string]$WorkingDir,
+    [string]$CommandLine
+  )
+  if (-not $CommandLine) { return $false }
+  $isPwaDir = $WorkingDir -match '[\\/]ALQASEER-PWA$'
+  if (-not $isPwaDir) { return $false }
+  return $CommandLine -match '^npm\s+(ci|test\b|run\s+(lint|build)\b)'
+}
+
 if (-not $CiTruthsJson) {
   $CiTruthsJson = Join-Path $jsonDir "ci_truths.json"
 }
@@ -59,6 +70,7 @@ foreach ($job in $ciTruths.jobs) {
 
   while ($attempt -lt $MaxRetries -and -not $jobPass) {
     $attempt++
+    $pwaChecksHandled = $false
     Add-Content -Path $gateLog -Value ("=== Attempt {0} ===" -f $attempt)
     $jobPass = $true
     foreach ($step in $job.steps) {
@@ -76,6 +88,45 @@ foreach ($job in $ciTruths.jobs) {
         $cmdLine = $line.Trim()
         if (-not $cmdLine) { continue }
         $cmdLine = Replace-PythonCommand -Line $cmdLine -Resolved $pythonCmd
+
+        if (Test-IsPwaNpmCheckCommand -WorkingDir $workingDir -CommandLine $cmdLine) {
+          if ($pwaChecksHandled) {
+            Add-Content -Path $gateLog -Value "Skipping source-tree PWA npm command after windows-safe execution: $cmdLine"
+            continue
+          }
+
+          $pwaScript = Join-Path $PSScriptRoot "windows_safe_npm_ci.ps1"
+          if (-not (Test-Path $pwaScript)) {
+            $jobPass = $false
+            $jobError = "Missing script: $pwaScript"
+            break
+          }
+
+          Add-Content -Path $gateLog -Value "Routing PWA checks through windows_safe_npm_ci.ps1"
+          try {
+            $pwaOutput = & $pwaScript `
+              -AppPath $workingDir `
+              -AppName "ALQASEER-PWA" `
+              -RunDir $runDirFull `
+              -LogsDir $logsDir `
+              -AdditionalNpmCommands @("npm run lint --if-present") 2>&1
+            if ($pwaOutput) {
+              $pwaOutput | Out-File -FilePath $gateLog -Append -Encoding utf8
+            }
+            if ($LASTEXITCODE -ne 0) {
+              $jobPass = $false
+              $jobError = "PWA checks failed via windows_safe_npm_ci.ps1"
+              break
+            }
+            $pwaChecksHandled = $true
+            continue
+          } catch {
+            $jobPass = $false
+            $jobError = $_.Exception.Message
+            $_ | Out-File -FilePath $gateLog -Append -Encoding utf8
+            break
+          }
+        }
 
         Push-Location $workingDir
         try {

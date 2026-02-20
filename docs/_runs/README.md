@@ -1,16 +1,25 @@
-# docs/_runs Hygiene Policy
+# docs/_runs دليل البنية (Run Structure Guide)
 
-This directory is for local/ephemeral run evidence.
+هذا المجلد مخصص لـ run artifacts وقواعد إدارتها فقط.
 
-Tracked files only:
-- `docs/_runs/README.md`
-- `docs/_runs/LATEST.txt`
+## البنية المعتمدة (Required Structure)
+- `run_<YYYYMMDD_HHMMSS>/` لكل تنفيذ فعلي.
+- `run_<YYYYMMDD_HHMMSS>.zip` عند الأرشفة في الجذر.
+- `LATEST.txt` ويحتوي اسم مجلد run الحالي فقط.
+- `REPORT_ROTATION_POLICY.txt` لسياسة الاحتفاظ.
 
-Ignored and kept untracked:
-- `docs/_runs/run_*/`
-- `docs/_runs/*.zip`
-- `docs/_runs/report.md`
-- `docs/_runs/master_audit.md`
-- `docs/_runs/size_breakdown.md`
+## قواعد إلزامية (Governance Rules)
+- لا تنشئ run folder جديد لتعديلات توثيق فقط.
+- لا تعدّل `LATEST.txt` إلا بعد إنشاء run folder جديد فعليًا.
+- يجب أن يشير `LATEST.txt` دائمًا إلى مجلد موجود.
+- المخرجات يجب أن تكون خالية من الأسرار.
+- أي release process يبقى افتراضيًا `APPROVE_RELEASE=NO`.
+- أي بنود `OWNER_ACTIONS` تُنفذ UI-only وليس عبر shell يدوي.
 
-Evidence for PRs should be attached via GitHub Actions artifacts. Local run packs stay on disk and must not be committed.
+## سياسة التشغيل
+- لا نطلب من المستخدم تنفيذ أوامر shell يدويًا.
+- استخدم السكربتات/الأتمتة الموثقة داخل الريبو.
+
+## checklist سريع
+- راجع توافق مراجع docs التشغيل مع `LATEST.txt`.
+- راجع تطبيق `REPORT_ROTATION_POLICY.txt` على المخرجات الأقدم.

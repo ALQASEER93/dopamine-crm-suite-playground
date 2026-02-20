@@ -7,8 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from api.v1.utils_gps import GPSValidationError, validate_accuracy
 from core.db import get_db
-from core.security import get_current_user
+from core.security import get_current_user, require_roles
 from models.crm import Doctor, Pharmacy, User, Visit
 
 router = APIRouter(
@@ -17,10 +18,47 @@ router = APIRouter(
     dependencies=[Depends(get_current_user)],
 )
 
+_PWA_ALLOWED_STATUSES = {"", "scheduled", "reminder", "pending"}
+_PWA_LIFECYCLE_FIELDS = {
+    "status",
+    "visitDate",
+    "visit_date",
+    "date",
+    "visitedAt",
+    "startedAt",
+    "endedAt",
+    "duration",
+    "durationSeconds",
+    "duration_seconds",
+    "durationMinutes",
+    "duration_minutes",
+    "coordinates",
+    "startLat",
+    "startLng",
+    "startAccuracy",
+    "endLat",
+    "endLng",
+    "endAccuracy",
+}
+
 
 def _format_address(*parts: Optional[str]) -> Optional[str]:
     cleaned = [part.strip() for part in parts if part and part.strip()]
     return ", ".join(cleaned) if cleaned else None
+
+
+def _validate_pwa_create_payload(payload: dict) -> None:
+    status_value = str(payload.get("status", "") or "").strip().lower()
+    if status_value not in _PWA_ALLOWED_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Visit lifecycle fields can only be changed through start/end endpoints.",
+        )
+    if any(key in payload for key in _PWA_LIFECYCLE_FIELDS - {"status"}):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use visits start/end endpoints for lifecycle timestamps, GPS and duration.",
+        )
 
 
 @router.get("/customers")
@@ -30,6 +68,7 @@ def list_customers(
     area: Optional[str] = None,
     specialty: Optional[str] = None,
     db: Session = Depends(get_db),
+    _user: User = Depends(require_roles("sales_manager", "medical_rep", "admin")),
 ) -> list[dict]:
     normalized_type = (type or "").lower()
     results: list[dict] = []
@@ -113,6 +152,7 @@ def list_visits(
     customer_id: Optional[str] = Query(default=None, alias="customerId"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _user: User = Depends(require_roles("sales_manager", "medical_rep", "admin")),
 ) -> list[dict]:
     query = db.query(Visit).filter(Visit.is_deleted.is_(False), Visit.rep_id == current_user.id)
     if date_value:
@@ -171,7 +211,9 @@ def create_visit(
     payload: dict,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _user: User = Depends(require_roles("sales_manager", "medical_rep", "admin")),
 ) -> dict:
+    _validate_pwa_create_payload(payload)
     customer_id = payload.get("customerId")
     customer_type = payload.get("customerType")
     if not customer_id or not customer_type:
@@ -190,39 +232,17 @@ def create_visit(
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid customer type.")
 
-    status_map = {
-        "success": "completed",
-        "no-show": "cancelled",
-        "refused": "cancelled",
-    }
-    normalized_status = status_map.get(payload.get("status"), "scheduled")
-
-    visited_at = payload.get("visitedAt")
+    # Lifecycle integrity: PWA creation only schedules a visit.
+    # Start/end timestamps and GPS are accepted only via /visits/{id}/start and /visits/{id}/end.
     visit_date = date.today()
-    started_at = None
-    ended_at = None
-    if visited_at:
-        try:
-            parsed = datetime.fromisoformat(visited_at)
-            visit_date = parsed.date()
-            started_at = parsed
-            if normalized_status == "completed":
-                ended_at = parsed
-        except ValueError as exc:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid visitedAt format.") from exc
-
-    coordinates = payload.get("coordinates") or {}
+    visited_at = datetime.now(timezone.utc).isoformat()
     visit = Visit(
         visit_date=visit_date,
         rep_id=current_user.id,
         doctor_id=doctor_id,
         pharmacy_id=pharmacy_id,
         notes=payload.get("notes"),
-        status=normalized_status,
-        started_at=started_at,
-        ended_at=ended_at,
-        start_lat=coordinates.get("lat"),
-        start_lng=coordinates.get("lng"),
+        status="scheduled",
     )
     db.add(visit)
     db.commit()
@@ -235,13 +255,20 @@ def create_visit(
         "customerName": payload.get("customerName") or "",
         "customerType": customer_type,
         "visitType": payload.get("visitType") or "follow-up",
-        "status": payload.get("status") or "success",
+        "status": "reminder",
         "notes": visit.notes,
-        "coordinates": coordinates if coordinates else None,
-        "visitedAt": visited_at or datetime.now(timezone.utc).isoformat(),
+        "coordinates": None,
+        "visitedAt": visited_at,
     }
 
 
 @router.post("/tracking/pings")
-def tracking_ping(payload: dict) -> dict:
+def tracking_ping(
+    payload: dict,
+    _user: User = Depends(require_roles("sales_manager", "medical_rep", "admin")),
+) -> dict:
+    try:
+        validate_accuracy(payload.get("accuracy"))
+    except GPSValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return {"success": True}

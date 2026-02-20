@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { GoogleMapWidget } from "../../components/map/GoogleMap";
 import { Customer } from "../../api/types";
 import { getCustomers, sendLocationPing } from "../../api/client";
-import { enqueueMutation } from "../../offline/queue";
+import { useOfflineQueue } from "../../hooks/useOfflineQueue";
 
 export default function LiveMapPage() {
   const [position, setPosition] = useState<google.maps.LatLngLiteral | null>(null);
@@ -10,6 +10,7 @@ export default function LiveMapPage() {
   const [positionTimestamp, setPositionTimestamp] = useState<string | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [status, setStatus] = useState<string | null>(null);
+  const { enqueue } = useOfflineQueue();
 
   useEffect(() => {
     let watchId: number | null = null;
@@ -52,9 +53,9 @@ export default function LiveMapPage() {
   const sendLocation = async (coords: google.maps.LatLngLiteral, accuracy?: number | null) => {
     const online = navigator.onLine;
     if (!online) {
-      enqueueMutation({
+      await enqueue({
         type: "location",
-        endpoint: "tracking/pings",
+        endpoint: "pwa/tracking/pings",
         method: "POST",
         payload: { lat: coords.lat, lng: coords.lng, accuracy },
       });
@@ -63,9 +64,9 @@ export default function LiveMapPage() {
 
     const res = await sendLocationPing({ lat: coords.lat, lng: coords.lng, accuracy });
     if (!res.success) {
-      enqueueMutation({
+      await enqueue({
         type: "location",
-        endpoint: "tracking/pings",
+        endpoint: "pwa/tracking/pings",
         method: "POST",
         payload: { lat: coords.lat, lng: coords.lng, accuracy },
       });

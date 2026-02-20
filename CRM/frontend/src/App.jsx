@@ -17,6 +17,13 @@ import ReportsPage from './pages/ReportsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import RepsPage from './pages/RepsPage.jsx';
+import SamplesInventoryPage from './pages/SamplesInventoryPage.jsx';
+import SamplesDistributePage from './pages/SamplesDistributePage.jsx';
+import SamplesHistoryPage from './pages/SamplesHistoryPage.jsx';
+import MedicalEventsPage from './pages/MedicalEventsPage.jsx';
+import KOLDirectoryPage from './pages/KOLDirectoryPage.jsx';
+import ScientificMaterialsPage from './pages/ScientificMaterialsPage.jsx';
+import MedicalAffairsReportsPage from './pages/MedicalAffairsReportsPage.jsx';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -44,8 +51,43 @@ const AppRoutes = () => {
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/stock" element={<StockPage />} />
+        <Route path="/samples/inventory" element={<SamplesInventoryPage />} />
+        <Route path="/samples/distribute" element={<SamplesDistributePage />} />
+        <Route path="/samples/history" element={<SamplesHistoryPage />} />
         <Route path="/targets" element={<TargetsPage />} />
         <Route path="/collections" element={<CollectionsPage />} />
+        <Route
+          path="/medical/events"
+          element={
+            <RequireRole roles={['admin', 'sales_manager', 'medical_rep']}>
+              <MedicalEventsPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/medical/kols"
+          element={
+            <RequireRole roles={['admin', 'sales_manager', 'medical_rep']}>
+              <KOLDirectoryPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/medical/materials"
+          element={
+            <RequireRole roles={['admin', 'sales_manager', 'medical_rep']}>
+              <ScientificMaterialsPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/medical/reports"
+          element={
+            <RequireRole roles={['admin', 'sales_manager']}>
+              <MedicalAffairsReportsPage />
+            </RequireRole>
+          }
+        />
         <Route
           path="/reports"
           element={

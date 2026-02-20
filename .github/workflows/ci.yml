@@ -11,6 +11,18 @@ permissions:
   contents: read
 
 jobs:
+  workflow-lint:
+    name: Workflow Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install actionlint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash \
+            | bash -s -- latest
+      - name: Validate GitHub workflows
+        run: ./actionlint -color
+
   ai-orchestrator:
     name: AI Orchestrator
     runs-on: ubuntu-latest

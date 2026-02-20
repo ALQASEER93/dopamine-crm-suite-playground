@@ -11,6 +11,7 @@ from sqlalchemy.exc import OperationalError
 from api import api_router
 from core.config import settings
 from core.db import Base, SessionLocal, build_fallback_engine, engine, swap_engine
+from services.startup_bootstrap_admin import maybe_bootstrap_admin_on_startup
 from services.seed_data import seed_reference_data
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,9 @@ def init_database() -> None:
 async def lifespan(_: FastAPI):
     """Initialize database and seed reference data once on startup."""
     init_database()
+    with SessionLocal() as session:
+        # Opt-in bootstrap for first-admin creation (safe-by-default; disabled unless env flag is set).
+        maybe_bootstrap_admin_on_startup(session)
     yield
 
 

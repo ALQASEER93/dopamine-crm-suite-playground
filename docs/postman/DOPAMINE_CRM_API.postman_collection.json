@@ -1,0 +1,183 @@
+{
+  "info": {
+    "name": "DOPAMINE CRM API",
+    "_postman_id": "3e3943fa-3123-4da2-a437-6f811f662a60",
+    "description": "Core CRM, Samples, and Medical Affairs endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin12345!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Samples - Products",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/samples/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "samples",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Samples - Distribute",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sample_product_id\": 1,\n  \"doctor_id\": 1,\n  \"quantity\": 1,\n  \"notes\": \"Field distribution\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/samples/distribute",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "samples",
+            "distribute"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Samples - Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sample_product_id\": 1,\n  \"quantity_requested\": 3,\n  \"notes\": \"Need for next route\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/samples/request",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "samples",
+            "request"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Medical Affairs - Events List",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/medical-affairs/events?page=1&page_size=25",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "medical-affairs",
+            "events"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "page_size",
+              "value": "25"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Medical Affairs - Event ROI",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/medical-affairs/reports/event-roi",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "medical-affairs",
+            "reports",
+            "event-roi"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ]
+}
