@@ -18,6 +18,34 @@ app.use(
 );
 app.use(express.json());
 
+const createRateLimiter = ({ windowMs, max }) => {
+  const buckets = new Map();
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const key = String(req.ip || req.headers['x-forwarded-for'] || 'unknown');
+    const current = buckets.get(key);
+
+    if (!current || current.resetAt <= now) {
+      buckets.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    if (current.count >= max) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfterSeconds));
+      return res.status(429).json({ message: 'Too many requests. Please try again later.' });
+    }
+
+    current.count += 1;
+    buckets.set(key, current);
+    return next();
+  };
+};
+
+const authRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30 });
+const protectedApiRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 300 });
+
 const buildAuthResponse = (user) => ({
   user,
   id: user.id,
@@ -67,13 +95,13 @@ const healthHandler = (_req, res) => {
   res.json({ status: 'ok' });
 };
 
-app.post('/api/auth/login', (req, res, next) => {
+app.post('/api/auth/login', authRateLimiter, (req, res, next) => {
   Promise.resolve(loginHandler(req, res, next)).catch(next);
 });
-app.get('/api/auth/me', requireAuth, (req, res) => {
+app.get('/api/auth/me', protectedApiRateLimiter, requireAuth, (req, res) => {
   return meHandler(req, res);
 });
-app.post('/api/auth/refresh', requireAuth, (req, res, next) => {
+app.post('/api/auth/refresh', authRateLimiter, requireAuth, (req, res, next) => {
   Promise.resolve(refreshHandler(req, res, next)).catch(next);
 });
 // Health and primary functional routers assume authentication middleware ran above.
@@ -90,23 +118,25 @@ const registerRoutes = () => {
 
   app.use(
     '/api/hcps',
+    protectedApiRateLimiter,
     requireAuth,
     requireRole(['sales_manager', 'sales_rep']),
     hcpsRouter,
   );
-  app.use('/api/import', requireAuth, requireRole(['sales_manager']), importRouter);
-  app.use('/api/visits', requireAuth, visitsRouter);
-  app.use('/api/reports', requireAuth, reportsRouter);
+  app.use('/api/import', protectedApiRateLimiter, requireAuth, requireRole(['sales_manager']), importRouter);
+  app.use('/api/visits', protectedApiRateLimiter, requireAuth, visitsRouter);
+  app.use('/api/reports', protectedApiRateLimiter, requireAuth, reportsRouter);
   app.use(
     '/api/pharmacies',
+    protectedApiRateLimiter,
     requireAuth,
     requireRole(['sales_manager', 'sales_rep']),
     pharmaciesRouter,
   );
-  app.use('/api/sales-reps', requireAuth, requireRole(['sales_manager', 'sales_rep']), salesRepsRouter);
-  app.use('/api/territories', requireAuth, requireRole(['sales_manager', 'sales_rep']), territoriesRouter);
+  app.use('/api/sales-reps', protectedApiRateLimiter, requireAuth, requireRole(['sales_manager', 'sales_rep']), salesRepsRouter);
+  app.use('/api/territories', protectedApiRateLimiter, requireAuth, requireRole(['sales_manager', 'sales_rep']), territoriesRouter);
   const usersRouter = require('./routes/users');
-  app.use('/api/admin/users', requireAuth, requireRole(['sales_manager', 'admin']), usersRouter);
+  app.use('/api/admin/users', protectedApiRateLimiter, requireAuth, requireRole(['sales_manager', 'admin']), usersRouter);
 };
 
 // Initialize the database once; routers can rely on `ready` when needed for testing.
