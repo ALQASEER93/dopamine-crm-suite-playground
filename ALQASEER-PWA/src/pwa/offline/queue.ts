@@ -46,6 +46,22 @@ function writeQueue(queue: QueuedMutation[]) {
   }
 }
 
+function generateQueueId() {
+  if (typeof crypto !== "undefined") {
+    if (typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+
+    if (typeof crypto.getRandomValues === "function") {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    }
+  }
+
+  return `fallback-${Date.now()}-${new Date().toISOString()}`;
+}
+
 export function enqueueMutation(input: Omit<QueuedMutation, "id" | "createdAt">) {
   const meta = getQueueMeta();
   const now = new Date();
@@ -96,7 +112,7 @@ export function enqueueMutation(input: Omit<QueuedMutation, "id" | "createdAt">)
     return { queued: false, reason: "duplicate" as const };
   }
 
-  const uid = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  const uid = generateQueueId();
   queue.push({
     ...input,
     id: uid,
