@@ -12,6 +12,33 @@ const USER_TYPE_ROLE_MAP = {
   sales_rep: 'sales_rep',
 };
 
+const createRateLimiter = ({ windowMs, max }) => {
+  const buckets = new Map();
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const key = String(req.ip || req.headers['x-forwarded-for'] || 'unknown');
+    const current = buckets.get(key);
+
+    if (!current || current.resetAt <= now) {
+      buckets.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    if (current.count >= max) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfterSeconds));
+      return res.status(429).json({ message: 'Too many requests. Please try again later.' });
+    }
+
+    current.count += 1;
+    buckets.set(key, current);
+    return next();
+  };
+};
+
+const adminUsersRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 120 });
+
 const serializeUser = user => {
   const roleSlug = user.role?.slug || null;
   let roleLabel = 'User';
@@ -90,7 +117,7 @@ const attachRelations = () => ({
   ],
 });
 
-router.use(requireAuth, requireRole(['sales_manager', 'admin']));
+router.use(adminUsersRateLimiter, requireAuth, requireRole(['sales_manager', 'admin']));
 
 router.get('/', async (_req, res, next) => {
   try {
