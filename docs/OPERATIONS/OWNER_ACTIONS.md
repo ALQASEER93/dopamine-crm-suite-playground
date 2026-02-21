@@ -32,3 +32,30 @@
 
 ## 5) Security Hygiene
 - لا تضع passwords/tokens/secrets داخل docs أو logs.
+
+## 6) Vercel Staging Setup (UI-only)
+- الهدف: جعل `staging` هو Production Branch على Vercel مع Auto Deploy آمن خارج `main`.
+
+### الخطوات (UI-only)
+1. افتح مشروع Vercel (Project) واربطه مع GitHub repository إذا لم يكن مربوطًا.
+2. من إعدادات المشروع (Settings -> Git)، عيّن `Production Branch` = `staging`.
+3. تأكد من متغيرات البيئة المطلوبة (Environment Variables) بالأسماء فقط:
+   - `VITE_API_BASE_URL`
+   - `VITE_GOOGLE_MAPS_API_KEY`
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+4. للحصول على روابط الاستخدام للمندوبين:
+   - رابط Preview من تبويب Deployments لكل PR.
+   - رابط Production من آخر نشر ناجح على `staging`.
+
+### Fallback اختياري: GitHub Actions على staging فقط
+- يستخدم فقط عند تعذر/تعطّل Git Integration.
+- أسماء الأسرار المطلوبة (Names only):
+  - `VERCEL_TOKEN`
+  - `VERCEL_ORG_ID`
+  - `VERCEL_PROJECT_ID`
+- مكان الإضافة: GitHub -> Repository -> Settings -> Secrets and variables -> Actions.
+- ممنوع تفعيل Auto Deploy على `main`.
