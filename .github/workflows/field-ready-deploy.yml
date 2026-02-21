@@ -2,9 +2,11 @@ name: Field-Ready Deploy
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+    inputs:
+      reason:
+        description: "Why this manual legacy deploy is needed"
+        required: false
+        default: "manual maintenance"
 
 permissions:
   contents: read

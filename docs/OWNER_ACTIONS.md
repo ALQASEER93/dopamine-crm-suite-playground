@@ -1,30 +1,25 @@
-# OWNER_ACTIONS (Field-Ready Deploy + PR Fallback)
+# OWNER_ACTIONS (UI-only)
 
-## Required UI-only actions
-1. In Vercel, create/import the project for `ALQASEER-PWA`.
-2. In GitHub repo settings -> Secrets and variables -> Actions, add:
-- `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
-3. Re-run workflow `Field-Ready Deploy` manually (`workflow_dispatch`) for first production publish.
+> الخطوات البشرية هنا عبر واجهات المستخدم فقط. لا أوامر shell.
+> المرجع التفصيلي: `docs/OPERATIONS/OWNER_ACTIONS.md`.
 
-## Automated path (recommended)
-Use this script to minimize manual work:
-1. Copy `scripts/owner_actions.env.example` to `scripts/owner_actions.env` and fill values.
-2. Run:
-   - `pwsh -File scripts/owner_actions_automate.ps1 -ApplyGithubSecrets -TriggerCloudflareDeploy -TriggerFieldReadyDeploy`
-3. The script will:
-   - set GitHub Actions secrets automatically
-   - list current secrets
-   - trigger deploy workflows
+## 1) GitHub PR
+1. افتح PR.
+2. تأكد أن Required checks كلها PASS.
+3. نفّذ الدمج من GitHub UI وفق سياسة الفريق.
 
-## If auto PR creation is not possible (UI-only)
-1. Open GitHub -> Pull requests -> New pull request.
-2. Select `base: main` and `compare: <your branch>`.
-3. Paste content from `artifacts/PR_DESCRIPTION.md` as the PR body.
-4. Confirm all template checklist items are completed.
-5. Submit PR and request required reviewers.
+## 2) Deployment Policy
+1. لا Auto-Deploy على push إلى `main`.
+2. أي نشر PWA يتم يدويًا عبر GitHub Actions workflow:
+   - `Field-Ready Deploy (Cloudflare)`
+3. لا تستخدم Cloudflare Dashboard build.
+4. لا تستخدم `wrangler deploy` من جهاز محلي.
 
-## Optional actions
-- Configure custom domain for Jordan-wide access.
-- Add environment variables in Vercel project settings (`VITE_API_BASE_URL` etc.).
+## 3) Secrets (Names only)
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_PROJECT_NAME` (اختياري)
+- `JWT_SECRET`
+
+## 4) Frontend Build-time Env
+- `VITE_API_BASE_URL` يجب ضبطه وقت build إلى API production HTTPS.
