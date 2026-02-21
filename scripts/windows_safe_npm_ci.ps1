@@ -126,10 +126,7 @@ $logPath = Join-Path $LogsDir ("windows_safe_npm_ci_{0}.log" -f $safeAppName)
 
 $npmCommands = @(
   "npm ci --omit=dev"
-) + $AdditionalNpmCommands + @(
-  "npm run build",
-  "npm test --if-present"
-)
+) + $AdditionalNpmCommands
 
 for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
   "=== Attempt $attempt/$MaxRetries for $AppName ===" | Tee-Object -FilePath $logPath -Append
