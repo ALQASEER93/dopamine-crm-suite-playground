@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const { initDb } = require('./db');
 const { authenticate, AuthenticationError, refreshToken } = require('./services/auth');
 const { requireAuth, requireRole } = require('./middleware/auth');
@@ -8,6 +9,18 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const apiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 400,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 80,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 app.use(
   cors({
@@ -17,6 +30,7 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use('/api', apiRateLimiter);
 
 const buildAuthResponse = (user) => ({
   user,
@@ -67,13 +81,13 @@ const healthHandler = (_req, res) => {
   res.json({ status: 'ok' });
 };
 
-app.post('/api/auth/login', (req, res, next) => {
+app.post('/api/auth/login', authRateLimiter, (req, res, next) => {
   Promise.resolve(loginHandler(req, res, next)).catch(next);
 });
-app.get('/api/auth/me', requireAuth, (req, res) => {
+app.get('/api/auth/me', authRateLimiter, requireAuth, (req, res) => {
   return meHandler(req, res);
 });
-app.post('/api/auth/refresh', requireAuth, (req, res, next) => {
+app.post('/api/auth/refresh', authRateLimiter, requireAuth, (req, res, next) => {
   Promise.resolve(refreshHandler(req, res, next)).catch(next);
 });
 // Health and primary functional routers assume authentication middleware ran above.
@@ -90,23 +104,43 @@ const registerRoutes = () => {
 
   app.use(
     '/api/hcps',
+    apiRateLimiter,
     requireAuth,
     requireRole(['sales_manager', 'sales_rep']),
     hcpsRouter,
   );
-  app.use('/api/import', requireAuth, requireRole(['sales_manager']), importRouter);
-  app.use('/api/visits', requireAuth, visitsRouter);
-  app.use('/api/reports', requireAuth, reportsRouter);
+  app.use('/api/import', apiRateLimiter, requireAuth, requireRole(['sales_manager']), importRouter);
+  app.use('/api/visits', apiRateLimiter, requireAuth, visitsRouter);
+  app.use('/api/reports', apiRateLimiter, requireAuth, reportsRouter);
   app.use(
     '/api/pharmacies',
+    apiRateLimiter,
     requireAuth,
     requireRole(['sales_manager', 'sales_rep']),
     pharmaciesRouter,
   );
-  app.use('/api/sales-reps', requireAuth, requireRole(['sales_manager', 'sales_rep']), salesRepsRouter);
-  app.use('/api/territories', requireAuth, requireRole(['sales_manager', 'sales_rep']), territoriesRouter);
+  app.use(
+    '/api/sales-reps',
+    apiRateLimiter,
+    requireAuth,
+    requireRole(['sales_manager', 'sales_rep']),
+    salesRepsRouter,
+  );
+  app.use(
+    '/api/territories',
+    apiRateLimiter,
+    requireAuth,
+    requireRole(['sales_manager', 'sales_rep']),
+    territoriesRouter,
+  );
   const usersRouter = require('./routes/users');
-  app.use('/api/admin/users', requireAuth, requireRole(['sales_manager', 'admin']), usersRouter);
+  app.use(
+    '/api/admin/users',
+    authRateLimiter,
+    requireAuth,
+    requireRole(['sales_manager', 'admin']),
+    usersRouter,
+  );
 };
 
 // Initialize the database once; routers can rely on `ready` when needed for testing.

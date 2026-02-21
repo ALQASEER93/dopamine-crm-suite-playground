@@ -1,9 +1,16 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { User, Role, SalesRep, Territory, UserTerritory } = require('../models');
 
 const router = express.Router();
+const adminUsersRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const USER_TYPE_ROLE_MAP = {
   admin: 'sales_manager',
@@ -90,7 +97,7 @@ const attachRelations = () => ({
   ],
 });
 
-router.use(requireAuth, requireRole(['sales_manager', 'admin']));
+router.use(adminUsersRateLimiter, requireAuth, requireRole(['sales_manager', 'admin']));
 
 router.get('/', async (_req, res, next) => {
   try {

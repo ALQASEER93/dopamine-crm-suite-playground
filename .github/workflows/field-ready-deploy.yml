@@ -60,7 +60,6 @@ jobs:
 
       - name: Deploy to Vercel (production)
         if: steps.secrets.outputs.should_deploy == 'true'
-        working-directory: ALQASEER-PWA
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
