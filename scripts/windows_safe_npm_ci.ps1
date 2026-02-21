@@ -61,38 +61,37 @@ function Invoke-NpmCommand {
 
   "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")] CMD: $CommandText" | Tee-Object -FilePath $LogFile -Append | Out-Null
 
-  $processInfo = New-Object System.Diagnostics.ProcessStartInfo
-  $processInfo.FileName = "cmd.exe"
-  $processInfo.Arguments = "/d /s /c ""$CommandText"""
-  $processInfo.WorkingDirectory = $WorkingDirectory
-  $processInfo.RedirectStandardOutput = $true
-  $processInfo.RedirectStandardError = $true
-  $processInfo.UseShellExecute = $false
-  $processInfo.CreateNoWindow = $true
+  $stdoutTemp = Join-Path $env:TEMP ("safe_npm_stdout_{0}.log" -f ([System.Guid]::NewGuid().ToString("N")))
+  $stderrTemp = Join-Path $env:TEMP ("safe_npm_stderr_{0}.log" -f ([System.Guid]::NewGuid().ToString("N")))
+  try {
+    $wrapped = "$CommandText 1>""$stdoutTemp"" 2>""$stderrTemp"""
+    Push-Location $WorkingDirectory
+    try {
+      & cmd.exe /d /s /c $wrapped
+      $exitCode = $LASTEXITCODE
+    } finally {
+      Pop-Location
+    }
 
-  $process = New-Object System.Diagnostics.Process
-  $process.StartInfo = $processInfo
-  $null = $process.Start()
+    $combinedLines = @()
+    if (Test-Path $stdoutTemp) {
+      $combinedLines += (Get-Content $stdoutTemp -ErrorAction SilentlyContinue)
+    }
+    if (Test-Path $stderrTemp) {
+      $combinedLines += (Get-Content $stderrTemp -ErrorAction SilentlyContinue)
+    }
+    $combinedLines = $combinedLines | Where-Object { $_ -and $_.Trim().Length -gt 0 }
+    if ($combinedLines) {
+      $combinedLines | Tee-Object -FilePath $LogFile -Append
+    }
 
-  $stdoutText = $process.StandardOutput.ReadToEnd()
-  $stderrText = $process.StandardError.ReadToEnd()
-  $process.WaitForExit()
-
-  $combinedLines = @()
-  if ($stdoutText) {
-    $combinedLines += ($stdoutText -split "(`r`n|`n|`r)")
-  }
-  if ($stderrText) {
-    $combinedLines += ($stderrText -split "(`r`n|`n|`r)")
-  }
-  $combinedLines = $combinedLines | Where-Object { $_ -and $_.Trim().Length -gt 0 }
-  if ($combinedLines) {
-    $combinedLines | Tee-Object -FilePath $LogFile -Append
-  }
-
-  return @{
-    ExitCode = $process.ExitCode
-    Output = ($combinedLines -join "`n")
+    return @{
+      ExitCode = $exitCode
+      Output = ($combinedLines -join "`n")
+    }
+  } finally {
+    if (Test-Path $stdoutTemp) { Remove-Item -Force $stdoutTemp -ErrorAction SilentlyContinue }
+    if (Test-Path $stderrTemp) { Remove-Item -Force $stderrTemp -ErrorAction SilentlyContinue }
   }
 }
 
