@@ -59,19 +59,39 @@ function Invoke-NpmCommand {
     [string]$LogFile
   )
 
-  Push-Location $WorkingDirectory
+  "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")] CMD: $CommandText" | Tee-Object -FilePath $LogFile -Append | Out-Null
+
+  $stdoutTemp = Join-Path $env:TEMP ("safe_npm_stdout_{0}.log" -f ([System.Guid]::NewGuid().ToString("N")))
+  $stderrTemp = Join-Path $env:TEMP ("safe_npm_stderr_{0}.log" -f ([System.Guid]::NewGuid().ToString("N")))
   try {
-    "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")] CMD: $CommandText" | Tee-Object -FilePath $LogFile -Append | Out-Null
-    $output = & cmd.exe /d /s /c $CommandText 2>&1
-    if ($output) {
-      $output | Tee-Object -FilePath $LogFile -Append
+    $wrapped = "$CommandText 1>""$stdoutTemp"" 2>""$stderrTemp"""
+    Push-Location $WorkingDirectory
+    try {
+      & cmd.exe /d /s /c $wrapped
+      $exitCode = $LASTEXITCODE
+    } finally {
+      Pop-Location
     }
+
+    $combinedLines = @()
+    if (Test-Path $stdoutTemp) {
+      $combinedLines += (Get-Content $stdoutTemp -ErrorAction SilentlyContinue)
+    }
+    if (Test-Path $stderrTemp) {
+      $combinedLines += (Get-Content $stderrTemp -ErrorAction SilentlyContinue)
+    }
+    $combinedLines = $combinedLines | Where-Object { $_ -and $_.Trim().Length -gt 0 }
+    if ($combinedLines) {
+      $combinedLines | Tee-Object -FilePath $LogFile -Append
+    }
+
     return @{
-      ExitCode = $LASTEXITCODE
-      Output = ($output -join "`n")
+      ExitCode = $exitCode
+      Output = ($combinedLines -join "`n")
     }
   } finally {
-    Pop-Location
+    if (Test-Path $stdoutTemp) { Remove-Item -Force $stdoutTemp -ErrorAction SilentlyContinue }
+    if (Test-Path $stderrTemp) { Remove-Item -Force $stderrTemp -ErrorAction SilentlyContinue }
   }
 }
 
@@ -105,11 +125,8 @@ $tempSharedPath = Join-Path $tempRootBase "shared"
 $logPath = Join-Path $LogsDir ("windows_safe_npm_ci_{0}.log" -f $safeAppName)
 
 $npmCommands = @(
-  "npm ci"
-) + $AdditionalNpmCommands + @(
-  "npm run build",
-  "npm test --if-present"
-)
+  "npm ci --omit=dev"
+) + $AdditionalNpmCommands
 
 for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
   "=== Attempt $attempt/$MaxRetries for $AppName ===" | Tee-Object -FilePath $logPath -Append

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "npm run test:vitest",
     "test:vitest": "cross-env NODE_ENV=test node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false",
     "lint": "eslint .",
     "e2e": "npx playwright test --config=playwright.config.ts"
@@ -40,5 +41,8 @@
     "vite": "^5.4.21",
     "vite-plugin-pwa": "^0.20.5",
     "vitest": "https://registry.npmjs.org/vitest/-/vitest-1.6.1.tgz"
+  },
+  "overrides": {
+    "minimatch": "^10.2.1"
   }
 }

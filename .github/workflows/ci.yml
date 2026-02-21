@@ -82,9 +82,14 @@ jobs:
       - name: Install deps
         run: npm ci
         working-directory: CRM/frontend
+      - name: NPM Prod Audit Gate
+        run: node ../../scripts/npm_prod_audit_gate.mjs .
+        working-directory: CRM/frontend
       - name: Build
         run: npm run build
         working-directory: CRM/frontend
+        env:
+          VITE_API_BASE_URL: https://api.example.com/api/v1
 
   pwa:
     name: ALQASEER PWA
@@ -99,6 +104,9 @@ jobs:
             ALQASEER-PWA/package-lock.json
       - name: Install deps
         run: npm ci
+        working-directory: ALQASEER-PWA
+      - name: NPM Prod Audit Gate
+        run: node ../scripts/npm_prod_audit_gate.mjs .
         working-directory: ALQASEER-PWA
       - name: Lint
         run: npm run lint

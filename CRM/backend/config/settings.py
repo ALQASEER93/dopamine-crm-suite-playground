@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     gps_max_distance_m: float = Field(default=100.0, validation_alias="GPS_MAX_DISTANCE_M")
     gps_min_accuracy_m: float = Field(default=80.0, validation_alias="GPS_MIN_ACCURACY_M")
     allow_gps_override: bool | None = Field(default=None, validation_alias="ALLOW_GPS_OVERRIDE")
+    allow_dev_token_endpoint: bool | None = Field(default=None, validation_alias="ALLOW_DEV_TOKEN_ENDPOINT")
+    allow_dev_token: bool | None = Field(default=None, validation_alias="ALLOW_DEV_TOKEN")
     geofence_radius_m: float = Field(default=120.0, validation_alias="GEOFENCE_RADIUS_M")
     geofence_enabled: bool = Field(default=False, validation_alias="GEOFENCE_ENABLED")
     geofence_require_target_coords: bool | None = Field(default=None, validation_alias="GEOFENCE_REQUIRE_TARGET_COORDS")
@@ -81,6 +83,8 @@ class Settings(BaseSettings):
                 object.__setattr__(self, "database_url", self.prod_database_url)
             if self.prod_echo_sql is not None:
                 object.__setattr__(self, "echo_sql", self.prod_echo_sql)
+            if bool(self.seed_default_users):
+                raise ValueError("SEED_DEFAULT_USERS must be disabled when DPM_ENV=production.")
             # Never auto-seed default users in production.
             object.__setattr__(self, "seed_default_users", False)
             secret = (self.jwt_secret or "").strip()
@@ -91,11 +95,20 @@ class Settings(BaseSettings):
             restricted = {
                 origin
                 for origin in self.allowed_origins
-                if origin == "*" or "localhost" in origin or "127.0.0.1" in origin
+                if (
+                    origin == "*"
+                    or "localhost" in origin
+                    or "127.0.0.1" in origin
+                    or not origin.lower().startswith("https://")
+                )
             }
             if restricted:
                 raise ValueError(
-                    "ALLOWED_ORIGINS in production must not include wildcard/local origins."
+                    "ALLOWED_ORIGINS in production must use trusted https origins only."
+                )
+            if bool(self.allow_dev_token_endpoint) or bool(self.allow_dev_token):
+                raise ValueError(
+                    "Dev token toggles must be disabled when DPM_ENV=production."
                 )
             if self.allow_gps_override is None:
                 object.__setattr__(self, "allow_gps_override", False)
@@ -103,6 +116,10 @@ class Settings(BaseSettings):
                 object.__setattr__(self, "geofence_require_target_coords", True)
         elif self.seed_default_users is None:
             object.__setattr__(self, "seed_default_users", True)
+        if self.allow_dev_token_endpoint is None:
+            object.__setattr__(self, "allow_dev_token_endpoint", False)
+        if self.allow_dev_token is None:
+            object.__setattr__(self, "allow_dev_token", False)
         if self.allow_gps_override is None:
             object.__setattr__(self, "allow_gps_override", True)
         if self.geofence_require_target_coords is None:
