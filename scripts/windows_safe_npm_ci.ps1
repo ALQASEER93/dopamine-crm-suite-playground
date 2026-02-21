@@ -59,19 +59,40 @@ function Invoke-NpmCommand {
     [string]$LogFile
   )
 
-  Push-Location $WorkingDirectory
-  try {
-    "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")] CMD: $CommandText" | Tee-Object -FilePath $LogFile -Append | Out-Null
-    $output = & cmd.exe /d /s /c $CommandText 2>&1
-    if ($output) {
-      $output | Tee-Object -FilePath $LogFile -Append
-    }
-    return @{
-      ExitCode = $LASTEXITCODE
-      Output = ($output -join "`n")
-    }
-  } finally {
-    Pop-Location
+  "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")] CMD: $CommandText" | Tee-Object -FilePath $LogFile -Append | Out-Null
+
+  $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+  $processInfo.FileName = "cmd.exe"
+  $processInfo.Arguments = "/d /s /c ""$CommandText"""
+  $processInfo.WorkingDirectory = $WorkingDirectory
+  $processInfo.RedirectStandardOutput = $true
+  $processInfo.RedirectStandardError = $true
+  $processInfo.UseShellExecute = $false
+  $processInfo.CreateNoWindow = $true
+
+  $process = New-Object System.Diagnostics.Process
+  $process.StartInfo = $processInfo
+  $null = $process.Start()
+
+  $stdoutText = $process.StandardOutput.ReadToEnd()
+  $stderrText = $process.StandardError.ReadToEnd()
+  $process.WaitForExit()
+
+  $combinedLines = @()
+  if ($stdoutText) {
+    $combinedLines += ($stdoutText -split "(`r`n|`n|`r)")
+  }
+  if ($stderrText) {
+    $combinedLines += ($stderrText -split "(`r`n|`n|`r)")
+  }
+  $combinedLines = $combinedLines | Where-Object { $_ -and $_.Trim().Length -gt 0 }
+  if ($combinedLines) {
+    $combinedLines | Tee-Object -FilePath $LogFile -Append
+  }
+
+  return @{
+    ExitCode = $process.ExitCode
+    Output = ($combinedLines -join "`n")
   }
 }
 
@@ -105,7 +126,7 @@ $tempSharedPath = Join-Path $tempRootBase "shared"
 $logPath = Join-Path $LogsDir ("windows_safe_npm_ci_{0}.log" -f $safeAppName)
 
 $npmCommands = @(
-  "npm ci"
+  "npm ci --omit=dev"
 ) + $AdditionalNpmCommands + @(
   "npm run build",
   "npm test --if-present"
