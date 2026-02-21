@@ -32,3 +32,17 @@
 
 ## 5) Security Hygiene
 - لا تضع passwords/tokens/secrets داخل docs أو logs.
+
+## 6) Local Seed Users (UI-only)
+- الهدف: إنشاء مستخدمي login المحليين (Admin/Manager/Reps) بطريقة متكررة وآمنة.
+- عبر Swagger UI فقط:
+1. افتح `http://127.0.0.1:8000/docs`
+2. نفّذ `POST /api/dev/seed-local-users`
+3. احفظ النتائج (emails/passwords) في ملف محلي داخل run artifacts فقط.
+- الشروط:
+  - تعمل فقط عند `DPM_ENV=development`.
+  - تتطلب تفعيل `ALLOW_DEV_LOCAL_SEED_ENDPOINT=true` داخل بيئة backend المحلية.
+  - في production تكون endpoint معطلة (`404`).
+- تحقق سريع بعد الـseed:
+  - Login ناجح للحسابات المولدة.
+  - حساب Rep لا يمكنه الوصول لـ`/api/v1/admin/users` (403).
