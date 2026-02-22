@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,8 +20,14 @@ def _default_allowed_origins() -> list[str]:
 class Settings(BaseSettings):
     app_env: str = Field("development", validation_alias="DPM_ENV")
     app_name: str = "ALQASEER CRM API"
-    database_url: str = "sqlite:///./data/fastapi.db"
-    prod_database_url: str | None = None
+    database_url: str = Field(
+        "sqlite:///./data/fastapi.db",
+        validation_alias=AliasChoices("DATABASE_URL", "SQLALCHEMY_DATABASE_URL"),
+    )
+    prod_database_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("PROD_DATABASE_URL", "PRODUCTION_DATABASE_URL"),
+    )
     echo_sql: bool = False
     prod_echo_sql: bool | None = None
     jwt_secret: str | None = Field(default=None, validation_alias="JWT_SECRET")
@@ -34,6 +40,10 @@ class Settings(BaseSettings):
     seed_default_users: bool | None = None
     bootstrap_code: str | None = None
     allowed_origins: list[str] = Field(default_factory=_default_allowed_origins, validation_alias="ALLOWED_ORIGINS")
+    allowed_origin_regex: str | None = Field(
+        default=r"^https://dopamine-crm-frontend-playground(?:-[a-z0-9-]+)?\.vercel\.app$",
+        validation_alias="ALLOWED_ORIGIN_REGEX",
+    )
     gps_max_distance_m: float = Field(default=100.0, validation_alias="GPS_MAX_DISTANCE_M")
     gps_min_accuracy_m: float = Field(default=80.0, validation_alias="GPS_MIN_ACCURACY_M")
     allow_gps_override: bool | None = Field(default=None, validation_alias="ALLOW_GPS_OVERRIDE")

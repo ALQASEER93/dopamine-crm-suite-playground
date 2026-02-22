@@ -72,15 +72,11 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=settings.app_name, openapi_tags=tags_metadata, lifespan=lifespan)
 
-allowed_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
 # Single CORS middleware to allow the SPA to call all API routes, including preflight.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=settings.allowed_origins,
+    allow_origin_regex=settings.allowed_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
