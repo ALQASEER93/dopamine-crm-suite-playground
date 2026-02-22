@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from schemas.email_policy import EmailInput
 
 
 class RoleOut(BaseModel):
@@ -16,7 +18,7 @@ class RoleOut(BaseModel):
 
 class UserBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
+    email: EmailInput
     role_id: int
     is_active: bool = True
 
@@ -27,7 +29,7 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[EmailInput] = None
     role_id: Optional[int] = None
     is_active: Optional[bool] = None
     password: Optional[str] = Field(default=None, min_length=6)
@@ -36,7 +38,7 @@ class UserUpdate(BaseModel):
 class UserOut(BaseModel):
     id: int
     name: str
-    email: EmailStr
+    email: EmailInput
     is_active: bool
     role: RoleOut
 
@@ -45,7 +47,7 @@ class UserOut(BaseModel):
 
 class RepCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
+    email: EmailInput
     password: str = Field(..., min_length=6)
     is_active: bool = True
     role_slug: str = "medical_rep"
@@ -54,7 +56,7 @@ class RepCreate(BaseModel):
 
 class RepUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[EmailInput] = None
     password: Optional[str] = Field(default=None, min_length=6)
     is_active: Optional[bool] = None
     role_slug: Optional[str] = None
@@ -69,7 +71,7 @@ class SalesRepInfo(BaseModel):
 
 class AdminUserCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
+    email: EmailInput
     password: str = Field(..., min_length=6)
     userType: str = Field(..., min_length=1)
     territoryId: Optional[int] = None
@@ -77,7 +79,7 @@ class AdminUserCreate(BaseModel):
 
 class AdminUserUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[EmailInput] = None
     password: Optional[str] = Field(default=None, min_length=6)
     userType: Optional[str] = None
     territoryId: Optional[int] = None
@@ -87,7 +89,7 @@ class AdminUserUpdate(BaseModel):
 class AdminUserOut(BaseModel):
     id: int
     name: str
-    email: EmailStr
+    email: EmailInput
     isActive: bool
     role: RoleOut
     salesRep: Optional[SalesRepInfo] = None
