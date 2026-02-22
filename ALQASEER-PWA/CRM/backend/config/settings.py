@@ -1,14 +1,34 @@
 from __future__ import annotations
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _default_allowed_origins() -> list[str]:
+    return [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4174",
+        "http://127.0.0.1:4174",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+        "https://crm-dopamine.web.app",
+        "https://dopamine-crm-suite-playground.onrender.com",
+        "https://dopamine-crm-frontend-playground.vercel.app",
+    ]
 
 
 class Settings(BaseSettings):
     app_env: str = Field("development", validation_alias="DPM_ENV")
     app_name: str = "ALQASEER CRM API"
-    database_url: str = "sqlite:///./data/fastapi.db"
-    prod_database_url: str | None = None
+    database_url: str = Field(
+        "sqlite:///./data/fastapi.db",
+        validation_alias=AliasChoices("DATABASE_URL", "SQLALCHEMY_DATABASE_URL"),
+    )
+    prod_database_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("PROD_DATABASE_URL", "PRODUCTION_DATABASE_URL"),
+    )
     echo_sql: bool = False
     prod_echo_sql: bool | None = None
     jwt_secret: str = "development-secret"
@@ -18,6 +38,11 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     seed_default_users: bool | None = None
     bootstrap_code: str | None = None
+    allowed_origins: list[str] = Field(default_factory=_default_allowed_origins, validation_alias="ALLOWED_ORIGINS")
+    allowed_origin_regex: str | None = Field(
+        default=r"^https://dopamine-crm-frontend-playground(?:-[a-z0-9-]+)?\.vercel\.app$",
+        validation_alias="ALLOWED_ORIGIN_REGEX",
+    )
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -37,6 +62,18 @@ class Settings(BaseSettings):
     def normalize_bootstrap_code(cls, value):  # noqa: ANN001
         if isinstance(value, str):
             return value.strip()
+        return value
+
+    @field_validator("allowed_origins", mode="before")
+    @classmethod
+    def normalize_allowed_origins(cls, value):  # noqa: ANN001
+        if value is None:
+            return _default_allowed_origins()
+        if isinstance(value, str):
+            parsed = [item.strip() for item in value.split(",") if item.strip()]
+            return parsed or _default_allowed_origins()
+        if isinstance(value, (list, tuple, set)):
+            return [str(item).strip() for item in value if str(item).strip()]
         return value
 
     def model_post_init(self, __context: dict[str, object] | None = None) -> None:
