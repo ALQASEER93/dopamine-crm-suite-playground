@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import AliasChoices, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 def _default_allowed_origins() -> list[str]:
@@ -38,7 +40,10 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     seed_default_users: bool | None = None
     bootstrap_code: str | None = None
-    allowed_origins: list[str] = Field(default_factory=_default_allowed_origins, validation_alias="ALLOWED_ORIGINS")
+    allowed_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=_default_allowed_origins,
+        validation_alias="ALLOWED_ORIGINS",
+    )
     allowed_origin_regex: str | None = Field(
         default=r"^https://dopamine-crm-frontend-playground(?:-[a-z0-9-]+)?\.vercel\.app$",
         validation_alias="ALLOWED_ORIGIN_REGEX",
