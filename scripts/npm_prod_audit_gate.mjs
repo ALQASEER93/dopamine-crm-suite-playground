@@ -4,12 +4,15 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+
 function runOrFail(command, args, cwd) {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
+    shell: process.platform === "win32",
   });
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
@@ -24,11 +27,12 @@ function runOrFail(command, args, cwd) {
 }
 
 function runAuditJson(cwd) {
-  const result = spawnSync("npm", ["audit", "--omit=dev", "--json"], {
+  const result = spawnSync(npmCommand, ["audit", "--omit=dev", "--json"], {
     cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
+    shell: process.platform === "win32",
   });
   if (result.stderr) process.stderr.write(result.stderr);
   if (result.error) {
@@ -54,6 +58,53 @@ function appendStepSummary(lines) {
   fs.appendFileSync(stepSummary, `${lines.join("\n")}\n`, "utf8");
 }
 
+function copySanitizedNpmrc(sourcePath, destinationPath) {
+  const unsafeKeys = new Set(["include", "omit", "production"]);
+  const sanitized = fs
+    .readFileSync(sourcePath, "utf8")
+    .split(/\r?\n/)
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith(";")) return true;
+      const key = trimmed.split("=", 1)[0]?.trim().toLowerCase();
+      return !unsafeKeys.has(key);
+    })
+    .join("\n");
+  if (sanitized.trim()) {
+    fs.writeFileSync(destinationPath, `${sanitized}\n`, "utf8");
+  }
+}
+
+function isInstalledNode(tempDir, nodePath) {
+  if (!nodePath || typeof nodePath !== "string") return false;
+  const resolved = path.resolve(tempDir, nodePath);
+  const tempRoot = path.resolve(tempDir);
+  if (resolved !== tempRoot && !resolved.startsWith(`${tempRoot}${path.sep}`)) {
+    return false;
+  }
+  return fs.existsSync(resolved);
+}
+
+function filterInstalledVulnerabilities(vulnerabilitiesByName, tempDir) {
+  return Object.fromEntries(
+    Object.entries(vulnerabilitiesByName).filter(([, vulnerability]) => {
+      const nodes = Array.isArray(vulnerability?.nodes) ? vulnerability.nodes : [];
+      return nodes.some((nodePath) => isInstalledNode(tempDir, nodePath));
+    })
+  );
+}
+
+function countBySeverity(vulnerabilitiesByName) {
+  const counts = { info: 0, low: 0, moderate: 0, high: 0, critical: 0 };
+  for (const vulnerability of Object.values(vulnerabilitiesByName)) {
+    const severity = vulnerability?.severity;
+    if (Object.hasOwn(counts, severity)) {
+      counts[severity] += 1;
+    }
+  }
+  return counts;
+}
+
 const targetArg = process.argv[2] || ".";
 const projectDir = path.resolve(process.cwd(), targetArg);
 const pkgJsonPath = path.join(projectDir, "package.json");
@@ -69,24 +120,28 @@ const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "npm-prod-audit-"));
 fs.copyFileSync(pkgJsonPath, path.join(tempDir, "package.json"));
 fs.copyFileSync(lockPath, path.join(tempDir, "package-lock.json"));
 if (fs.existsSync(npmrcPath)) {
-  fs.copyFileSync(npmrcPath, path.join(tempDir, ".npmrc"));
+  copySanitizedNpmrc(npmrcPath, path.join(tempDir, ".npmrc"));
 }
 
 console.log(`[npm-prod-audit] Temp workspace: ${tempDir}`);
-runOrFail("npm", ["ci", "--omit=dev"], tempDir);
+runOrFail(npmCommand, ["ci", "--omit=dev"], tempDir);
 
 const audit = runAuditJson(tempDir);
-const vulnerabilities = audit?.metadata?.vulnerabilities || {};
-const info = Number(vulnerabilities.info || 0);
-const low = Number(vulnerabilities.low || 0);
-const moderate = Number(vulnerabilities.moderate || 0);
-const high = Number(vulnerabilities.high || 0);
-const critical = Number(vulnerabilities.critical || 0);
+const allVulnerabilities = audit?.vulnerabilities || {};
+const installedVulnerabilities = filterInstalledVulnerabilities(allVulnerabilities, tempDir);
+const vulnerabilities = countBySeverity(installedVulnerabilities);
+const info = vulnerabilities.info;
+const low = vulnerabilities.low;
+const moderate = vulnerabilities.moderate;
+const high = vulnerabilities.high;
+const critical = vulnerabilities.critical;
+const omitted = Object.keys(allVulnerabilities).length - Object.keys(installedVulnerabilities).length;
 
 const lines = [
   `### NPM Prod Audit: ${path.relative(process.cwd(), projectDir) || "."}`,
-  `- Scope: production dependencies only (\`npm ci --omit=dev\`, \`npm audit --omit=dev\`)`,
+  `- Scope: installed production dependencies only (\`npm ci --omit=dev\`, \`npm audit --omit=dev\`)`,
   `- Result counts: info=${info}, low=${low}, moderate=${moderate}, high=${high}, critical=${critical}`,
+  `- Omitted dev/optional-only audit entries: ${omitted}`,
 ];
 
 if (moderate > 0 && high === 0 && critical === 0) {
