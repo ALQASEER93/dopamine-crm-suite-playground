@@ -21,6 +21,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || secrets.VITE_API_BASE_URL }}
         run: |
           set -euo pipefail
           missing=0
@@ -35,6 +36,31 @@ jobs:
             echo "Required: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID."
             exit 1
           fi
+          if [ -z "${VITE_API_BASE_URL}" ]; then
+            echo "Missing repository variable or secret: VITE_API_BASE_URL"
+            echo "Cloudflare Pages deploy blocked: production PWA builds must point to a deployed API base URL."
+            exit 1
+          fi
+          node -e '
+            const value = process.env.VITE_API_BASE_URL || "";
+            let invalid = !value.trim();
+            try {
+              const parsed = new URL(value);
+              const host = parsed.hostname.toLowerCase();
+              invalid =
+                invalid ||
+                parsed.protocol !== "https:" ||
+                ["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(host) ||
+                host.endsWith(".local");
+            } catch (_err) {
+              invalid = true;
+            }
+            if (invalid) {
+              console.error("VITE_API_BASE_URL must be a deployed HTTPS API URL, not localhost, a relative path, or an invalid value.");
+              process.exit(1);
+            }
+          '
+          echo "VITE_API_BASE_URL=$VITE_API_BASE_URL" >> "$GITHUB_ENV"
           repo_name="${GITHUB_REPOSITORY##*/}"
           resolved_project_name="${CLOUDFLARE_PROJECT_NAME:-$repo_name}"
           if [ -z "$resolved_project_name" ]; then
@@ -56,6 +82,8 @@ jobs:
 
       - name: Build PWA
         working-directory: ALQASEER-PWA
+        env:
+          VITE_API_BASE_URL: ${{ env.VITE_API_BASE_URL }}
         run: npm run build
 
       - name: Verify build output exists

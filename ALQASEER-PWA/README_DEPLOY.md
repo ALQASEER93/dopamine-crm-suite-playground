@@ -1,5 +1,12 @@
 # دليل نشر مشروع Dopamine PWA على Vercel
 
+> ⚠️ **Legacy / Non-Canonical**
+>
+> هذا الدليل **ليس** مسار النشر المعتمد لهذا المستودع حالياً.
+> مسار النشر المعتمد للـ pilot الداخلي هو:
+> `docker-compose.prod.yml` + `Dockerfile.caddy` + `CRM/backend/Dockerfile`
+> (راجع `docs/DEPLOYMENT_CANONICAL.md`).
+
 هذا الملف موجّه لعمر ليوضح خطوات نشر مشروع `dopamine-pwa` على Vercel (الخطة المجانية)، وربطه مع GitHub.
 
 ---

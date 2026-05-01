@@ -68,12 +68,20 @@ export default function OrdersPage() {
         await createOrder(payload);
         setMessage("تم إرسال الطلب.");
       } else {
-        enqueueMutation({
+        const queued = await enqueueMutation({
           endpoint: "orders",
           method: "POST",
           payload,
           type: "order",
         });
+        if (!queued.queued) {
+          setMessage(
+            queued.reason === "offline_limit_reached"
+              ? "تم تجاوز حد العمل دون اتصال. يرجى إعادة الاتصال ثم إعادة المحاولة."
+              : "هذا الطلب موجود بالفعل في الطابور دون اتصال.",
+          );
+          return;
+        }
         setMessage("تم حفظ الطلب وسيتم إرساله عند توفر الاتصال.");
       }
       setForm({ customerId: "", items: [{ productId: "", quantity: 1 }], notes: "" });

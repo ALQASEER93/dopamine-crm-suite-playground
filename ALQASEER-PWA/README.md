@@ -1,8 +1,18 @@
 
 # Dopamine Pharma – Field Force PWA (Skeleton)
+
+> ⚠️ **Important (Canonical Deployment)**
+>
+> مسار النشر المعتمد لهذا المستودع في وضع pilot هو Cloudflare Pages للـ PWA مع API production مضبوط عبر `VITE_API_BASE_URL`.
+> يوجد أيضاً مسار Docker Compose لتشغيل الحزمة كاملة داخلياً كما هو موثق في:
+> `docs/DEPLOYMENT_CANONICAL.md`.
+>
+> أي مقاطع أدناه تشير إلى Next.js/Vercel تعتبر legacy مرجعية وليست مسار نشر معتمد حالياً.
+
 ## API Base (FastAPI)
 
-- Base URL: `http://127.0.0.1:8000/api/v1`
+- Local dev base URL: `http://127.0.0.1:8000/api/v1`
+- Field/production base URL: set `VITE_API_BASE_URL` to the deployed HTTPS FastAPI base URL; do not build a field deployment with localhost.
 - PWA endpoints:
   - `/api/v1/pwa/customers`
   - `/api/v1/pwa/visits`
@@ -14,6 +24,12 @@
 VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
 VITE_MAP_MODE=links
 VITE_GOOGLE_MAPS_API_KEY=
+```
+
+Production/Cloudflare example:
+
+```
+VITE_API_BASE_URL=https://api.example.com/api/v1
 ```
 
 Notes:
@@ -112,5 +128,4 @@ VITE_MAP_MODE=links
   - صفحات داخل `/reports/...` مع جداول وتحليلات وتصدير Excel/PDF.
 
 هذا المشروع هو الأساس، جاهز للبناء عليه مباشرة.
-
 

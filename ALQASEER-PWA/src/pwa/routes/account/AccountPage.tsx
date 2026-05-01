@@ -18,9 +18,11 @@ export default function AccountPage() {
   };
 
   const refreshQueue = () => {
-    setQueueCount(getQueuedMutations().length);
-    const meta = getQueueMeta();
-    setLastSyncAt(meta.lastSyncAt ?? null);
+    void (async () => {
+      const [queue, meta] = await Promise.all([getQueuedMutations(), getQueueMeta()]);
+      setQueueCount(queue.length);
+      setLastSyncAt(meta.lastSyncAt ?? null);
+    })();
   };
 
   useEffect(() => {

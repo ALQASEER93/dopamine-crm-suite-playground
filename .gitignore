@@ -29,6 +29,12 @@ __pycache__/
 FINAL_STATUS.md
 PR_BLOCKER_ANALYSIS.md
 /_runs/
+.codex_run_id.tmp
+.tmp/
+.tmp_*/
+.tmp_fix_*/
+.tmp_rc_*/
+CRM/frontend/.vercel/
 
 # docs/_runs hygiene
 docs/_runs/*

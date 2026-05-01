@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { apiFetch, setAuthToken, setUnauthorizedHandler } from '../api/client';
 import { queryClient } from '../api/queryClient';
 
-const storageKey = 'crm.activeUser';
+const storageKey = 'crm.activeSession';
 
 const defaultState = {
   user: null,
@@ -26,7 +26,7 @@ function parseStoredState() {
     if (parsed && typeof parsed === 'object') {
       return {
         user: parsed.user ?? null,
-        token: null,
+        token: parsed.token ?? null,
       };
     }
   } catch (error) {
@@ -40,7 +40,6 @@ export const AuthProvider = ({ children }) => {
   const isMountedRef = useRef(false);
   const [authState, setAuthState] = useState(() => {
     const parsed = parseStoredState();
-    // Ensure the API client has the token before any queries fire on first render.
     setAuthToken(parsed.token ?? null);
     return parsed;
   });
@@ -51,7 +50,10 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => () => setAuthState(defaultState));
+    setUnauthorizedHandler(() => () => {
+      setAuthToken(null);
+      setAuthState(defaultState);
+    });
     return () => setUnauthorizedHandler(null);
   }, []);
 
@@ -62,8 +64,8 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      if (user) {
-        window.localStorage.setItem(storageKey, JSON.stringify({ user }));
+      if (user && token) {
+        window.localStorage.setItem(storageKey, JSON.stringify({ user, token }));
       } else {
         window.localStorage.removeItem(storageKey);
       }
@@ -85,7 +87,7 @@ export const AuthProvider = ({ children }) => {
     const tokenFromBody =
       (result && typeof result === 'object' && (result.access_token || result.token || result.jwt)) || null;
     const normalizedHeaderToken =
-      headerToken && headerToken.startsWith('Bearer ') ? headerToken.replace(/^Bearer\\s+/i, '') : headerToken;
+      headerToken && headerToken.startsWith('Bearer ') ? headerToken.replace(/^Bearer\s+/i, '') : headerToken;
     const resolvedToken = tokenFromBody || normalizedHeaderToken;
 
     const resolvedUser =

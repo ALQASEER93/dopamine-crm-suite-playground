@@ -11,6 +11,7 @@ from sqlalchemy.exc import OperationalError
 from api import api_router
 from core.config import settings
 from core.db import Base, SessionLocal, build_fallback_engine, engine, swap_engine
+from scripts.migrate_sqlite import run_sqlite_migrations
 from services.startup_bootstrap_admin import maybe_bootstrap_admin_on_startup
 from services.seed_data import seed_reference_data
 
@@ -60,6 +61,9 @@ def init_database() -> None:
         else:
             raise
     with SessionLocal() as session:
+        bind = session.get_bind()
+        migration_engine = getattr(bind, "engine", bind)
+        run_sqlite_migrations(migration_engine)
         seed_reference_data(session)
     logger.info("Database schema ensured and seeded.")
 

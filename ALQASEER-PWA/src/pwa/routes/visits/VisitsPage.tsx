@@ -2,7 +2,15 @@ import React, { FormEvent, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { createVisit, endVisit, getCustomers, getVisits, startVisit } from "../../api/client";
 import { Customer, Visit } from "../../api/types";
-import { enqueueMutation, getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../offline/queue";
+import {
+  enqueueMutation,
+  generateOfflineVisitId,
+  getOfflineVisits,
+  getQueueMeta,
+  getQueuedMutations,
+  replayQueuedMutations,
+  upsertOfflineVisit,
+} from "../../offline/queue";
 
 export default function VisitsPage() {
   const location = useLocation();
@@ -24,9 +32,34 @@ export default function VisitsPage() {
 
   const accuracyThreshold = 80;
 
-  const refreshQueue = () => {
-    setQueueCount(getQueuedMutations().length);
-    const meta = getQueueMeta();
+  const mergeVisits = (serverVisits: Visit[], offlineVisits: Visit[]) => {
+    const byId = new Map<string, Visit>();
+    for (const visit of serverVisits) {
+      byId.set(String(visit.id), visit);
+    }
+    for (const visit of offlineVisits) {
+      byId.set(String(visit.id), { ...(byId.get(String(visit.id)) || {}), ...visit });
+    }
+    return Array.from(byId.values()).sort((left, right) => {
+      const leftAt = Date.parse(left.visitedAt || left.startedAt || "") || 0;
+      const rightAt = Date.parse(right.visitedAt || right.startedAt || "") || 0;
+      return rightAt - leftAt;
+    });
+  };
+
+  const loadData = async () => {
+    const [visitsData, customersData, offlineVisits] = await Promise.all([
+      getVisits(),
+      getCustomers(),
+      getOfflineVisits(),
+    ]);
+    setCustomers(customersData);
+    setVisits(mergeVisits(visitsData, offlineVisits));
+  };
+
+  const refreshQueue = async () => {
+    const [queue, meta] = await Promise.all([getQueuedMutations(), getQueueMeta()]);
+    setQueueCount(queue.length);
     setLastSyncAt(meta.lastSyncAt ?? null);
   };
 
@@ -40,7 +73,7 @@ export default function VisitsPage() {
     });
 
   useEffect(() => {
-    refreshQueue();
+    void refreshQueue();
     readPosition()
       .then((pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
@@ -52,14 +85,12 @@ export default function VisitsPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [visitsData, customersData] = await Promise.all([getVisits(), getCustomers()]);
-        setVisits(visitsData);
-        setCustomers(customersData);
+        await loadData();
       } catch (err) {
         console.error(err);
       }
     };
-    load();
+    void load();
   }, []);
 
   const handleSubmit = async (evt: FormEvent) => {
@@ -95,32 +126,31 @@ export default function VisitsPage() {
       visitedAt: new Date().toISOString(),
     };
 
-    const online = navigator.onLine;
     try {
-      if (online) {
+      if (navigator.onLine) {
         const created = await createVisit(payload);
-        setVisits((prev) => [{ ...created, serverStatus: "scheduled" }, ...prev]);
+        setVisits((prev) => mergeVisits([{ ...created, serverStatus: "scheduled" }, ...prev], []));
         setMessage("\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u0628\u0646\u062c\u0627\u062d.");
       } else {
-        const queued = enqueueMutation({
-          endpoint: "visits",
+        const localVisitId = generateOfflineVisitId();
+        const queued = await enqueueMutation({
+          endpoint: "pwa/visits",
           method: "POST",
           payload,
           type: "visit",
+          localVisitId,
         });
         if (!queued.queued) {
           setMessage(
             queued.reason === "offline_limit_reached"
               ? "\u062a\u0645 \u062a\u062c\u0627\u0648\u0632 \u062d\u062f \u0627\u0644\u0639\u0645\u0644 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644 (\u0633\u0627\u0639\u0629 \u064a\u0648\u0645\u064a\u064b\u0627). \u064a\u0631\u062c\u0649 \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u0644\u0644\u0645\u0632\u0627\u0645\u0646\u0629."
-              : queued.reason === "online_required"
-                ? "\u064a\u0631\u062c\u0649 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0625\u0646\u062a\u0631\u0646\u062a \u0644\u0644\u0639\u0645\u0644\u064a\u0627\u062a \u063a\u064a\u0631 \u0627\u0644\u0645\u0644\u0627\u062d\u0638\u0627\u062a \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644."
               : "\u0644\u0645 \u062a\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0639\u0645\u0644\u064a\u0629 (\u0645\u0643\u0631\u0631\u0629 \u0623\u0648 \u063a\u064a\u0631 \u0645\u0633\u0645\u0648\u062d\u0629)."
           );
           setLoading(false);
           return;
         }
-        refreshQueue();
-        setVisits((prev) => [{ ...payload, id: crypto.randomUUID(), serverStatus: "pending_create" } as Visit, ...prev]);
+        await upsertOfflineVisit({ ...payload, id: localVisitId, localVisitId, serverStatus: "pending_create" } as Visit);
+        await Promise.all([loadData(), refreshQueue()]);
         setMessage("\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644 \u0648\u0633\u064a\u062a\u0645 \u0645\u0632\u0627\u0645\u0646\u062a\u0647\u0627 \u0644\u0627\u062d\u0642\u064b\u0627.");
       }
       setNewVisit({ customerId: "", visitType: "follow-up", status: "success", notes: "" });
@@ -133,7 +163,7 @@ export default function VisitsPage() {
   };
 
   const updateVisit = (visitId: string, patch: Partial<Visit>) => {
-    setVisits((prev) => prev.map((visit) => (visit.id === visitId ? { ...visit, ...patch } : visit)));
+    setVisits((prev) => prev.map((visit) => (String(visit.id) === String(visitId) ? { ...visit, ...patch } : visit)));
   };
 
   const ensurePosition = async () => {
@@ -143,7 +173,7 @@ export default function VisitsPage() {
       setCoords(nextCoords);
       setAccuracy(pos.coords.accuracy ?? null);
       return { coords: nextCoords, accuracy: pos.coords.accuracy ?? null };
-    } catch (err) {
+    } catch {
       setMessage("\u062a\u0639\u0630\u0631 \u0627\u0644\u062d\u0635\u0648\u0644 \u0639\u0644\u0649 \u0645\u0648\u0642\u0639 GPS.");
       return null;
     }
@@ -159,19 +189,15 @@ export default function VisitsPage() {
 
   const syncQueue = async () => {
     const res = await replayQueuedMutations();
-    refreshQueue();
+    await Promise.all([loadData(), refreshQueue()]);
     setMessage(`\u062a\u0645\u062a \u0645\u062d\u0627\u0648\u0644\u0629 \u0645\u0632\u0627\u0645\u0646\u0629 ${res.attempted}\u060c \u0627\u0644\u0645\u062a\u0628\u0642\u064a ${res.pending}.`);
   };
 
-  const handleStart = async (visit: Visit) => {
+  const handleVisitLifecycle = async (visit: Visit, type: "visit-start" | "visit-end") => {
     setLoading(true);
     setMessage(null);
     const position = await ensurePosition();
-    if (!position) {
-      setLoading(false);
-      return;
-    }
-    if (!validateAccuracy(position.accuracy)) {
+    if (!position || !validateAccuracy(position.accuracy)) {
       setLoading(false);
       return;
     }
@@ -180,97 +206,62 @@ export default function VisitsPage() {
       lat: position.coords.lat,
       lng: position.coords.lng,
       accuracy: position.accuracy,
-      startedAt: new Date().toISOString(),
+      [type === "visit-start" ? "startedAt" : "endedAt"]: new Date().toISOString(),
     };
 
     if (!navigator.onLine) {
-      const queued = enqueueMutation({
-        endpoint: `visits/${visit.id}/start`,
+      const localVisitId = String(visit.id).startsWith("offline-visit-") ? String(visit.id) : undefined;
+      const visitId = localVisitId ? undefined : String(visit.id);
+      const queued = await enqueueMutation({
+        endpoint: `visits/${visit.id}/${type === "visit-start" ? "start" : "end"}`,
         method: "POST",
         payload,
-        type: "visit-start",
+        type,
+        localVisitId,
+        visitId,
       });
       if (!queued.queued) {
         setMessage(
           queued.reason === "offline_limit_reached"
             ? "\u062d\u062f \u0627\u0644\u0639\u0645\u0644 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644 \u0627\u0643\u062a\u0645\u0644 (\u0633\u0627\u0639\u0629 \u064a\u0648\u0645\u064a\u064b\u0627)."
-            : queued.reason === "online_required"
-              ? "\u0628\u062f\u0621/\u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u064a\u062a\u0637\u0644\u0628 \u0627\u062a\u0635\u0627\u0644 \u0625\u0646\u062a\u0631\u0646\u062a \u0641\u0639\u0627\u0644."
-            : "\u0644\u0645 \u062a\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 (\u0645\u0643\u0631\u0631\u0629 \u0623\u0648 \u063a\u064a\u0631 \u0645\u0633\u0645\u0648\u062d\u0629)."
+            : "\u0644\u0645 \u062a\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0639\u0645\u0644\u064a\u0629 \u0627\u0644\u0632\u064a\u0627\u0631\u0629."
         );
         setLoading(false);
         return;
       }
-      refreshQueue();
-      updateVisit(visit.id, { serverStatus: "pending_start", startedAt: payload.startedAt });
-      setLoading(false);
-      setMessage("\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u0644\u0644\u0637\u0627\u0628\u0648\u0631 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644.");
-      return;
-    }
-
-    try {
-      await startVisit(visit.id, payload);
-      updateVisit(visit.id, { serverStatus: "in_progress", startedAt: payload.startedAt });
-      setMessage("\u062a\u0645 \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629.");
-    } catch (err) {
-      setMessage("\u062a\u0639\u0630\u0631 \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629. \u062a\u062d\u0642\u0642 \u0645\u0646 GPS \u062b\u0645 \u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEnd = async (visit: Visit) => {
-    setLoading(true);
-    setMessage(null);
-    const position = await ensurePosition();
-    if (!position) {
-      setLoading(false);
-      return;
-    }
-    if (!validateAccuracy(position.accuracy)) {
-      setLoading(false);
-      return;
-    }
-
-    const payload = {
-      lat: position.coords.lat,
-      lng: position.coords.lng,
-      accuracy: position.accuracy,
-      endedAt: new Date().toISOString(),
-    };
-
-    if (!navigator.onLine) {
-      const queued = enqueueMutation({
-        endpoint: `visits/${visit.id}/end`,
-        method: "POST",
-        payload,
-        type: "visit-end",
+      await upsertOfflineVisit({
+        ...visit,
+        localVisitId,
+        startedAt: type === "visit-start" ? (payload as any).startedAt : visit.startedAt,
+        endedAt: type === "visit-end" ? (payload as any).endedAt : visit.endedAt,
+        serverStatus: type === "visit-start" ? "pending_start" : "pending_end",
       });
-      if (!queued.queued) {
-        setMessage(
-          queued.reason === "offline_limit_reached"
-            ? "\u062d\u062f \u0627\u0644\u0639\u0645\u0644 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644 \u0627\u0643\u062a\u0645\u0644 (\u0633\u0627\u0639\u0629 \u064a\u0648\u0645\u064a\u064b\u0627)."
-            : queued.reason === "online_required"
-              ? "\u0628\u062f\u0621/\u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u064a\u062a\u0637\u0644\u0628 \u0627\u062a\u0635\u0627\u0644 \u0625\u0646\u062a\u0631\u0646\u062a \u0641\u0639\u0627\u0644."
-            : "\u0644\u0645 \u062a\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 (\u0645\u0643\u0631\u0631\u0629 \u0623\u0648 \u063a\u064a\u0631 \u0645\u0633\u0645\u0648\u062d\u0629)."
-        );
-        setLoading(false);
-        return;
-      }
-      refreshQueue();
-      updateVisit(visit.id, { serverStatus: "pending_end", endedAt: payload.endedAt });
+      await Promise.all([loadData(), refreshQueue()]);
+      setMessage(
+        type === "visit-start"
+          ? "\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u0644\u0644\u0637\u0627\u0628\u0648\u0631 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644."
+          : "\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u0644\u0644\u0637\u0627\u0628\u0648\u0631 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644."
+      );
       setLoading(false);
-      setMessage("\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629 \u0644\u0644\u0637\u0627\u0628\u0648\u0631 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644.");
       return;
     }
 
     try {
-      await endVisit(visit.id, payload);
-      updateVisit(visit.id, { serverStatus: "completed", endedAt: payload.endedAt });
-      setMessage("\u062a\u0645 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629.");
+      if (type === "visit-start") {
+        await startVisit(visit.id, payload as { lat: number; lng: number; accuracy?: number | null; startedAt?: string });
+        updateVisit(String(visit.id), { serverStatus: "in_progress", startedAt: (payload as any).startedAt });
+        setMessage("\u062a\u0645 \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629.");
+      } else {
+        await endVisit(visit.id, payload as { lat: number; lng: number; accuracy?: number | null; endedAt?: string });
+        updateVisit(String(visit.id), { serverStatus: "completed", endedAt: (payload as any).endedAt });
+        setMessage("\u062a\u0645 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629.");
+      }
     } catch (err) {
-      setMessage("\u062a\u0639\u0630\u0631 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629. \u062a\u062d\u0642\u0642 \u0645\u0646 GPS \u062b\u0645 \u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629.");
+      setMessage(
+        type === "visit-start"
+          ? "\u062a\u0639\u0630\u0631 \u0628\u062f\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629. \u062a\u062d\u0642\u0642 \u0645\u0646 GPS \u062b\u0645 \u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629."
+          : "\u062a\u0639\u0630\u0631 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0632\u064a\u0627\u0631\u0629. \u062a\u062d\u0642\u0642 \u0645\u0646 GPS \u062b\u0645 \u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629."
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -376,8 +367,8 @@ export default function VisitsPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
                   <span className="pill">{statusLabel}</span>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" onClick={() => handleStart(visit)} disabled={loading || !canStart}>\u0628\u062f\u0621</button>
-                    <button type="button" onClick={() => handleEnd(visit)} disabled={loading || !canEnd}>\u0625\u0646\u0647\u0627\u0621</button>
+                    <button type="button" onClick={() => void handleVisitLifecycle(visit, "visit-start")} disabled={loading || !canStart}>\u0628\u062f\u0621</button>
+                    <button type="button" onClick={() => void handleVisitLifecycle(visit, "visit-end")} disabled={loading || !canEnd}>\u0625\u0646\u0647\u0627\u0621</button>
                   </div>
                 </div>
               </div>

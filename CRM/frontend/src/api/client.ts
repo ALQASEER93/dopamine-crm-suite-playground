@@ -1,5 +1,47 @@
-const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1') as string;
-export const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
+const LOCAL_API_DEFAULT = 'http://127.0.0.1:8000/api/v1';
+
+const isLocalApiUrl = (value: string) => {
+  const normalized = value.trim();
+  const lower = normalized.toLowerCase();
+
+  try {
+    const parsed = new URL(normalized);
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host === '::1' ||
+      host.endsWith('.local')
+    );
+  } catch (_error) {
+    if (normalized.startsWith('/')) return false;
+    return (
+      lower.includes('localhost') ||
+      lower.includes('127.0.0.1') ||
+      lower.includes('0.0.0.0') ||
+      lower.includes('::1')
+    );
+  }
+};
+
+const resolveApiBaseUrl = () => {
+  const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || LOCAL_API_DEFAULT) as string;
+  const normalized = rawBaseUrl.trim().replace(/\/$/, '');
+
+  if (import.meta.env.PROD && (!normalized || isLocalApiUrl(normalized) || normalized === LOCAL_API_DEFAULT)) {
+    throw new Error(
+      [
+        'Production API base URL is invalid.',
+        'Set VITE_API_BASE_URL to the deployed HTTPS API base before building or deploying the CRM frontend.',
+      ].join(' '),
+    );
+  }
+
+  return normalized;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export type ResponseType = 'json' | 'text' | 'blob';

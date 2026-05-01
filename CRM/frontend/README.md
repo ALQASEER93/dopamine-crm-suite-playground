@@ -31,6 +31,7 @@ For field/staging/production, set the deployed HTTPS API host using:
 
 Production build guard:
 - `npm run build` now fails in `production` mode if the effective API base URL is empty or local/default (`localhost`, `127.0.0.1`, `0.0.0.0`, `::1`, `.local`, or the built-in default `http://127.0.0.1:8000/api/v1`).
+- The runtime API client also refuses local/default API bases when `import.meta.env.PROD` is true, so a production bundle cannot silently call localhost.
 - This check does not block `npm run dev` local development flow.
 
 Optional (only when `VITE_MAP_MODE=google`):

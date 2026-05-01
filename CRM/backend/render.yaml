@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: dopamine-crm-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    autoDeploy: false
+    envVars:
+      - key: DPM_ENV
+        value: production
+      - key: PROD_DATABASE_URL
+        fromDatabase:
+          name: dopamine-crm-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: ALLOWED_ORIGIN_REGEX
+        sync: false
+      - key: SEED_DEFAULT_USERS
+        value: "false"
+      - key: ALLOW_DEV_TOKEN_ENDPOINT
+        value: "false"
+      - key: ALLOW_DEV_TOKEN
+        value: "false"
+      - key: GEOFENCE_ENABLED
+        value: "true"
+
+databases:
+  - name: dopamine-crm-db
+    plan: starter
+    databaseName: dpm_crm
+    user: dpm_user

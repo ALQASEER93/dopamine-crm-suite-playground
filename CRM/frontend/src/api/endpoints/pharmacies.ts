@@ -9,7 +9,7 @@ export const pharmacyKeys = {
 
 export interface PharmacyListParams {
   page?: number;
-  pageSize?: number;
+  page_size?: number;
   search?: string;
   city?: string;
   area?: string;
@@ -19,13 +19,15 @@ export interface PharmacyListParams {
 export const listPharmacies = async (params: PharmacyListParams) => {
   const query = new URLSearchParams();
   if (params.page) query.set('page', String(params.page));
-  if (params.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params.page_size) query.set('page_size', String(params.page_size));
   if (params.search) query.set('search', params.search.trim());
   if (params.city) query.set('city', params.city);
   if (params.area) query.set('area', params.area);
   if (params.segment) query.set('segment', params.segment);
 
-  const { data } = await apiClient.get<ApiListResponse<Pharmacy>>(`/pharmacies?${query.toString()}`);
+  const qs = query.toString();
+  const path = qs ? `/pharmacies?${qs}` : '/pharmacies';
+  const { data } = await apiClient.get<ApiListResponse<Pharmacy>>(path);
   return data;
 };
 

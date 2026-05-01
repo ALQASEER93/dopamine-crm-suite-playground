@@ -2,6 +2,10 @@
 
 This runbook is the source of truth for running the FastAPI backend, CRM frontend, and ALQASEER PWA locally.
 
+## Canonical Deployment Reference
+- Internal pilot/staging deployment path is **Docker Compose** (`docker-compose.prod.yml`) as documented in `docs/DEPLOYMENT_CANONICAL.md`.
+- Any standalone PWA-only Vercel/Next deployment guide is non-canonical for this monorepo.
+
 ## Prerequisites
 - Windows PowerShell 7+ (or Windows PowerShell 5.1)
 - Python 3.11+
