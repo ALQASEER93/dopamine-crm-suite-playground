@@ -60,6 +60,13 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    @field_validator("*", mode="before")
+    @classmethod
+    def strip_env_strings(cls, value):  # noqa: ANN001
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
     @field_validator("seed_default_users", mode="before")
     @classmethod
     def normalize_seed_flag(cls, value):  # noqa: ANN001

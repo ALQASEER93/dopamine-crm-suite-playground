@@ -57,6 +57,23 @@ def test_production_rejects_sqlite_database_url():
         )
 
 
+def test_production_trims_crlf_env_values_before_parsing():
+    settings = Settings(
+        DPM_ENV="production\r\n",
+        JWT_SECRET="StrongProductionSecret123!\r\n",
+        ALLOWED_ORIGINS="https://crm.example.com\r\n",
+        ALLOW_DEV_TOKEN_ENDPOINT="false\r\n",
+        ALLOW_DEV_TOKEN="false\r\n",
+        GEOFENCE_ENABLED="true\r\n",
+        DATABASE_URL="postgresql://user:pass@db.example.com:5432/defaultdb?sslmode=require\r\n",
+    )
+
+    assert settings.allow_dev_token_endpoint is False
+    assert settings.allow_dev_token is False
+    assert settings.geofence_enabled is True
+    assert settings.database_url == "postgresql://user:pass@db.example.com:5432/defaultdb?sslmode=require"
+
+
 def test_seed_admin_and_rep_does_not_seed_users_in_production(monkeypatch):
     db = _make_session()
     monkeypatch.setattr(auth_service.settings, "app_env", "production")

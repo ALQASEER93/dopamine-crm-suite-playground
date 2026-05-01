@@ -21,4 +21,5 @@ def test_api_v1_health(client):
     data = response.json()
     assert data.get("status") == "ok"
     assert "db" in data
+    assert "://" not in data["db"]
     assert "version" in data
