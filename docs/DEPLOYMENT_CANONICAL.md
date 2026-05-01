@@ -1,13 +1,15 @@
 # Canonical Deployment Path (Pilot Candidate)
 
-This repository has two supported deployment tracks for internal pilot usage:
+This repository has three supported deployment tracks for internal pilot usage:
 
 1. Field PWA: GitHub Actions direct upload to Cloudflare Pages from `ALQASEER-PWA/dist`.
-2. Full internal stack: Docker Compose with FastAPI, CRM, PWA, and Caddy.
+2. No-card pilot backend: Vercel FastAPI from `CRM/backend` with Aiven Free PostgreSQL.
+3. Full internal stack: Docker Compose with FastAPI, CRM, PWA, and Caddy.
 
 ## Status
 
 - Preferred field deployment: `.github/workflows/field-ready-deploy-cloudflare.yml`.
+- No-card backend pilot: `CRM/backend/vercel.json` plus Aiven Free PostgreSQL.
 - Internal full-stack deployment: Docker Compose stack below.
 - Non-canonical: standalone Vercel/Next.js guides for PWA-only deployment.
 
@@ -44,9 +46,58 @@ Required SPA redirect:
 
 This must remain in `ALQASEER-PWA/public/_redirects` so `/login` and other SPA routes do not return 404 after direct navigation.
 
-## Backend HTTPS API Deployment
+## No-Card Backend HTTPS API Deployment
 
-Preferred pilot path when no existing hosted backend URL is available: Render Web Service from `CRM/backend/Dockerfile`.
+Preferred no-card pilot path when Render is blocked by billing/payment requirements:
+
+- Backend host: Vercel Hobby project `dopamine-crm-api` from `CRM/backend`.
+- Database: Aiven Free PostgreSQL.
+- Frontend/PWA: Cloudflare Pages direct upload workflow.
+
+Deployment pack:
+
+- `CRM/backend/api/index.py`
+- `CRM/backend/vercel.json`
+- `CRM/backend/.vercelignore`
+- `CRM/backend/.env.example`
+
+Smoke endpoint:
+
+```text
+GET https://<vercel-backend>.vercel.app/api/v1/health
+```
+
+Minimum Vercel env vars:
+
+- `DPM_ENV=production`
+- `DATABASE_URL=<aiven-postgresql-url>`
+- `PROD_DATABASE_URL=<aiven-postgresql-url>`
+- `JWT_SECRET=<strong random secret, at least 16 chars>`
+- `ALLOWED_ORIGINS=https://<cloudflare-pages-project>.pages.dev`
+- `ALLOWED_ORIGIN_REGEX=^https://<cloudflare-pages-project>(?:-[a-z0-9-]+)?\.pages\.dev$`
+- `SEED_DEFAULT_USERS=false`
+- `ALLOW_DEV_TOKEN_ENDPOINT=false`
+- `ALLOW_DEV_TOKEN=false`
+
+The backend rejects production startup with SQLite. Production must use a managed PostgreSQL URL.
+
+After Vercel returns the HTTPS backend URL, use:
+
+```text
+VITE_API_BASE_URL=https://<vercel-backend>.vercel.app/api/v1
+```
+
+Set that value in GitHub Actions as repository variable `VITE_API_BASE_URL`, then run the Cloudflare Pages workflow.
+
+Limits:
+
+- Aiven Free PostgreSQL is pilot-only: 20 max connections, no SLA, 1 GB storage.
+- Vercel Hobby is pilot-only and subject to Hobby/serverless limits.
+- This path is not the final production architecture.
+
+## Render Backend HTTPS API Deployment
+
+Render is no longer the preferred no-card path for this run because the account returned payment/billing blockers. Keep this section only as a secondary option if the owner later approves Render billing.
 
 Deployment pack:
 

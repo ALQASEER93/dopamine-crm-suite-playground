@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+node_modules/
+data/
+tests/
+legacy-express/
+*.log
+LOG_WRITE_TEST.tmp

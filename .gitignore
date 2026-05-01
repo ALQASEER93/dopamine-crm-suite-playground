@@ -35,6 +35,7 @@ PR_BLOCKER_ANALYSIS.md
 .tmp_fix_*/
 .tmp_rc_*/
 CRM/frontend/.vercel/
+CRM/backend/.vercel/
 
 # docs/_runs hygiene
 docs/_runs/*

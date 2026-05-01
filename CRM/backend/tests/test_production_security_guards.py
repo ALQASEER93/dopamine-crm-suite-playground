@@ -45,6 +45,18 @@ def test_production_rejects_seed_default_users_enabled():
         )
 
 
+def test_production_rejects_sqlite_database_url():
+    with pytest.raises(ValueError, match="managed PostgreSQL"):
+        Settings(
+            DPM_ENV="production",
+            JWT_SECRET="StrongProductionSecret123!",
+            ALLOWED_ORIGINS="https://crm.example.com",
+            ALLOW_DEV_TOKEN_ENDPOINT=False,
+            ALLOW_DEV_TOKEN=False,
+            DATABASE_URL="sqlite:///./data/fastapi.db",
+        )
+
+
 def test_seed_admin_and_rep_does_not_seed_users_in_production(monkeypatch):
     db = _make_session()
     monkeypatch.setattr(auth_service.settings, "app_env", "production")

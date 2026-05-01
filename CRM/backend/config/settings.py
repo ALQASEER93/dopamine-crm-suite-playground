@@ -125,6 +125,8 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "Dev token toggles must be disabled when DPM_ENV=production."
                 )
+            if self.database_url.strip().lower().startswith("sqlite"):
+                raise ValueError("DATABASE_URL or PROD_DATABASE_URL must use managed PostgreSQL in production.")
             if self.allow_gps_override is None:
                 object.__setattr__(self, "allow_gps_override", False)
             if self.geofence_require_target_coords is None:
