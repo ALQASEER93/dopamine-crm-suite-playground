@@ -171,7 +171,7 @@ jobs:
           set -euo pipefail
           log_file=".github/_ci_logs/cloudflare/deploy.log"
           wrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"
-          $wrangler_cmd pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" 2>&1 | tee "$log_file"
+          $wrangler_cmd pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch main 2>&1 | tee "$log_file"
           deploy_url="$(grep -Eo 'https://[a-zA-Z0-9._/-]+\.pages\.dev[^ ]*' "$log_file" | head -n 1 || true)"
           if [ -z "$deploy_url" ]; then
             deploy_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"
@@ -186,6 +186,7 @@ jobs:
           CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
           DEPLOY_URL: ${{ env.DEPLOY_URL }}
           PROD_URL: ${{ env.PROD_URL }}
+          VITE_API_BASE_URL: ${{ env.VITE_API_BASE_URL }}
         run: |
           set -euo pipefail
           log_file=".github/_ci_logs/cloudflare/smoke.log"
@@ -238,6 +239,35 @@ jobs:
             fi
             exit 1
           fi
+
+          html_file="$RUNNER_TEMP/cloudflare-production-index.html"
+          assets_dir="$RUNNER_TEMP/cloudflare-production-assets"
+          mkdir -p "$assets_dir"
+          curl -sS -L --connect-timeout 15 --max-time 45 "$PRODUCTION_ROOT" -o "$html_file"
+          node - "$html_file" "$PRODUCTION_ROOT" "$VITE_API_BASE_URL" "$assets_dir" <<'NODE'
+          const fs = require("fs");
+          const path = require("path");
+          const { execFileSync } = require("child_process");
+
+          const [htmlFile, rootUrl, expectedApiBase, assetsDir] = process.argv.slice(2);
+          const html = fs.readFileSync(htmlFile, "utf8");
+          const assetMatches = [...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g)];
+          const assets = [...new Set(assetMatches.map((match) => new URL(match[1], rootUrl).toString()))];
+          let combined = html;
+          for (const assetUrl of assets) {
+            const file = path.join(assetsDir, encodeURIComponent(assetUrl));
+            execFileSync("curl", ["-sS", "-L", "--connect-timeout", "15", "--max-time", "45", assetUrl, "-o", file]);
+            combined += "\n" + fs.readFileSync(file, "utf8");
+          }
+          if (!combined.includes(expectedApiBase)) {
+            console.error(`Production frontend assets do not include expected VITE_API_BASE_URL: ${expectedApiBase}`);
+            process.exit(1);
+          }
+          if (combined.includes('const i0="/api/v1"') || combined.includes('="/api/v1"')) {
+            console.error("Production frontend assets still include the relative /api/v1 default.");
+            process.exit(1);
+          }
+          NODE
 
           {
             echo "## Field-Ready Cloudflare Deploy"
