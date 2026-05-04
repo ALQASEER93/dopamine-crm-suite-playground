@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WRANGLER_VERSION: "4.64.0"
+      VITE_API_BASE_URL: "/api/v1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,7 +22,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || secrets.VITE_API_BASE_URL }}
         run: |
           set -euo pipefail
           missing=0
@@ -36,30 +36,10 @@ jobs:
             echo "Required: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID."
             exit 1
           fi
-          if [ -z "${VITE_API_BASE_URL}" ]; then
-            echo "Missing repository variable or secret: VITE_API_BASE_URL"
-            echo "Cloudflare Pages deploy blocked: production PWA builds must point to a deployed API base URL."
+          if [ "${VITE_API_BASE_URL}" != "/api/v1" ]; then
+            echo "Cloudflare Pages field deploy must use the same-origin API proxy: VITE_API_BASE_URL=/api/v1"
             exit 1
           fi
-          node -e '
-            const value = process.env.VITE_API_BASE_URL || "";
-            let invalid = !value.trim();
-            try {
-              const parsed = new URL(value);
-              const host = parsed.hostname.toLowerCase();
-              invalid =
-                invalid ||
-                parsed.protocol !== "https:" ||
-                ["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(host) ||
-                host.endsWith(".local");
-            } catch (_err) {
-              invalid = true;
-            }
-            if (invalid) {
-              console.error("VITE_API_BASE_URL must be a deployed HTTPS API URL, not localhost, a relative path, or an invalid value.");
-              process.exit(1);
-            }
-          '
           echo "VITE_API_BASE_URL=$VITE_API_BASE_URL" >> "$GITHUB_ENV"
           repo_name="${GITHUB_REPOSITORY##*/}"
           resolved_project_name="${CLOUDFLARE_PROJECT_NAME:-$repo_name}"
@@ -93,6 +73,15 @@ jobs:
           if [ ! -d "ALQASEER-PWA/dist" ]; then
             echo "Build output missing: ALQASEER-PWA/dist"
             echo "Run the PWA build first and ensure dist/ is produced."
+            exit 1
+          fi
+          if [ ! -f "ALQASEER-PWA/dist/_routes.json" ]; then
+            echo "Build output missing: ALQASEER-PWA/dist/_routes.json"
+            echo "Cloudflare Pages Functions must be limited to /api/v1/* via ALQASEER-PWA/public/_routes.json."
+            exit 1
+          fi
+          if [ ! -f "ALQASEER-PWA/functions/api/v1/[[path]].js" ]; then
+            echo "Pages Function proxy missing: ALQASEER-PWA/functions/api/v1/[[path]].js"
             exit 1
           fi
 
@@ -163,15 +152,16 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         shell: bash
+        working-directory: ALQASEER-PWA
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_PROJECT_NAME_RESOLVED: ${{ env.CLOUDFLARE_PROJECT_NAME_RESOLVED }}
         run: |
           set -euo pipefail
-          log_file=".github/_ci_logs/cloudflare/deploy.log"
+          log_file="../.github/_ci_logs/cloudflare/deploy.log"
           wrangler_cmd="npx -y wrangler@${WRANGLER_VERSION}"
-          $wrangler_cmd pages deploy ALQASEER-PWA/dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch main 2>&1 | tee "$log_file"
+          $wrangler_cmd pages deploy dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch main 2>&1 | tee "$log_file"
           deploy_url="$(grep -Eo 'https://[a-zA-Z0-9._/-]+\.pages\.dev[^ ]*' "$log_file" | head -n 1 || true)"
           if [ -z "$deploy_url" ]; then
             deploy_url="https://$CLOUDFLARE_PROJECT_NAME_RESOLVED.pages.dev/"
@@ -194,6 +184,7 @@ jobs:
           DEPLOY_LOGIN="${DEPLOY_ROOT%/}/login"
           PRODUCTION_ROOT="${PROD_URL%/}/"
           PRODUCTION_LOGIN="${PRODUCTION_ROOT%/}/login"
+          PRODUCTION_HEALTH="${PRODUCTION_ROOT%/}/api/v1/health"
 
           check_url_with_retry() {
             local label="$1"
@@ -226,19 +217,44 @@ jobs:
           deploy_login_code="$(check_url_with_retry "deploy-login" "$DEPLOY_LOGIN" "login")" || deploy_login_failed=1
           prod_root_code="$(check_url_with_retry "prod-root" "$PRODUCTION_ROOT" "root")" || prod_root_failed=1
           prod_login_code="$(check_url_with_retry "prod-login" "$PRODUCTION_LOGIN" "login")" || prod_login_failed=1
+          prod_health_code="$(check_url_with_retry "prod-health" "$PRODUCTION_HEALTH" "root")" || prod_health_failed=1
 
           deploy_root_failed="${deploy_root_failed:-0}"
           deploy_login_failed="${deploy_login_failed:-0}"
           prod_root_failed="${prod_root_failed:-0}"
           prod_login_failed="${prod_login_failed:-0}"
+          prod_health_failed="${prod_health_failed:-0}"
 
-          if [ "$deploy_root_failed" -eq 1 ] || [ "$deploy_login_failed" -eq 1 ] || [ "$prod_root_failed" -eq 1 ] || [ "$prod_login_failed" -eq 1 ]; then
+          if [ "$deploy_root_failed" -eq 1 ] || [ "$deploy_login_failed" -eq 1 ] || [ "$prod_root_failed" -eq 1 ] || [ "$prod_login_failed" -eq 1 ] || [ "$prod_health_failed" -eq 1 ]; then
             echo "Smoke checks failed for one or more URLs." | tee -a "$log_file"
             if [ "$deploy_login_code" = "404" ] || [ "$prod_login_code" = "404" ]; then
               echo "Guidance: ensure ALQASEER-PWA/public/_redirects contains '/* /index.html 200'." | tee -a "$log_file"
             fi
             exit 1
           fi
+
+          health_body_file="$RUNNER_TEMP/cloudflare-production-health.json"
+          curl -sS -L --connect-timeout 15 --max-time 45 "$PRODUCTION_HEALTH" -o "$health_body_file"
+          node - "$health_body_file" <<'NODE'
+          const fs = require("fs");
+          const file = process.argv[2];
+          const raw = fs.readFileSync(file, "utf8");
+          if (/<!doctype html|<html/i.test(raw)) {
+            console.error("Cloudflare /api/v1/health returned HTML instead of backend JSON.");
+            process.exit(1);
+          }
+          let parsed;
+          try {
+            parsed = JSON.parse(raw);
+          } catch (_err) {
+            console.error("Cloudflare /api/v1/health did not return JSON.");
+            process.exit(1);
+          }
+          if (parsed?.status !== "ok" || parsed?.db !== "postgresql" || !parsed?.version) {
+            console.error("Cloudflare /api/v1/health returned JSON but not the expected backend health payload.");
+            process.exit(1);
+          }
+          NODE
 
           html_file="$RUNNER_TEMP/cloudflare-production-index.html"
           assets_dir="$RUNNER_TEMP/cloudflare-production-assets"
@@ -263,8 +279,12 @@ jobs:
             console.error(`Production frontend assets do not include expected VITE_API_BASE_URL: ${expectedApiBase}`);
             process.exit(1);
           }
-          if (combined.includes('const i0="/api/v1"') || combined.includes('="/api/v1"')) {
-            console.error("Production frontend assets still include the relative /api/v1 default.");
+          if (
+            combined.includes("https://dopamine-crm-api.vercel.app/api/v1") ||
+            combined.includes("http://127.0.0.1:8000/api/v1") ||
+            combined.includes("http://localhost:8000/api/v1")
+          ) {
+            console.error("Production frontend assets include a stale external or localhost API base.");
             process.exit(1);
           }
           NODE
@@ -279,7 +299,8 @@ jobs:
             echo "- Deploy URL HTTP /login: $deploy_login_code"
             echo "- Production URL HTTP /: $prod_root_code"
             echo "- Production URL HTTP /login: $prod_login_code"
-            echo "- Smoke: Passed (deploy + production URLs for / and /login)"
+            echo "- Production URL HTTP /api/v1/health: $prod_health_code"
+            echo "- Smoke: Passed (deploy + production URLs for / and /login, production /api/v1/health)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload deploy and smoke logs

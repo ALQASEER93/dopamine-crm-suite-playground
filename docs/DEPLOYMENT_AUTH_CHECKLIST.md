@@ -13,7 +13,7 @@ To help differentiate "wrong credentials" vs "API unreachable/CORS" without leak
 Vite exposes ONLY variables prefixed with `VITE_` to the browser build. Do not put secrets in `VITE_*`.
 
 Required:
-- `VITE_API_BASE_URL`
+- `VITE_API_BASE_URL=/api/v1` for Cloudflare Pages field deployment.
   - Used by the PWA API client as the base for requests.
   - Default in code is `"/api/v1"` (same-origin).
 
@@ -76,7 +76,7 @@ cd CRM/backend
 python -m scripts.bootstrap_admin
 ```
 
-## Cloudflare Pages SPA Routing (PWA)
+## Cloudflare Pages SPA Routing and API Proxy (PWA)
 Cloudflare Pages requires SPA fallback routing via `_redirects`.
 
 Place this file in:
@@ -86,4 +86,13 @@ Content:
 ```txt
 /* /index.html 200
 ```
+
+Cloudflare Pages also requires the same-origin API proxy route:
+
+```text
+ALQASEER-PWA/functions/api/v1/[[path]].js
+ALQASEER-PWA/public/_routes.json
+```
+
+`_routes.json` must include only `/api/v1/*` so Functions do not run for normal static assets or SPA routes.
 

@@ -11,7 +11,8 @@ function isDebugUiEnabled() {
 
 async function checkHealth(opts: { timeoutMs: number }): Promise<{ status: HealthStatus; detail: string; url: string }> {
   const base = new URL(API_BASE_URL, window.location.origin);
-  const candidates = ["/health", "/api/health"].map((p) => `${base.origin}${p}`);
+  const apiBase = `${base.origin}${base.pathname.replace(/\/$/, "")}`;
+  const candidates = [`${apiBase}/health`];
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), opts.timeoutMs);
 

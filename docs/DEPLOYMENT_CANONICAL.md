@@ -2,7 +2,7 @@
 
 This repository has three supported deployment tracks for internal pilot usage:
 
-1. Field PWA: GitHub Actions direct upload to Cloudflare Pages from `ALQASEER-PWA/dist`.
+1. Field PWA: GitHub Actions direct upload to Cloudflare Pages from `ALQASEER-PWA/dist`, with Pages Functions from `ALQASEER-PWA/functions`.
 2. No-card pilot backend: Vercel FastAPI from `CRM/backend` with Aiven Free PostgreSQL.
 3. Full internal stack: Docker Compose with FastAPI, CRM, PWA, and Caddy.
 
@@ -26,17 +26,39 @@ Optional GitHub secret:
 
 - `CLOUDFLARE_PROJECT_NAME`
 
-Required GitHub repository variable or secret:
-
-- `VITE_API_BASE_URL`
-
-`VITE_API_BASE_URL` must be the deployed HTTPS FastAPI API base, for example:
+Production browser API base:
 
 ```text
-https://api.example.com/api/v1
+VITE_API_BASE_URL=/api/v1
 ```
 
-The Cloudflare workflow blocks localhost, relative paths, and invalid API URLs for production Pages builds. It deploys the already built static PWA via Wrangler Pages direct upload and does not require a root Worker entrypoint or root `wrangler.toml`.
+The Cloudflare workflow intentionally builds the field PWA against the same-origin API base. Browser requests go to:
+
+```text
+https://dopamine-crm-suite-playground.pages.dev/api/v1/*
+```
+
+Cloudflare Pages Function proxy:
+
+```text
+ALQASEER-PWA/functions/api/v1/[[path]].js
+```
+
+proxies those API requests to the Vercel FastAPI upstream:
+
+```text
+https://dopamine-crm-api.vercel.app/api/v1/*
+```
+
+The Vercel URL is upstream-only and diagnostic-only for this pilot. Field browsers should not call `https://dopamine-crm-api.vercel.app` directly.
+
+The workflow deploys from inside `ALQASEER-PWA`:
+
+```bash
+npx -y wrangler@4 pages deploy dist --project-name "$CLOUDFLARE_PROJECT_NAME_RESOLVED" --branch main
+```
+
+This keeps Pages Functions discoverable by direct upload without adding a root Worker entrypoint or root `wrangler.toml`.
 
 Required SPA redirect:
 
@@ -84,10 +106,17 @@ The backend rejects production startup with SQLite. Production must use a manage
 After Vercel returns the HTTPS backend URL, use:
 
 ```text
-VITE_API_BASE_URL=https://<vercel-backend>.vercel.app/api/v1
+VITE_API_BASE_URL=/api/v1
 ```
 
-Set that value in GitHub Actions as repository variable `VITE_API_BASE_URL`, then run the Cloudflare Pages workflow.
+The Cloudflare Pages Function uses the Vercel backend as upstream. The browser must use the same-origin Cloudflare URL, not the Vercel URL directly.
+
+Future custom CRM subdomain options are documented but not active in this task:
+
+- `crm.dopaminepharma.com`
+- `app.dopaminepharma.com`
+
+The official company domain and emails are available for later setup. DNS, email, MX, SPF, DKIM, and DMARC are out of scope for this deployment task.
 
 Limits:
 
