@@ -19,6 +19,26 @@ def test_login_and_me(client):
     assert me["role"]["slug"] == "admin"
 
 
+def test_login_missing_user_returns_controlled_unauthorized(client):
+    resp = client.post(
+        "/api/v1/auth/login",
+        json={"email": "missing.user@example.com", "password": "NoSuchUser123!"},
+    )
+
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Invalid email or password."
+
+
+def test_login_wrong_password_returns_controlled_unauthorized(client):
+    resp = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@example.com", "password": "WrongPassword123!"},
+    )
+
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Invalid email or password."
+
+
 def test_login_default_seeded_users(client):
     users = [
         ("admin@example.com", "Admin12345!", "admin"),
