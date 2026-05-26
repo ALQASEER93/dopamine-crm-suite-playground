@@ -19,7 +19,7 @@ class Base(DeclarativeBase):
     """Base class for SQLAlchemy models."""
 
 
-def _create_engine(url: str) -> Engine:
+def _create_engine(url: str, *, verify_connection: bool = False) -> Engine:
     connect_args = {}
     normalized_url = url
 
@@ -48,20 +48,21 @@ def _create_engine(url: str) -> Engine:
 
     engine = create_engine(normalized_url, echo=settings.echo_sql, connect_args=connect_args)
 
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-    except OperationalError as exc:
-        msg = str(exc).lower()
-        if "disk i/o error" in msg or "readonly" in msg:
-            logger.error(
-                "Primary DB path unavailable (%s): %s. Falling back to temp SQLite.",
-                normalized_url,
-                exc,
-            )
-            engine = build_fallback_engine()
-        else:
-            raise
+    if verify_connection:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+        except OperationalError as exc:
+            msg = str(exc).lower()
+            if "disk i/o error" in msg or "readonly" in msg:
+                logger.error(
+                    "Primary DB path unavailable (%s): %s. Falling back to temp SQLite.",
+                    normalized_url,
+                    exc,
+                )
+                engine = build_fallback_engine()
+            else:
+                raise
 
     return engine
 

@@ -36,6 +36,17 @@ tags_metadata = [
 ]
 
 
+def _env_flag_enabled(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def should_skip_startup_db_init() -> bool:
+    """Avoid serverless cold-start failures; migrations/seeding are explicit outside Vercel."""
+    if _env_flag_enabled(os.getenv("DPM_SKIP_STARTUP_DB_INIT")):
+        return True
+    return settings.app_env.lower() == "production" and _env_flag_enabled(os.getenv("VERCEL"))
+
+
 def init_database() -> None:
     """
     Import models and create tables if they do not exist.
@@ -71,10 +82,13 @@ def init_database() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Initialize database and seed reference data once on startup."""
-    init_database()
-    with SessionLocal() as session:
-        # Opt-in bootstrap for first-admin creation (safe-by-default; disabled unless env flag is set).
-        maybe_bootstrap_admin_on_startup(session)
+    if should_skip_startup_db_init():
+        logger.info("Skipping startup database initialization for serverless runtime.")
+    else:
+        init_database()
+        with SessionLocal() as session:
+            # Opt-in bootstrap for first-admin creation (safe-by-default; disabled unless env flag is set).
+            maybe_bootstrap_admin_on_startup(session)
     yield
 
 
