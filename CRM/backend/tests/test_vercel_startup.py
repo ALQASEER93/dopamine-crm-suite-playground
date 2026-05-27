@@ -31,3 +31,34 @@ def test_vercel_entrypoint_import_does_not_connect_to_database_on_import() -> No
 
     assert result.returncode == 0, result.stderr
     assert "True" in result.stdout
+
+
+def test_vercel_entrypoint_accepts_provider_postgres_scheme_on_import() -> None:
+    backend_root = Path(__file__).resolve().parents[1]
+    env = {
+        **os.environ,
+        "DPM_ENV": "production",
+        "JWT_SECRET": "StrongProductionSecret123!",
+        "ALLOWED_ORIGINS": "https://dopamine-crm-suite-playground.pages.dev",
+        "ALLOW_DEV_TOKEN_ENDPOINT": "false",
+        "ALLOW_DEV_TOKEN": "false",
+        "DATABASE_URL": "postgres://user:pass@127.0.0.1:1/defaultdb?sslmode=require",
+        "VERCEL": "1",
+    }
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from core.db import engine; print(engine.url.get_backend_name())",
+        ],
+        cwd=backend_root,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "postgresql" in result.stdout

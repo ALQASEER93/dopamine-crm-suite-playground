@@ -23,6 +23,9 @@ def _create_engine(url: str, *, verify_connection: bool = False) -> Engine:
     connect_args = {}
     normalized_url = url
 
+    if url.startswith("postgres://"):
+        normalized_url = f"postgresql://{url.removeprefix('postgres://')}"
+
     if url.startswith("sqlite"):
         connect_args = {"check_same_thread": False}
 
