@@ -5,6 +5,22 @@ import { getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../o
 import { useAuthStore } from "../../state/auth";
 import { useNavigate } from "react-router-dom";
 
+function formatAccountValue(value: unknown, fallback = "غير متوفر") {
+  if (value == null || value === "") return fallback;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    const values = value.map((item) => formatAccountValue(item, "")).filter(Boolean);
+    return values.length ? values.join("، ") : fallback;
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return formatAccountValue(record.name || record.role || record.code || record.id, fallback);
+  }
+  return fallback;
+}
+
 export default function AccountPage() {
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
@@ -88,8 +104,8 @@ export default function AccountPage() {
         <div className="section-title">بيانات المستخدم</div>
         <div className="grid">
           <div><span className="muted">الاسم</span><br />{user?.name || "غير متوفر"}</div>
-          <div><span className="muted">البريد</span><br />{user?.email || "غير متوفر"}</div>
-          <div><span className="muted">الدور</span><br />{user?.role || "غير متوفر"}</div>
+          <div><span className="muted">البريد</span><br />{formatAccountValue(user?.email)}</div>
+          <div><span className="muted">الدور</span><br />{formatAccountValue(user?.role)}</div>
           <div><span className="muted">الاتصال</span><br />{online ? "متصل" : "دون اتصال"}</div>
           <div><span className="muted">المناطق المكلف بها</span><br />{Array.from(new Set(customers.map((item) => item.area).filter(Boolean))).join("، ") || "غير متوفر"}</div>
           <div><span className="muted">إذن الموقع</span><br />{geoPermission}</div>
