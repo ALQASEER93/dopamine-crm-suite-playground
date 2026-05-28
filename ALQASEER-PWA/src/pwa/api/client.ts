@@ -139,9 +139,17 @@ export async function getVisits(filters?: { date?: string; status?: string; cust
 }
 
 export async function createVisit(payload: VisitPayload) {
+  const body = {
+    customerId: payload.customerId,
+    customerName: payload.customerName,
+    customerType: payload.customerType,
+    visitType: payload.visitType,
+    notes: payload.notes,
+    ...(payload.status ? { status: payload.status } : {}),
+  };
   return apiFetch<Visit>("pwa/visits", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 }
 
@@ -166,6 +174,13 @@ export async function endVisit(visitId: string, payload: { lat: number; lng: num
       accuracy: payload.accuracy ?? null,
       ended_at: payload.endedAt,
     }),
+  });
+}
+
+export async function updateVisitNotes(visitId: string, notes: string) {
+  return apiFetch<Visit>(`visits/${visitId}`, {
+    method: "PUT",
+    body: JSON.stringify({ notes }),
   });
 }
 

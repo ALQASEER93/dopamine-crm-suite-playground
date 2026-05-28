@@ -30,6 +30,15 @@ const items = [
     ),
   },
   {
+    to: "/reports",
+    label: "التقارير",
+    icon: (
+      <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+        <path d="M5 4h14v16H5V4zm3 11h2V9H8v6zm3 0h2V7h-2v8zm3 0h2v-4h-2v4z" />
+      </svg>
+    ),
+  },
+  {
     to: "/customers",
     label: "العملاء",
     icon: (

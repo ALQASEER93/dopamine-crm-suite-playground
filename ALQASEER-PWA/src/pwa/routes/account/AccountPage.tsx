@@ -1,69 +1,134 @@
 import React, { useEffect, useState } from "react";
-import { API_BASE_URL } from "../../api/client";
+import { API_BASE_URL, getCustomers, getTodayRoute } from "../../api/client";
+import type { Customer, RouteStop } from "../../api/types";
 import { getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../offline/queue";
 import { useAuthStore } from "../../state/auth";
 import { useNavigate } from "react-router-dom";
 
 export default function AccountPage() {
-  const user = useAuthStore((s) => s.user);
-  const clearSession = useAuthStore((s) => s.clearSession);
+  const user = useAuthStore((state) => state.user);
+  const clearSession = useAuthStore((state) => state.clearSession);
   const navigate = useNavigate();
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [queueCount, setQueueCount] = useState(0);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [storage, setStorage] = useState<string>("غير معروف");
+  const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const [error, setError] = useState<string | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
+  const [geoPermission, setGeoPermission] = useState("غير معروف");
+
+  const refreshQueue = async () => {
+    try {
+      const [queue, meta] = await Promise.all([getQueuedMutations(), getQueueMeta()]);
+      setQueueCount(queue.length);
+      setLastSyncAt(meta.lastSyncAt ?? null);
+      setStorage(meta.storage || "غير محدد");
+      setError(null);
+    } catch (queueError) {
+      console.error(queueError);
+      setError("تعذر قراءة طابور عدم الاتصال.");
+    }
+  };
+
+  useEffect(() => {
+    void refreshQueue();
+    void (async () => {
+      try {
+        const [customerData, routeData] = await Promise.all([getCustomers(), getTodayRoute()]);
+        setCustomers(customerData);
+        setRouteStops(routeData);
+      } catch (loadError) {
+        console.error(loadError);
+      }
+    })();
+    if (navigator.permissions?.query) {
+      void navigator.permissions
+        .query({ name: "geolocation" as PermissionName })
+        .then((result) => setGeoPermission(result.state))
+        .catch(() => setGeoPermission("غير معروف"));
+    }
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const syncNow = async () => {
+    try {
+      const res = await replayQueuedMutations();
+      await refreshQueue();
+      setSyncResult(`تمت محاولة مزامنة ${res.attempted} عملية، المتبقي ${res.pending}.`);
+    } catch (syncError) {
+      console.error(syncError);
+      setSyncResult("تعذرت المزامنة الآن. ستتم إعادة المحاولة عند عودة الاتصال.");
+    }
+  };
 
   const logout = () => {
     clearSession();
     navigate("/login", { replace: true });
   };
 
-  const refreshQueue = () => {
-    void (async () => {
-      const [queue, meta] = await Promise.all([getQueuedMutations(), getQueueMeta()]);
-      setQueueCount(queue.length);
-      setLastSyncAt(meta.lastSyncAt ?? null);
-    })();
-  };
-
-  useEffect(() => {
-    refreshQueue();
-  }, []);
-
-  const syncNow = async () => {
-    const res = await replayQueuedMutations();
-    refreshQueue();
-    setSyncResult(`\u062a\u0645\u062a \u0645\u062d\u0627\u0648\u0644\u0629 \u0645\u0632\u0627\u0645\u0646\u0629 ${res.attempted}\u060c \u0627\u0644\u0645\u062a\u0628\u0642\u064a ${res.pending}`);
-  };
-
   return (
     <div className="page">
+      <section className="hero-band">
+        <div className="section-title">حسابي</div>
+        <div className="muted">بيانات الجلسة والتشخيص دون عرض أي أسرار.</div>
+      </section>
+
+      {error ? <div className="card" style={{ color: "var(--warning)" }}>{error}</div> : null}
+
       <div className="card">
-        <div className="section-title">\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u0633\u0627\u0628</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div>\u0627\u0644\u0627\u0633\u0645: {user?.name || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u0628\u0631\u064a\u062f: {user?.email || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u062f\u0648\u0631: {user?.role || "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631"}</div>
-          <div>\u0627\u0644\u062e\u0627\u062f\u0645: {API_BASE_URL}</div>
+        <div className="section-title">بيانات المستخدم</div>
+        <div className="grid">
+          <div><span className="muted">الاسم</span><br />{user?.name || "غير متوفر"}</div>
+          <div><span className="muted">البريد</span><br />{user?.email || "غير متوفر"}</div>
+          <div><span className="muted">الدور</span><br />{user?.role || "غير متوفر"}</div>
+          <div><span className="muted">الاتصال</span><br />{online ? "متصل" : "دون اتصال"}</div>
+          <div><span className="muted">المناطق المكلف بها</span><br />{Array.from(new Set(customers.map((item) => item.area).filter(Boolean))).join("، ") || "غير متوفر"}</div>
+          <div><span className="muted">إذن الموقع</span><br />{geoPermission}</div>
         </div>
       </div>
 
       <div className="card">
-        <div className="section-title">\u0627\u0644\u0645\u0632\u0627\u0645\u0646\u0629 \u062f\u0648\u0646 \u0627\u062a\u0635\u0627\u0644</div>
-        <div className="muted">\u0627\u0644\u0639\u0645\u0644\u064a\u0627\u062a \u0627\u0644\u0645\u0639\u0644\u0642\u0629: {queueCount}</div>
-        <div className="muted">
-          \u0622\u062e\u0631 \u0645\u0632\u0627\u0645\u0646\u0629: {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "\u0644\u0645 \u062a\u062a\u0645 \u0628\u0639\u062f"}
+        <div className="section-title">ملخص العمل اليوم</div>
+        <div className="metric-grid">
+          <div className="metric"><span className="metric-value">{customers.length}</span><span className="muted">عملاء مكلفون</span></div>
+          <div className="metric"><span className="metric-value">{routeStops.length}</span><span className="muted">خطة اليوم</span></div>
         </div>
-        <button type="button" onClick={syncNow}>
-          \u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0622\u0646
-        </button>
-        {syncResult ? <div className="muted">{syncResult}</div> : null}
       </div>
 
       <div className="card">
-        <div className="section-title">\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c</div>
-        <button type="button" onClick={logout}>
-          \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c
-        </button>
+        <div className="section-title">المزامنة دون اتصال</div>
+        <div className="grid">
+          <div><span className="muted">العمليات المعلقة</span><br />{queueCount}</div>
+          <div><span className="muted">آخر مزامنة</span><br />{lastSyncAt ? new Date(lastSyncAt).toLocaleString("ar-JO") : "لم تتم بعد"}</div>
+          <div><span className="muted">وسيلة التخزين</span><br />{storage}</div>
+        </div>
+        <div className="actions-row" style={{ marginTop: 10 }}>
+          <button type="button" onClick={syncNow} disabled={!queueCount}>مزامنة الآن</button>
+          <button type="button" className="secondary-button" onClick={() => void refreshQueue()}>تحديث الحالة</button>
+        </div>
+        {syncResult ? <div className="muted" style={{ marginTop: 8 }}>{syncResult}</div> : null}
+      </div>
+
+      <div className="card">
+        <div className="section-title">تشخيص التطبيق</div>
+        <div className="grid">
+          <div><span className="muted">API</span><br />{API_BASE_URL}</div>
+          <div><span className="muted">إصدار الواجهة</span><br />{import.meta.env.VITE_APP_VERSION || "0.2.0"}</div>
+          <div><span className="muted">Service Worker</span><br />{"serviceWorker" in navigator ? "مدعوم" : "غير مدعوم"}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <button type="button" className="danger-button" onClick={logout}>تسجيل الخروج</button>
       </div>
     </div>
   );

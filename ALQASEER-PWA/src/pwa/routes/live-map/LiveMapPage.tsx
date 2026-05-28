@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { GoogleMapWidget } from "../../components/map/GoogleMap";
-import { Customer } from "../../api/types";
+import type { Customer } from "../../api/types";
 import { getCustomers, sendLocationPing } from "../../api/client";
 import { useOfflineQueue } from "../../hooks/useOfflineQueue";
+import { buildGoogleMapsUrl, buildOpenStreetMapUrl } from "../../utils/mapLinks";
+
+function gpsErrorMessage(error: GeolocationPositionError) {
+  if (error.code === error.PERMISSION_DENIED) return "تم رفض إذن الموقع. فعّل الصلاحية من إعدادات المتصفح.";
+  if (error.code === error.POSITION_UNAVAILABLE) return "الموقع غير متاح حالياً. انتقل لمكان مفتوح وحاول مجدداً.";
+  if (error.code === error.TIMEOUT) return "انتهت مهلة تحديد الموقع. حاول مرة أخرى.";
+  return "تعذر الحصول على الموقع.";
+}
 
 export default function LiveMapPage() {
   const [position, setPosition] = useState<google.maps.LatLngLiteral | null>(null);
@@ -20,13 +28,12 @@ export default function LiveMapPage() {
           const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setPosition(coords);
           setPositionAccuracy(pos.coords.accuracy ?? null);
-          setPositionTimestamp(new Date().toISOString());
-          sendLocation(coords, pos.coords.accuracy);
+          setPositionTimestamp(new Date(pos.timestamp || Date.now()).toISOString());
+          setStatus(pos.coords.accuracy && pos.coords.accuracy > 80 ? `دقة منخفضة: ${Math.round(pos.coords.accuracy)}م` : null);
+          void sendLocation(coords, pos.coords.accuracy);
         },
-        (err) => {
-          setStatus(`تعذّر الحصول على الموقع: ${err.message}`);
-        },
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 8000 },
+        (err) => setStatus(gpsErrorMessage(err)),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
       );
     } else {
       setStatus("المتصفح لا يدعم تحديد الموقع.");
@@ -40,69 +47,65 @@ export default function LiveMapPage() {
   useEffect(() => {
     const loadCustomers = async () => {
       try {
-        const data = await getCustomers();
-        setCustomers(data);
+        setCustomers(await getCustomers());
       } catch (err) {
         console.error(err);
       }
     };
-
-    loadCustomers();
+    void loadCustomers();
   }, []);
 
   const sendLocation = async (coords: google.maps.LatLngLiteral, accuracy?: number | null) => {
-    const online = navigator.onLine;
-    if (!online) {
-      await enqueue({
-        type: "location",
-        endpoint: "pwa/tracking/pings",
-        method: "POST",
-        payload: { lat: coords.lat, lng: coords.lng, accuracy },
-      });
+    if (!navigator.onLine) {
+      await enqueue({ type: "location", endpoint: "pwa/tracking/pings", method: "POST", payload: { lat: coords.lat, lng: coords.lng, accuracy } });
       return;
     }
-
     const res = await sendLocationPing({ lat: coords.lat, lng: coords.lng, accuracy });
     if (!res.success) {
-      await enqueue({
-        type: "location",
-        endpoint: "pwa/tracking/pings",
-        method: "POST",
-        payload: { lat: coords.lat, lng: coords.lng, accuracy },
-      });
+      await enqueue({ type: "location", endpoint: "pwa/tracking/pings", method: "POST", payload: { lat: coords.lat, lng: coords.lng, accuracy } });
     }
   };
 
   return (
     <div className="page">
-      <div className="card-header" style={{ padding: "0 4px" }}>
-        <div>
-          <div className="section-title">الخريطة الحية</div>
-          <div className="muted">موقعك الحالي وأقرب العملاء.</div>
+      <section className="hero-band">
+        <div className="card-header">
+          <div>
+            <div className="section-title">الخريطة الحية</div>
+            <div className="muted">موقعي الحالي والعملاء القريبون مع دقة GPS ووقت الالتقاط.</div>
+          </div>
+          <span className="pill">{navigator.onLine ? "متصل" : "دون اتصال"}</span>
         </div>
-        {status ? <span className="pill" style={{ color: "#fbbf24" }}>{status}</span> : null}
-      </div>
+        {status ? <div style={{ color: "var(--warning)" }}>{status}</div> : null}
+      </section>
 
       <GoogleMapWidget
         currentLocation={position}
         currentAccuracy={positionAccuracy}
         currentTimestamp={positionTimestamp}
         markers={customers
-          .filter((c) => c.location)
-          .map((c) => ({
-            id: c.id,
-            position: c.location!,
-            label: c.name,
-            color: c.type === "doctor" ? "#22d3ee" : "#a855f7",
+          .filter((customer) => customer.location)
+          .map((customer) => ({
+            id: customer.id,
+            position: customer.location!,
+            label: customer.name,
+            color: customer.type === "doctor" ? "#22d3ee" : "#a855f7",
           }))}
       />
 
       <div className="card">
-        <div className="section-title">معلومات الموقع</div>
-        <div className="muted">الموقع يتم تحديثه تلقائياً كلما تحركت.</div>
-        <div style={{ marginTop: 8, fontWeight: 700 }}>
-          {position ? `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}` : "بإنتظار تحديد الموقع"}
+        <div className="section-title">معلومات GPS</div>
+        <div className="grid">
+          <div><span className="muted">الإحداثيات</span><br />{position ? `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}` : "بانتظار تحديد الموقع"}</div>
+          <div><span className="muted">الدقة</span><br />{positionAccuracy !== null ? `${Math.round(positionAccuracy)}م` : "غير متوفر"}</div>
+          <div><span className="muted">وقت الالتقاط</span><br />{positionTimestamp ? new Date(positionTimestamp).toLocaleString("ar-JO") : "غير متوفر"}</div>
         </div>
+        {position ? (
+          <div className="actions-row" style={{ marginTop: 10 }}>
+            <a className="secondary-button" href={buildGoogleMapsUrl(position.lat, position.lng)} target="_blank" rel="noreferrer">Google Maps</a>
+            <a className="secondary-button" href={buildOpenStreetMapUrl(position.lat, position.lng)} target="_blank" rel="noreferrer">OpenStreetMap</a>
+          </div>
+        ) : null}
       </div>
     </div>
   );

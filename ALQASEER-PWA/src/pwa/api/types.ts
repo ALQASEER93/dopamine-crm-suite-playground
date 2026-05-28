@@ -26,7 +26,15 @@ export type Customer = {
   name: string;
   type: "doctor" | "pharmacy";
   area?: string;
+  territory?: string;
   specialty?: string;
+  category?: string;
+  priority?: "A" | "B" | "C";
+  monthlyFrequencyTarget?: number;
+  visitsThisMonth?: number;
+  assignedRepEmail?: string;
+  productFocus?: string;
+  notes?: string;
   phone?: string;
   address?: string;
   lastVisit?: string;
@@ -41,7 +49,7 @@ export type VisitPayload = {
   customerName: string;
   customerType: "doctor" | "pharmacy";
   visitType: "follow-up" | "new" | "reminder";
-  status: "success" | "refused" | "no-show";
+  status?: "scheduled" | "success" | "refused" | "no-show" | "reminder";
   notes?: string;
   coordinates?: {
     lat: number;
@@ -55,7 +63,31 @@ export type Visit = VisitPayload & {
   repId?: string;
   startedAt?: string;
   endedAt?: string;
+  durationSeconds?: number;
+  callDurationSeconds?: number;
+  startAccuracy?: number | null;
+  endAccuracy?: number | null;
+  endCoordinates?: {
+    lat: number;
+    lng: number;
+  } | null;
   serverStatus?: string;
+};
+
+export type CoverageSummary = {
+  totalAssignedCustomers: number;
+  visitedToday: number;
+  remainingToday: number;
+  completedVisitsThisMonth: number;
+  monthlyFrequencyTarget: number;
+  frequencyAchievedPct: number;
+  dueCustomers: number;
+  overdueCustomers: number;
+  avgVisitDurationMinutes: number;
+  avgCallDurationMinutes: number;
+  visitsByArea: Array<{ area: string; visits: number }>;
+  visitsByCustomerType: Array<{ type: "doctor" | "pharmacy"; visits: number }>;
+  gpsMissingOrLowAccuracy: number;
 };
 
 export type Product = {
