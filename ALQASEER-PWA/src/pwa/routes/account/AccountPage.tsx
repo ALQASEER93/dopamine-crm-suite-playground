@@ -94,8 +94,19 @@ export default function AccountPage() {
   return (
     <div className="page">
       <section className="hero-band">
-        <div className="section-title">حسابي</div>
-        <div className="muted">بيانات الجلسة والتشخيص دون عرض أي أسرار.</div>
+        <div className="card-header">
+          <div>
+            <div className="section-title">حسابي</div>
+            <div className="muted">ملف تشغيل ميداني وتشخيص مزامنة دون عرض أي أسرار.</div>
+          </div>
+          <span className="pill pill-strong">{formatAccountValue(user?.role)}</span>
+        </div>
+        <div className="metric-grid">
+          <div className="metric"><span className="metric-value">{customers.length}</span><span className="muted">عملاء مكلفون</span></div>
+          <div className="metric"><span className="metric-value">{routeStops.length}</span><span className="muted">خطة اليوم</span></div>
+          <div className="metric"><span className="metric-value">{queueCount}</span><span className="muted">معلّق دون اتصال</span></div>
+          <div className="metric"><span className="metric-value">{online ? "متصل" : "دون اتصال"}</span><span className="muted">حالة الاتصال</span></div>
+        </div>
       </section>
 
       {error ? <div className="card" style={{ color: "var(--warning)" }}>{error}</div> : null}
@@ -109,14 +120,6 @@ export default function AccountPage() {
           <div><span className="muted">الاتصال</span><br />{online ? "متصل" : "دون اتصال"}</div>
           <div><span className="muted">المناطق المكلف بها</span><br /><span className="text-break">{Array.from(new Set(customers.map((item) => item.area).filter(Boolean))).join("، ") || "غير متوفر"}</span></div>
           <div><span className="muted">إذن الموقع</span><br />{geoPermission}</div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="section-title">ملخص العمل اليوم</div>
-        <div className="metric-grid">
-          <div className="metric"><span className="metric-value">{customers.length}</span><span className="muted">عملاء مكلفون</span></div>
-          <div className="metric"><span className="metric-value">{routeStops.length}</span><span className="muted">خطة اليوم</span></div>
         </div>
       </div>
 

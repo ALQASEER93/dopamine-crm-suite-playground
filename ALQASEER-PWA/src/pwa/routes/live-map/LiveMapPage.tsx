@@ -72,9 +72,15 @@ export default function LiveMapPage() {
         <div className="card-header">
           <div>
             <div className="section-title">خريطة الميدان</div>
-            <div className="muted">آخر موقع ملتقط والعملاء المكلفون مع دقة GPS ووقت الالتقاط. لا يتم عرض تتبع حي إلا أثناء توفر إذن الموقع.</div>
+            <div className="muted">آخر موقع ملتقط والعملاء المكلفون مع دقة GPS ووقت الالتقاط. هذا فحص موقع لجلسة العمل الحالية وليس تتبعاً حياً دائماً.</div>
           </div>
           <span className="pill">{navigator.onLine ? "متصل" : "دون اتصال"}</span>
+        </div>
+        <div className="metric-grid">
+          <div className="metric"><span className="metric-value">{customers.length}</span><span className="muted">عملاء مكلفون</span></div>
+          <div className="metric"><span className="metric-value">{customers.filter((customer) => customer.location).length}</span><span className="muted">لديهم إحداثيات</span></div>
+          <div className="metric"><span className="metric-value">{positionAccuracy !== null ? `${Math.round(positionAccuracy)}م` : "—"}</span><span className="muted">دقة آخر قراءة</span></div>
+          <div className="metric"><span className="metric-value">{position ? "نشط" : "بانتظار"}</span><span className="muted">حالة GPS</span></div>
         </div>
         {status ? <div style={{ color: "var(--warning)" }}>{status}</div> : null}
       </section>

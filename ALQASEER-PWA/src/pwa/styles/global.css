@@ -49,6 +49,7 @@ button {
   padding: 12px 16px;
   cursor: pointer;
   width: 100%;
+  min-height: 44px;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -111,6 +112,7 @@ label {
   gap: 12px;
   margin-bottom: 8px;
   font-weight: 700;
+  flex-wrap: wrap;
 }
 
 .pill {
@@ -352,6 +354,9 @@ form {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .metric-grid {
@@ -365,6 +370,7 @@ form {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
+  min-width: 0;
 }
 
 .metric-value {
@@ -445,5 +451,39 @@ form {
 @media (max-width: 560px) {
   .bottom-nav__label {
     font-size: 10px;
+  }
+}
+
+@media (min-width: 900px) {
+  .app-shell {
+    max-width: 1120px;
+    padding: 24px 24px 88px;
+  }
+
+  .page {
+    gap: 16px;
+  }
+
+  .card,
+  .hero-band {
+    padding: 18px;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .actions-row > * {
+    flex: 0 1 180px;
+  }
+
+  .map-container {
+    height: 380px;
   }
 }

@@ -35,6 +35,10 @@ function commentBody(summary) {
   const artifactId = process.env.ARTIFACT_ID || summary.artifactId || "unavailable";
   const artifactName = process.env.ARTIFACT_NAME || summary.artifactName || "unavailable";
   const workflowRunUrl = process.env.WORKFLOW_RUN_URL || summary.workflowRunUrl || "unavailable";
+  const screenshots = summary.artifacts?.screenshots || [];
+  const screenshotLine = screenshots.length
+    ? `yes (${screenshots.length}): ${screenshots.slice(0, 12).join(", ")}`
+    : "no";
   const validationSummary = (summary.validations || [])
     .map((v) => `- ${v.status}: \`${v.cwd && v.cwd !== "." ? `cd ${v.cwd} && ` : ""}${v.command}\` (${v.log})`)
     .join("\n") || "- No validation records.";
@@ -54,6 +58,7 @@ function commentBody(summary) {
 - Workflow Run URL: ${workflowRunUrl}
 - Artifact name: ${artifactName}
 - Artifact ID: ${artifactId}
+- Screenshots included: ${screenshotLine}
 
 ### Short Summary
 ${summary.verdictReason}
