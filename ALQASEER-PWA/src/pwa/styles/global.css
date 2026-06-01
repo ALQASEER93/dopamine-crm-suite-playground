@@ -31,6 +31,8 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  direction: rtl;
+  text-align: right;
 }
 
 a {
@@ -99,6 +101,7 @@ label {
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
 .card-header {
@@ -181,6 +184,32 @@ label {
 .muted {
   color: var(--muted);
   font-size: 13px;
+}
+
+.text-break {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.mono-value {
+  direction: ltr;
+  unicode-bidi: plaintext;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 12px;
 }
 
 .grid {

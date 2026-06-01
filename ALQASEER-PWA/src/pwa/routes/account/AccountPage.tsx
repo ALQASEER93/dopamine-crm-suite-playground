@@ -104,10 +104,10 @@ export default function AccountPage() {
         <div className="section-title">بيانات المستخدم</div>
         <div className="grid">
           <div><span className="muted">الاسم</span><br />{user?.name || "غير متوفر"}</div>
-          <div><span className="muted">البريد</span><br />{formatAccountValue(user?.email)}</div>
-          <div><span className="muted">الدور</span><br />{formatAccountValue(user?.role)}</div>
+          <div><span className="muted">البريد</span><br /><span className="text-break">{formatAccountValue(user?.email)}</span></div>
+          <div><span className="muted">الدور</span><br /><span className="status-badge">{formatAccountValue(user?.role)}</span></div>
           <div><span className="muted">الاتصال</span><br />{online ? "متصل" : "دون اتصال"}</div>
-          <div><span className="muted">المناطق المكلف بها</span><br />{Array.from(new Set(customers.map((item) => item.area).filter(Boolean))).join("، ") || "غير متوفر"}</div>
+          <div><span className="muted">المناطق المكلف بها</span><br /><span className="text-break">{Array.from(new Set(customers.map((item) => item.area).filter(Boolean))).join("، ") || "غير متوفر"}</span></div>
           <div><span className="muted">إذن الموقع</span><br />{geoPermission}</div>
         </div>
       </div>
@@ -137,9 +137,10 @@ export default function AccountPage() {
       <div className="card">
         <div className="section-title">تشخيص التطبيق</div>
         <div className="grid">
-          <div><span className="muted">API</span><br />{API_BASE_URL}</div>
+          <div><span className="muted">API</span><br /><span className="mono-value">{API_BASE_URL}</span></div>
           <div><span className="muted">إصدار الواجهة</span><br />{import.meta.env.VITE_APP_VERSION || "0.2.0"}</div>
           <div><span className="muted">Service Worker</span><br />{"serviceWorker" in navigator ? "مدعوم" : "غير مدعوم"}</div>
+          <div><span className="muted">وضع التطبيق</span><br />Field Force CRM</div>
         </div>
       </div>
 

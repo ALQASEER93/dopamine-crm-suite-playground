@@ -111,11 +111,11 @@ export default function CustomerProfilePage() {
           <div><span className="muted">المنطقة</span><br />{customer.area || "غير متوفر"}</div>
           <div><span className="muted">القطاع</span><br />{customer.territory || "غير متوفر"}</div>
           <div><span className="muted">الأولوية</span><br />{priorityLabel(customer.priority)}</div>
-          <div><span className="muted">المندوب</span><br />{customer.assignedRepEmail || "غير متوفر"}</div>
+          <div><span className="muted">المندوب</span><br /><span className="text-break">{customer.assignedRepEmail || "غير متوفر"}</span></div>
           <div><span className="muted">آخر زيارة</span><br />{formatDateTime(insight.lastVisit ? insight.lastVisit.visitedAt || insight.lastVisit.startedAt : customer.lastVisit)}</div>
           <div><span className="muted">محور النقاش</span><br />{customer.productFocus || "غير محدد"}</div>
         </div>
-        <div style={{ marginTop: 10 }} className="muted">{customer.address || "لا يوجد عنوان مفصل."}</div>
+        <div style={{ marginTop: 10 }} className="muted text-break">{customer.address || "لا يوجد عنوان مفصل."}</div>
         {customer.phone ? <div className="muted">الهاتف: {customer.phone}</div> : null}
       </div>
 

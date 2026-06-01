@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { endVisit, getCustomers, getVisits, startVisit, updateVisitNotes } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
-import { deriveVisitDuration, formatDateTime, formatDuration } from "../../utils/fieldCrm";
+import { deriveVisitDuration, formatDateTime, formatDuration, visitStatusLabel } from "../../utils/fieldCrm";
 import { enqueueMutation, getQueuedMutations, upsertOfflineVisit } from "../../offline/queue";
 
 type PositionSnapshot = {
@@ -230,7 +230,7 @@ export default function VisitSessionPage() {
         <div className="card-header">
           <div>
             <div className="section-title">{customerHeader}</div>
-            <div className="muted">حالة الجلسة: {visit.serverStatus || visit.status || "مجدولة"}</div>
+            <div className="muted">حالة الجلسة: {visitStatusLabel(visit.serverStatus || visit.status)}</div>
           </div>
           <span className="pill">{navigator.onLine ? "متصل" : "دون اتصال"}</span>
         </div>
@@ -247,12 +247,12 @@ export default function VisitSessionPage() {
         <div className="grid">
           <div>
             <span className="muted">بداية الزيارة</span><br />
-            {startGps || visit.coordinates ? `${(startGps?.coords.lat ?? visit.coordinates?.lat)?.toFixed(5)}, ${(startGps?.coords.lng ?? visit.coordinates?.lng)?.toFixed(5)}` : "غير ملتقط"}
+            <span className="mono-value">{startGps || visit.coordinates ? `${(startGps?.coords.lat ?? visit.coordinates?.lat)?.toFixed(5)}, ${(startGps?.coords.lng ?? visit.coordinates?.lng)?.toFixed(5)}` : "غير ملتقط"}</span>
             <div className="muted">{startGps ? `الدقة ${Math.round(startGps.accuracy || 0)}م - ${formatDateTime(startGps.timestamp)}` : ""}</div>
           </div>
           <div>
             <span className="muted">نهاية الزيارة</span><br />
-            {endGps || visit.endCoordinates ? `${(endGps?.coords.lat ?? visit.endCoordinates?.lat)?.toFixed(5)}, ${(endGps?.coords.lng ?? visit.endCoordinates?.lng)?.toFixed(5)}` : "غير ملتقط"}
+            <span className="mono-value">{endGps || visit.endCoordinates ? `${(endGps?.coords.lat ?? visit.endCoordinates?.lat)?.toFixed(5)}, ${(endGps?.coords.lng ?? visit.endCoordinates?.lng)?.toFixed(5)}` : "غير ملتقط"}</span>
             <div className="muted">{endGps ? `الدقة ${Math.round(endGps.accuracy || 0)}م - ${formatDateTime(endGps.timestamp)}` : ""}</div>
           </div>
         </div>

@@ -71,8 +71,8 @@ export default function LiveMapPage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
-            <div className="section-title">الخريطة الحية</div>
-            <div className="muted">موقعي الحالي والعملاء القريبون مع دقة GPS ووقت الالتقاط.</div>
+            <div className="section-title">خريطة الميدان</div>
+            <div className="muted">آخر موقع ملتقط والعملاء المكلفون مع دقة GPS ووقت الالتقاط. لا يتم عرض تتبع حي إلا أثناء توفر إذن الموقع.</div>
           </div>
           <span className="pill">{navigator.onLine ? "متصل" : "دون اتصال"}</span>
         </div>
@@ -96,7 +96,7 @@ export default function LiveMapPage() {
       <div className="card">
         <div className="section-title">معلومات GPS</div>
         <div className="grid">
-          <div><span className="muted">الإحداثيات</span><br />{position ? `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}` : "بانتظار تحديد الموقع"}</div>
+          <div><span className="muted">الإحداثيات</span><br /><span className="mono-value">{position ? `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}` : "بانتظار تحديد الموقع"}</span></div>
           <div><span className="muted">الدقة</span><br />{positionAccuracy !== null ? `${Math.round(positionAccuracy)}م` : "غير متوفر"}</div>
           <div><span className="muted">وقت الالتقاط</span><br />{positionTimestamp ? new Date(positionTimestamp).toLocaleString("ar-JO") : "غير متوفر"}</div>
         </div>

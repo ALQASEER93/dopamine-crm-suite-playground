@@ -2,7 +2,7 @@ import { get as getFromIdb, set as setInIdb } from "idb-keyval";
 import { apiFetch } from "../api/client";
 import type { Visit } from "../api/types";
 
-type MutationType = "visit" | "visit-start" | "visit-end" | "order" | "location";
+type MutationType = "visit" | "visit-start" | "visit-end" | "location";
 
 export type QueuedMutation = {
   id: string;

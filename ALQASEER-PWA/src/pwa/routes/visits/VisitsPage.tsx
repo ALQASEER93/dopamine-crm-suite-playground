@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createVisit, getCustomers, getVisits } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
-import { formatDateTime, formatDuration, deriveVisitDuration } from "../../utils/fieldCrm";
+import { formatDateTime, formatDuration, deriveVisitDuration, visitStatusLabel } from "../../utils/fieldCrm";
 import { getOfflineVisits, getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../offline/queue";
 
 export default function VisitsPage() {
@@ -164,12 +164,13 @@ export default function VisitsPage() {
                   <div style={{ fontWeight: 700 }}>{visit.customerName || customer?.name || "عميل غير معروف"}</div>
                   <div className="muted">{customer?.area || "منطقة غير محددة"} • {formatDateTime(visit.endedAt || visit.startedAt || visit.visitedAt)}</div>
                 </div>
-                <span className="pill">{visit.serverStatus || visit.status || "scheduled"}</span>
+                <span className="pill">{visitStatusLabel(visit.serverStatus || visit.status)}</span>
               </div>
               <div className="grid">
                 <div><span className="muted">المدة</span><br />{formatDuration(duration)}</div>
                 <div><span className="muted">GPS</span><br />{gpsStatus}</div>
                 <div><span className="muted">المزامنة</span><br />{String(visit.id).startsWith("offline-") || visit.serverStatus?.startsWith("pending") ? "معلق" : "مزامن"}</div>
+                <div><span className="muted">مرحلة العمل</span><br />مخططة → GPS بداية → داخل الزيارة → مكالمة/نقاش → GPS نهاية → مزامنة</div>
               </div>
               <div className="muted">الملاحظات: {visit.notes || "لا توجد ملاحظات"}</div>
               <div className="actions-row">

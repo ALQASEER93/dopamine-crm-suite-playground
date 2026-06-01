@@ -75,6 +75,20 @@ export function statusLabel(status: CustomerStatus) {
   return "مستحق";
 }
 
+export function visitStatusLabel(status?: string | null) {
+  if (!status) return "مجدولة";
+  const normalized = status.toLowerCase();
+  if (normalized === "scheduled" || normalized === "planned") return "مخططة";
+  if (normalized === "in_progress" || normalized === "started" || normalized === "active") return "داخل الزيارة";
+  if (normalized === "completed" || normalized === "success" || normalized === "synced") return "مكتملة / مزامنة";
+  if (normalized === "pending_create") return "بانتظار إنشاء الزيارة";
+  if (normalized === "pending_start") return "بانتظار بدء الزيارة";
+  if (normalized === "pending_end") return "بانتظار إنهاء الزيارة";
+  if (normalized === "refused") return "زيارة مرفوضة";
+  if (normalized === "no-show") return "لم تتم";
+  return status;
+}
+
 export function formatDateTime(value?: string | null) {
   if (!value) return "غير متوفر";
   const date = new Date(value);

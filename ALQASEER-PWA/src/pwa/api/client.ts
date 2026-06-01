@@ -2,8 +2,6 @@ import { useAuthStore } from "../state/auth";
 import {
   Customer,
   LoginResponse,
-  OrderPayload,
-  Product,
   RouteStop,
   Visit,
   VisitPayload,
@@ -181,17 +179,6 @@ export async function updateVisitNotes(visitId: string, notes: string) {
   return apiFetch<Visit>(`visits/${visitId}`, {
     method: "PUT",
     body: JSON.stringify({ notes }),
-  });
-}
-
-export async function getProducts() {
-  return apiFetch<Product[]>("products");
-}
-
-export async function createOrder(payload: OrderPayload) {
-  return apiFetch<{ id: string }>("orders", {
-    method: "POST",
-    body: JSON.stringify(payload),
   });
 }
 

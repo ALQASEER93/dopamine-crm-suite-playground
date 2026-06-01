@@ -90,24 +90,6 @@ export type CoverageSummary = {
   gpsMissingOrLowAccuracy: number;
 };
 
-export type Product = {
-  id: string;
-  name: string;
-  sku?: string;
-  price?: number;
-};
-
-export type OrderItem = {
-  productId: string;
-  quantity: number;
-};
-
-export type OrderPayload = {
-  customerId: string;
-  items: OrderItem[];
-  notes?: string;
-};
-
 export type LoginResponse = {
   access_token?: string;
   token?: string;
