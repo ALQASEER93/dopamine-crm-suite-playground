@@ -2,7 +2,16 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { endVisit, getCustomers, getVisits, startVisit, updateVisitNotes } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
-import { deriveVisitDuration, formatDateTime, formatDuration, visitStatusLabel } from "../../utils/fieldCrm";
+import {
+  deriveVisitDuration,
+  formatDateTime,
+  formatDuration,
+  gpsEndLabel,
+  gpsStartLabel,
+  visitLifecycleSteps,
+  visitStatusLabel,
+  visitSyncLabel,
+} from "../../utils/fieldCrm";
 import { enqueueMutation, getQueuedMutations, upsertOfflineVisit } from "../../offline/queue";
 
 type PositionSnapshot = {
@@ -50,6 +59,7 @@ export default function VisitSessionPage() {
   const visitSeconds = useTicker(isActive, visit?.startedAt);
   const activeCallSeconds = useTicker(Boolean(callStartedAt), callStartedAt);
   const displayedVisitSeconds = isActive ? visitSeconds : deriveVisitDuration(visit || ({} as Visit));
+  const lifecycle = visit ? visitLifecycleSteps(visit) : [];
 
   useEffect(() => {
     const load = async () => {
@@ -237,10 +247,26 @@ export default function VisitSessionPage() {
         <div className="metric-grid">
           <div className="metric"><span className="metric-value">{formatDuration(displayedVisitSeconds)}</span><span className="muted">مؤقت الزيارة</span></div>
           <div className="metric"><span className="metric-value">{formatDuration(callDuration + activeCallSeconds)}</span><span className="muted">مؤقت المكالمة</span></div>
+          <div className="metric"><span className="metric-value">{visitSyncLabel(visit)}</span><span className="muted">حالة المزامنة</span></div>
+          <div className="metric"><span className="metric-value">{visit.endedAt ? "مغلقة" : "نشطة/مجدولة"}</span><span className="muted">قفل السجل</span></div>
         </div>
       </section>
 
       {message ? <div className="card" style={{ color: "var(--warning)" }}>{message}</div> : null}
+
+      <div className="card">
+        <div className="section-title">مراحل الزيارة</div>
+        <div className="lifecycle">
+          {lifecycle.map((step) => (
+            <span
+              key={step.label}
+              className={`lifecycle-step ${step.done ? "done" : ""} ${step.label === "داخل الزيارة" && step.done ? "active" : ""}`}
+            >
+              {step.label}
+            </span>
+          ))}
+        </div>
+      </div>
 
       <div className="card">
         <div className="section-title">GPS</div>
@@ -249,11 +275,13 @@ export default function VisitSessionPage() {
             <span className="muted">بداية الزيارة</span><br />
             <span className="mono-value">{startGps || visit.coordinates ? `${(startGps?.coords.lat ?? visit.coordinates?.lat)?.toFixed(5)}, ${(startGps?.coords.lng ?? visit.coordinates?.lng)?.toFixed(5)}` : "غير ملتقط"}</span>
             <div className="muted">{startGps ? `الدقة ${Math.round(startGps.accuracy || 0)}م - ${formatDateTime(startGps.timestamp)}` : ""}</div>
+            <div className="muted">{gpsStartLabel(visit)}</div>
           </div>
           <div>
             <span className="muted">نهاية الزيارة</span><br />
             <span className="mono-value">{endGps || visit.endCoordinates ? `${(endGps?.coords.lat ?? visit.endCoordinates?.lat)?.toFixed(5)}, ${(endGps?.coords.lng ?? visit.endCoordinates?.lng)?.toFixed(5)}` : "غير ملتقط"}</span>
             <div className="muted">{endGps ? `الدقة ${Math.round(endGps.accuracy || 0)}م - ${formatDateTime(endGps.timestamp)}` : ""}</div>
+            <div className="muted">{gpsEndLabel(visit)}</div>
           </div>
         </div>
       </div>
@@ -275,6 +303,7 @@ export default function VisitSessionPage() {
           </button>
         </div>
         <label htmlFor="visit-notes">ملاحظات الزيارة</label>
+        <div className="muted">اكتب النقاش أو محور المنتج بدون أي ادعاءات علاجية أو بيانات مرضى.</div>
         <textarea
           id="visit-notes"
           rows={5}

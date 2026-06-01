@@ -2,7 +2,17 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createVisit, getCustomers, getVisits } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
-import { formatDateTime, formatDuration, deriveVisitDuration, visitStatusLabel } from "../../utils/fieldCrm";
+import {
+  customerDisplayType,
+  deriveVisitDuration,
+  formatDateTime,
+  formatDuration,
+  gpsEndLabel,
+  gpsStartLabel,
+  visitLifecycleSteps,
+  visitStatusLabel,
+  visitSyncLabel,
+} from "../../utils/fieldCrm";
 import { getOfflineVisits, getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../offline/queue";
 
 export default function VisitsPage() {
@@ -156,21 +166,35 @@ export default function VisitsPage() {
         {filteredVisits.map((visit) => {
           const customer = customers.find((item) => String(item.id) === String(visit.customerId) && item.type === visit.customerType);
           const duration = deriveVisitDuration(visit);
-          const gpsStatus = visit.coordinates ? "GPS بداية موجود" : "GPS بداية مفقود";
+          const lifecycle = visitLifecycleSteps(visit);
           return (
             <div key={visit.id} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
               <div className="card-header">
                 <div>
                   <div style={{ fontWeight: 700 }}>{visit.customerName || customer?.name || "عميل غير معروف"}</div>
-                  <div className="muted">{customer?.area || "منطقة غير محددة"} • {formatDateTime(visit.endedAt || visit.startedAt || visit.visitedAt)}</div>
+                  <div className="muted">
+                    {customerDisplayType(visit.customerType)} • {customer?.territory || customer?.area || "قطاع غير محدد"} • {formatDateTime(visit.endedAt || visit.startedAt || visit.visitedAt)}
+                  </div>
                 </div>
                 <span className="pill">{visitStatusLabel(visit.serverStatus || visit.status)}</span>
               </div>
+              <div className="lifecycle" aria-label="visit-lifecycle">
+                {lifecycle.map((step) => (
+                  <span
+                    key={step.label}
+                    className={`lifecycle-step ${step.done ? "done" : ""} ${step.label === "داخل الزيارة" && step.done ? "active" : ""}`}
+                  >
+                    {step.label}
+                  </span>
+                ))}
+              </div>
               <div className="grid">
                 <div><span className="muted">المدة</span><br />{formatDuration(duration)}</div>
-                <div><span className="muted">GPS</span><br />{gpsStatus}</div>
-                <div><span className="muted">المزامنة</span><br />{String(visit.id).startsWith("offline-") || visit.serverStatus?.startsWith("pending") ? "معلق" : "مزامن"}</div>
-                <div><span className="muted">مرحلة العمل</span><br />مخططة → GPS بداية → داخل الزيارة → مكالمة/نقاش → GPS نهاية → مزامنة</div>
+                <div><span className="muted">المكالمة</span><br />{formatDuration(visit.callDurationSeconds)}</div>
+                <div><span className="muted">GPS بداية</span><br />{gpsStartLabel(visit)}</div>
+                <div><span className="muted">GPS نهاية</span><br />{gpsEndLabel(visit)}</div>
+                <div><span className="muted">المزامنة</span><br />{visitSyncLabel(visit)}</div>
+                <div><span className="muted">الإغلاق</span><br />{visit.endedAt ? "مغلق بعد الإرسال" : "قابل للتحديث أثناء الزيارة"}</div>
               </div>
               <div className="muted">الملاحظات: {visit.notes || "لا توجد ملاحظات"}</div>
               <div className="actions-row">

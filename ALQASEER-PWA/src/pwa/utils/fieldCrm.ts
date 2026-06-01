@@ -75,6 +75,12 @@ export function statusLabel(status: CustomerStatus) {
   return "مستحق";
 }
 
+export function nextActionLabel(status: CustomerStatus) {
+  if (status === "covered") return "متابعة دورية";
+  if (status === "overdue") return "زيارة عاجلة";
+  return "جدولة زيارة";
+}
+
 export function visitStatusLabel(status?: string | null) {
   if (!status) return "مجدولة";
   const normalized = status.toLowerCase();
@@ -87,6 +93,45 @@ export function visitStatusLabel(status?: string | null) {
   if (normalized === "refused") return "زيارة مرفوضة";
   if (normalized === "no-show") return "لم تتم";
   return status;
+}
+
+export function routeStopStatusLabel(status?: string | null) {
+  if (status === "done") return "تمت";
+  if (status === "in-progress") return "قيد التنفيذ";
+  if (status === "skipped") return "متجاوزة";
+  return "مخططة";
+}
+
+export function gpsStartLabel(visit: Visit) {
+  if (!visit.coordinates) return "GPS بداية مفقود";
+  if (typeof visit.startAccuracy === "number" && visit.startAccuracy > 80) return `GPS بداية دقة منخفضة (${Math.round(visit.startAccuracy)}م)`;
+  return "GPS بداية موثق";
+}
+
+export function gpsEndLabel(visit: Visit) {
+  if (!visit.endedAt) return "GPS نهاية بانتظار الإنهاء";
+  if (!visit.endCoordinates) return "GPS نهاية مفقود";
+  if (typeof visit.endAccuracy === "number" && visit.endAccuracy > 80) return `GPS نهاية دقة منخفضة (${Math.round(visit.endAccuracy)}م)`;
+  return "GPS نهاية موثق";
+}
+
+export function visitSyncLabel(visit: Visit) {
+  if (String(visit.id).startsWith("offline-") || visit.serverStatus?.startsWith("pending")) return "معلق للمزامنة";
+  if (visit.serverStatus === "completed" || visit.status === "success" || visit.status === "completed") return "مقدم / مزامن";
+  return "قيد العمل";
+}
+
+export function visitLifecycleSteps(visit: Visit) {
+  return [
+    { label: "مخططة", done: Boolean(visit.id) },
+    { label: "بدأت", done: Boolean(visit.startedAt) },
+    { label: "GPS بداية", done: Boolean(visit.coordinates) },
+    { label: "داخل الزيارة", done: Boolean(visit.startedAt && !visit.endedAt) },
+    { label: "مكالمة/نقاش", done: Boolean(visit.callDurationSeconds || visit.notes) },
+    { label: "انتهت", done: Boolean(visit.endedAt) },
+    { label: "GPS نهاية", done: Boolean(visit.endCoordinates) },
+    { label: "مزامنة", done: !String(visit.id).startsWith("offline-") && !visit.serverStatus?.startsWith("pending") },
+  ];
 }
 
 export function formatDateTime(value?: string | null) {

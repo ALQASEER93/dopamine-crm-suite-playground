@@ -2,7 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createVisit, getCustomers, getVisits } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
-import { buildCustomerInsights, customerDisplayType, priorityLabel, statusLabel } from "../../utils/fieldCrm";
+import {
+  buildCustomerInsights,
+  customerDisplayType,
+  formatDateTime,
+  nextActionLabel,
+  priorityLabel,
+  statusLabel,
+} from "../../utils/fieldCrm";
 import { useAuthStore } from "../../state/auth";
 
 export default function CustomersPage() {
@@ -11,6 +18,7 @@ export default function CustomersPage() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [area, setArea] = useState("");
+  const [territory, setTerritory] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [assignee, setAssignee] = useState("");
   const [priority, setPriority] = useState("");
@@ -38,19 +46,32 @@ export default function CustomersPage() {
   const filtered = useMemo(
     () =>
       insights.filter(({ customer, status }) => {
-        const text = `${customer.name} ${customer.area || ""} ${customer.specialty || ""}`.toLowerCase();
+        const text = `${customer.name} ${customer.area || ""} ${customer.territory || ""} ${customer.specialty || ""} ${customer.category || ""}`.toLowerCase();
         return (
           (!search || text.includes(search.toLowerCase())) &&
           (!type || customer.type === type) &&
           (!area || (customer.area || "").toLowerCase().includes(area.toLowerCase())) &&
+          (!territory || (customer.territory || "").toLowerCase().includes(territory.toLowerCase())) &&
           (!specialty || (customer.specialty || "").toLowerCase().includes(specialty.toLowerCase())) &&
           (!assignee || (customer.assignedRepEmail || "").toLowerCase().includes(assignee.toLowerCase())) &&
           (!priority || customer.priority === priority) &&
           (!due || status === due)
         );
       }),
-    [area, assignee, due, insights, priority, search, specialty, type],
+    [area, assignee, due, insights, priority, search, specialty, territory, type],
   );
+
+  const summary = useMemo(() => {
+    const doctors = insights.filter(({ customer }) => customer.type === "doctor").length;
+    const pharmacies = insights.filter(({ customer }) => customer.type === "pharmacy").length;
+    return {
+      doctors,
+      pharmacies,
+      covered: insights.filter((item) => item.status === "covered").length,
+      due: insights.filter((item) => item.status === "due").length,
+      overdue: insights.filter((item) => item.status === "overdue").length,
+    };
+  }, [insights]);
 
   const startVisit = async (customer: Customer) => {
     try {
@@ -74,6 +95,12 @@ export default function CustomersPage() {
       <section className="hero-band">
         <div className="section-title">العملاء المكلفون</div>
         <div className="muted">أطباء وصيدليات حسب المنطقة والأولوية وحالة التكرار الشهري.</div>
+        <div className="metric-grid">
+          <div className="metric"><span className="metric-value">{summary.doctors}</span><span className="muted">أطباء</span></div>
+          <div className="metric"><span className="metric-value">{summary.pharmacies}</span><span className="muted">صيدليات</span></div>
+          <div className="metric"><span className="metric-value">{summary.due}</span><span className="muted">مستحقون</span></div>
+          <div className="metric"><span className="metric-value">{summary.overdue}</span><span className="muted">متأخرون</span></div>
+        </div>
       </section>
 
       <div className="card">
@@ -85,6 +112,7 @@ export default function CustomersPage() {
             <option value="pharmacy">صيدليات</option>
           </select>
           <input placeholder="فلتر المنطقة" value={area} onChange={(e) => setArea(e.target.value)} />
+          <input placeholder="فلتر القطاع" value={territory} onChange={(e) => setTerritory(e.target.value)} />
           <input placeholder="التخصص / الفئة" value={specialty} onChange={(e) => setSpecialty(e.target.value)} />
           <input placeholder="المندوب المكلف" value={assignee} onChange={(e) => setAssignee(e.target.value)} />
           <select value={priority} onChange={(e) => setPriority(e.target.value)}>
@@ -111,15 +139,21 @@ export default function CustomersPage() {
               <div>
                 <div style={{ fontWeight: 700 }}>{customer.name}</div>
                 <div className="muted">
-                  {customerDisplayType(customer.type)} • {customer.specialty || "غير محدد"} • {customer.area || "بدون منطقة"}
+                  {customerDisplayType(customer.type)} • {customer.specialty || customer.category || "غير محدد"} • {customer.area || "بدون منطقة"}
                 </div>
               </div>
               <span className={`pill status-${status}`}>{statusLabel(status)}</span>
             </div>
+            <div className="chip-row">
+              <span className="mini-chip">القطاع: {customer.territory || customer.area || "غير محدد"}</span>
+              <span className="mini-chip">المندوب: {customer.assignedRepEmail || user?.email || "غير محدد"}</span>
+              <span className="mini-chip">الإجراء التالي: {nextActionLabel(status)}</span>
+            </div>
             <div className="grid">
               <div><span className="muted">الأولوية</span><br />{priorityLabel(customer.priority)}</div>
               <div><span className="muted">التكرار</span><br />{completedThisMonth} / {target}</div>
-              <div><span className="muted">آخر زيارة</span><br />{lastVisit?.visitedAt || lastVisit?.startedAt ? new Date(lastVisit.visitedAt || lastVisit.startedAt || "").toLocaleDateString("ar-JO") : "لا يوجد"}</div>
+              <div><span className="muted">آخر زيارة</span><br />{formatDateTime(lastVisit?.endedAt || lastVisit?.visitedAt || lastVisit?.startedAt)}</div>
+              <div><span className="muted">محور النقاش</span><br />{customer.productFocus || "غير محدد"}</div>
             </div>
             <div className="actions-row">
               <button type="button" className="secondary-button" onClick={() => navigate(`/customers/${customer.type}/${customer.id}`)}>
@@ -128,6 +162,11 @@ export default function CustomersPage() {
               <button type="button" onClick={() => void startVisit(customer)}>
                 بدء زيارة
               </button>
+              {customer.location ? (
+                <button type="button" className="secondary-button" onClick={() => navigate("/live-map")}>
+                  الخريطة
+                </button>
+              ) : null}
             </div>
           </div>
         ))}

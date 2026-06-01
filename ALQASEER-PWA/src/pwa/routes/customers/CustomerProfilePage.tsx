@@ -3,7 +3,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { createVisit, getCustomers, getVisits } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
 import { buildGoogleMapsUrl, buildOpenStreetMapUrl } from "../../utils/mapLinks";
-import { buildCustomerInsights, customerDisplayType, formatDateTime, priorityLabel, statusLabel } from "../../utils/fieldCrm";
+import {
+  buildCustomerInsights,
+  customerDisplayType,
+  formatDateTime,
+  formatDuration,
+  gpsEndLabel,
+  gpsStartLabel,
+  nextActionLabel,
+  priorityLabel,
+  statusLabel,
+  visitStatusLabel,
+  visitSyncLabel,
+} from "../../utils/fieldCrm";
 import { useAuthStore } from "../../state/auth";
 
 export default function CustomerProfilePage() {
@@ -78,6 +90,7 @@ export default function CustomerProfilePage() {
   const { customer } = insight;
   const mapsUrl = customer.location ? buildGoogleMapsUrl(customer.location.lat, customer.location.lng) : null;
   const osmUrl = customer.location ? buildOpenStreetMapUrl(customer.location.lat, customer.location.lng) : null;
+  const attainment = insight.target ? Math.min(100, Math.round((insight.completedThisMonth / insight.target) * 100)) : 0;
 
   return (
     <div className="page">
@@ -91,6 +104,11 @@ export default function CustomerProfilePage() {
           </div>
           <span className={`pill status-${insight.status}`}>{statusLabel(insight.status)}</span>
         </div>
+        <div className="chip-row">
+          <span className="mini-chip">القطاع: {customer.territory || customer.area || "غير محدد"}</span>
+          <span className="mini-chip">المندوب: {customer.assignedRepEmail || user?.email || "غير محدد"}</span>
+          <span className="mini-chip">الإجراء التالي: {nextActionLabel(insight.status)}</span>
+        </div>
         <div className="metric-grid">
           <div className="metric">
             <span className="metric-value">{insight.completedThisMonth}</span>
@@ -99,6 +117,14 @@ export default function CustomerProfilePage() {
           <div className="metric">
             <span className="metric-value">{insight.target}</span>
             <span className="muted">هدف التكرار الشهري</span>
+          </div>
+          <div className="metric">
+            <span className="metric-value">{attainment}%</span>
+            <span className="muted">تحقيق التكرار</span>
+          </div>
+          <div className="metric">
+            <span className="metric-value">{insight.visits.length}</span>
+            <span className="muted">إجمالي الزيارات</span>
           </div>
         </div>
       </section>
@@ -120,6 +146,14 @@ export default function CustomerProfilePage() {
       </div>
 
       <div className="card">
+        <div className="section-title">ملخص Customer 360</div>
+        <div className="field-row"><span className="muted">حالة التغطية</span><strong>{statusLabel(insight.status)}</strong></div>
+        <div className="field-row"><span className="muted">التكرار الشهري</span><strong>{insight.completedThisMonth} / {insight.target}</strong></div>
+        <div className="field-row"><span className="muted">آخر ملاحظة</span><span className="text-break">{insight.lastVisit?.notes || customer.notes || "لا توجد ملاحظات حديثة"}</span></div>
+        <div className="field-row"><span className="muted">الموضوع/المنتج</span><span>{customer.productFocus || "غير محدد"}</span></div>
+      </div>
+
+      <div className="card">
         <div className="section-title">إجراءات ميدانية</div>
         <div className="actions-row">
           <button type="button" onClick={startVisitFromProfile}>بدء زيارة</button>
@@ -136,7 +170,9 @@ export default function CustomerProfilePage() {
             {insight.visits.map((visit) => (
               <div key={visit.id} className="timeline-item">
                 <div style={{ fontWeight: 700 }}>{formatDateTime(visit.endedAt || visit.startedAt || visit.visitedAt)}</div>
-                <div className="muted">الحالة: {visit.serverStatus || visit.status || "غير محدد"}</div>
+                <div className="muted">الحالة: {visitStatusLabel(visit.serverStatus || visit.status)} • {visitSyncLabel(visit)}</div>
+                <div className="muted">المدة: {formatDuration(visit.durationSeconds)} • المكالمة: {formatDuration(visit.callDurationSeconds)}</div>
+                <div className="muted">{gpsStartLabel(visit)} • {gpsEndLabel(visit)}</div>
                 <div className="muted">محور النقاش: {customer.productFocus || "غير محدد"}</div>
                 <div className="muted">الملاحظات: {visit.notes || "لا توجد ملاحظات"}</div>
               </div>

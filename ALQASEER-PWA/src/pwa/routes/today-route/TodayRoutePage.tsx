@@ -3,7 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { GoogleMapWidget } from "../../components/map/GoogleMap";
 import { createVisit, getCustomers, getTodayRoute, getVisits } from "../../api/client";
 import type { Customer, RouteStop, Visit } from "../../api/types";
-import { buildCoverageSummary, customerDisplayType, formatDateTime, statusLabel } from "../../utils/fieldCrm";
+import {
+  buildCoverageSummary,
+  buildCustomerInsights,
+  customerDisplayType,
+  formatDateTime,
+  nextActionLabel,
+  priorityLabel,
+  routeStopStatusLabel,
+  statusLabel,
+} from "../../utils/fieldCrm";
 import { useAuthStore } from "../../state/auth";
 
 const statusColor: Record<RouteStop["status"], string> = {
@@ -42,6 +51,20 @@ export default function TodayRoutePage() {
   }, []);
 
   const summary = useMemo(() => buildCoverageSummary(customers, visits, stops), [customers, stops, visits]);
+  const insightByCustomer = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof buildCustomerInsights>[number]>();
+    for (const insight of buildCustomerInsights(customers, visits, user?.email)) {
+      map.set(`${insight.customer.type}:${insight.customer.id}`, insight);
+    }
+    return map;
+  }, [customers, user?.email, visits]);
+  const routeTerritories = useMemo(
+    () => Array.from(new Set(stops.map((stop) => {
+      const insight = insightByCustomer.get(`${stop.customerType}:${stop.customerId}`);
+      return insight?.customer.territory || insight?.customer.area;
+    }).filter(Boolean))),
+    [insightByCustomer, stops],
+  );
 
   const startVisitForStop = async (stop: RouteStop) => {
     try {
@@ -68,6 +91,7 @@ export default function TodayRoutePage() {
           <div>
             <div className="section-title">مسار اليوم</div>
             <div className="muted">{user?.name || user?.email || "مندوب"} • العملاء المكلفون حسب المنطقة والقطاع</div>
+            <div className="muted">القطاعات: {routeTerritories.join("، ") || "غير محددة"}</div>
           </div>
           <span className="pill">{navigator.onLine ? "متصل" : "دون اتصال"}</span>
         </div>
@@ -97,21 +121,31 @@ export default function TodayRoutePage() {
       <div className="list">
         {stops.map((stop) => {
           const customer = customers.find((item) => item.id === stop.customerId && item.type === stop.customerType);
+          const insight = insightByCustomer.get(`${stop.customerType}:${stop.customerId}`);
           const customerVisits = visits.filter((visit) => visit.customerId === stop.customerId && visit.customerType === stop.customerType);
           const lastVisit = customerVisits[0];
-          const dueStatus = customerVisits.length ? "due" : "overdue";
+          const dueStatus = insight?.status || (customerVisits.length ? "due" : "overdue");
+          const stopIndex = stops.findIndex((item) => item.id === stop.id) + 1;
           return (
             <div key={stop.id} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
               <div className="card-header">
                 <div>
                   <div style={{ fontWeight: 700 }}>{stop.customerName}</div>
                   <div className="muted">
-                    {customerDisplayType(stop.customerType)} • {customer?.specialty || customer?.area || "بدون منطقة"}
+                    {customerDisplayType(stop.customerType)} • {customer?.specialty || customer?.category || "غير محدد"} • {customer?.territory || customer?.area || "قطاع غير محدد"}
                   </div>
                 </div>
                 <span className={`pill status-${dueStatus}`}>{statusLabel(dueStatus)}</span>
               </div>
+              <div className="chip-row">
+                <span className="mini-chip">ترتيب المسار: #{stopIndex}</span>
+                <span className="mini-chip">حالة المسار: {routeStopStatusLabel(stop.status)}</span>
+                <span className="mini-chip">الأولوية: {priorityLabel(customer?.priority)}</span>
+                <span className="mini-chip">التكرار: {insight?.completedThisMonth ?? 0} / {insight?.target ?? customer?.monthlyFrequencyTarget ?? 2}</span>
+                <span className="mini-chip">التالي: {nextActionLabel(dueStatus)}</span>
+              </div>
               <div className="muted">{stop.address || customer?.address || "عنوان غير متوفر"}</div>
+              <div className="muted">الموعد: {formatDateTime(stop.scheduledFor)} • المندوب: {customer?.assignedRepEmail || user?.email || "غير محدد"}</div>
               <div className="muted">آخر زيارة: {formatDateTime(lastVisit?.endedAt || lastVisit?.startedAt || lastVisit?.visitedAt)}</div>
               <div className="actions-row">
                 <button type="button" onClick={() => navigate(`/customers/${stop.customerType}/${stop.customerId}`)} className="secondary-button">
@@ -119,6 +153,9 @@ export default function TodayRoutePage() {
                 </button>
                 <button type="button" onClick={() => void startVisitForStop(stop)}>
                   بدء زيارة
+                </button>
+                <button type="button" className="secondary-button" onClick={() => navigate("/live-map")}>
+                  الخريطة
                 </button>
               </div>
             </div>

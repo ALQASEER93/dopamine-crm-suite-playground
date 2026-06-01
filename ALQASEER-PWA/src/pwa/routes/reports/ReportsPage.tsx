@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getCustomers, getTodayRoute, getVisits } from "../../api/client";
 import type { Customer, RouteStop, Visit } from "../../api/types";
-import { buildCoverageSummary, customerDisplayType } from "../../utils/fieldCrm";
+import { buildCoverageSummary, buildCustomerInsights, customerDisplayType, statusLabel } from "../../utils/fieldCrm";
 import { getQueuedMutations } from "../../offline/queue";
 
 export default function ReportsPage() {
@@ -33,6 +33,33 @@ export default function ReportsPage() {
   }, []);
 
   const summary = useMemo(() => buildCoverageSummary(customers, visits, routeStops), [customers, routeStops, visits]);
+  const insights = useMemo(() => buildCustomerInsights(customers, visits), [customers, visits]);
+  const plannedStops = routeStops.length;
+  const completedStops = routeStops.filter((stop) => stop.status === "done").length;
+  const repActivity = useMemo(() => {
+    const rows = new Map<string, { customers: number; due: number; overdue: number; completed: number }>();
+    for (const insight of insights) {
+      const rep = insight.customer.assignedRepEmail || "غير محدد";
+      const current = rows.get(rep) || { customers: 0, due: 0, overdue: 0, completed: 0 };
+      current.customers += 1;
+      if (insight.status === "due") current.due += 1;
+      if (insight.status === "overdue") current.overdue += 1;
+      current.completed += insight.completedThisMonth;
+      rows.set(rep, current);
+    }
+    return Array.from(rows, ([rep, values]) => ({ rep, ...values }));
+  }, [insights]);
+  const territoryCoverage = useMemo(() => {
+    const rows = new Map<string, { total: number; covered: number; due: number; overdue: number }>();
+    for (const insight of insights) {
+      const territory = insight.customer.territory || insight.customer.area || "غير محدد";
+      const current = rows.get(territory) || { total: 0, covered: 0, due: 0, overdue: 0 };
+      current.total += 1;
+      current[insight.status] += 1;
+      rows.set(territory, current);
+    }
+    return Array.from(rows, ([territory, values]) => ({ territory, ...values }));
+  }, [insights]);
 
   return (
     <div className="page">
@@ -49,7 +76,17 @@ export default function ReportsPage() {
         <div className="metric"><span className="metric-value">{summary.dueCustomers}</span><span className="muted">عملاء مستحقون</span></div>
         <div className="metric"><span className="metric-value">{summary.overdueCustomers}</span><span className="muted">عملاء متأخرون</span></div>
         <div className="metric"><span className="metric-value">{summary.avgVisitDurationMinutes}</span><span className="muted">متوسط مدة الزيارة/دقيقة</span></div>
+        <div className="metric"><span className="metric-value">{summary.avgCallDurationMinutes}</span><span className="muted">متوسط المكالمة/دقيقة</span></div>
         <div className="metric"><span className="metric-value">{queueCount}</span><span className="muted">عمليات دون اتصال</span></div>
+      </div>
+      <div className="card">
+        <div className="section-title">المخطط مقابل المنجز اليوم</div>
+        <div className="grid">
+          <div><span className="muted">زيارات مخططة</span><br />{plannedStops}</div>
+          <div><span className="muted">زيارات مكتملة</span><br />{completedStops}</div>
+          <div><span className="muted">المتبقي</span><br />{Math.max(plannedStops - completedStops, 0)}</div>
+          <div><span className="muted">نسبة الإنجاز</span><br />{plannedStops ? Math.round((completedStops / plannedStops) * 100) : 0}%</div>
+        </div>
       </div>
       <div className="card">
         <div className="section-title">الزيارات حسب المنطقة</div>
@@ -72,7 +109,45 @@ export default function ReportsPage() {
               <span className="pill">{row.visits}</span>
             </div>
           ))}
-          <div className="muted">تصدير CSV/Excel متاح من backend عبر مسارات الزيارات الإدارية عند توفر صلاحية المدير.</div>
+          <div className="muted">تصدير CSV/Excel متاح فقط إذا كانت صلاحية المدير ومسارات التصدير مفعلة في backend. لا يتم عرض زر تصدير وهمي هنا.</div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="section-title">نشاط المندوبين</div>
+        <div className="list">
+          {repActivity.map((row) => (
+            <div key={row.rep} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+              <div className="card-header">
+                <span className="text-break">{row.rep}</span>
+                <span className="pill">{row.customers} عميل</span>
+              </div>
+              <div className="grid">
+                <div><span className="muted">زيارات مكتملة هذا الشهر</span><br />{row.completed}</div>
+                <div><span className="muted">مستحق</span><br />{row.due}</div>
+                <div><span className="muted">متأخر</span><br />{row.overdue}</div>
+              </div>
+            </div>
+          ))}
+          {!repActivity.length ? <div className="muted">لا توجد بيانات مندوبين كافية.</div> : null}
+        </div>
+      </div>
+      <div className="card">
+        <div className="section-title">تغطية القطاعات</div>
+        <div className="list">
+          {territoryCoverage.map((row) => (
+            <div key={row.territory} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+              <div className="card-header">
+                <span>{row.territory}</span>
+                <span className="pill">{row.total} عميل</span>
+              </div>
+              <div className="chip-row">
+                <span className="mini-chip">{statusLabel("covered")}: {row.covered}</span>
+                <span className="mini-chip">{statusLabel("due")}: {row.due}</span>
+                <span className="mini-chip">{statusLabel("overdue")}: {row.overdue}</span>
+              </div>
+            </div>
+          ))}
+          {!territoryCoverage.length ? <div className="muted">لا توجد بيانات قطاعات كافية.</div> : null}
         </div>
       </div>
       <div className="card">
