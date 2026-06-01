@@ -91,6 +91,8 @@ export default function CustomerProfilePage() {
   const mapsUrl = customer.location ? buildGoogleMapsUrl(customer.location.lat, customer.location.lng) : null;
   const osmUrl = customer.location ? buildOpenStreetMapUrl(customer.location.lat, customer.location.lng) : null;
   const attainment = insight.target ? Math.min(100, Math.round((insight.completedThisMonth / insight.target) * 100)) : 0;
+  const progressClass = insight.status === "overdue" ? "danger" : insight.status === "due" ? "warning" : "";
+  const progressStyle = { "--progress": `${attainment}%` } as React.CSSProperties;
 
   return (
     <div className="page">
@@ -127,6 +129,19 @@ export default function CustomerProfilePage() {
             <span className="muted">إجمالي الزيارات</span>
           </div>
         </div>
+        <div className="progress-stack">
+          <div className="card-header" style={{ marginBottom: 0 }}>
+            <span className="muted">تحقيق هدف الزيارة الشهري</span>
+            <strong>{insight.completedThisMonth} / {insight.target}</strong>
+          </div>
+          <div className="progress-track" aria-label="frequency-attainment">
+            <div className={`progress-fill ${progressClass}`} style={progressStyle} />
+          </div>
+        </div>
+        <div className="actions-row">
+          <button type="button" onClick={startVisitFromProfile}>بدء زيارة</button>
+          {mapsUrl ? <a className="secondary-button" href={mapsUrl} target="_blank" rel="noreferrer">الملاحة</a> : null}
+        </div>
       </section>
 
       {message ? <div className="card" style={{ color: "var(--warning)" }}>{message}</div> : null}
@@ -146,9 +161,10 @@ export default function CustomerProfilePage() {
       </div>
 
       <div className="card">
-        <div className="section-title">ملخص Customer 360</div>
+        <div className="section-title">ملف 360 للعميل</div>
         <div className="field-row"><span className="muted">حالة التغطية</span><strong>{statusLabel(insight.status)}</strong></div>
         <div className="field-row"><span className="muted">التكرار الشهري</span><strong>{insight.completedThisMonth} / {insight.target}</strong></div>
+        <div className="field-row"><span className="muted">الإجراء التالي</span><strong>{nextActionLabel(insight.status)}</strong></div>
         <div className="field-row"><span className="muted">آخر ملاحظة</span><span className="text-break">{insight.lastVisit?.notes || customer.notes || "لا توجد ملاحظات حديثة"}</span></div>
         <div className="field-row"><span className="muted">الموضوع/المنتج</span><span>{customer.productFocus || "غير محدد"}</span></div>
       </div>
@@ -169,8 +185,11 @@ export default function CustomerProfilePage() {
           <div className="timeline">
             {insight.visits.map((visit) => (
               <div key={visit.id} className="timeline-item">
-                <div style={{ fontWeight: 700 }}>{formatDateTime(visit.endedAt || visit.startedAt || visit.visitedAt)}</div>
-                <div className="muted">الحالة: {visitStatusLabel(visit.serverStatus || visit.status)} • {visitSyncLabel(visit)}</div>
+                <div className="card-header">
+                  <strong>{formatDateTime(visit.endedAt || visit.startedAt || visit.visitedAt)}</strong>
+                  <span className="pill status-synced">{visitSyncLabel(visit)}</span>
+                </div>
+                <div className="muted">الحالة: {visitStatusLabel(visit.serverStatus || visit.status)}</div>
                 <div className="muted">المدة: {formatDuration(visit.durationSeconds)} • المكالمة: {formatDuration(visit.callDurationSeconds)}</div>
                 <div className="muted">{gpsStartLabel(visit)} • {gpsEndLabel(visit)}</div>
                 <div className="muted">محور النقاش: {customer.productFocus || "غير محدد"}</div>

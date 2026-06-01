@@ -55,6 +55,8 @@ const customers = [
   },
 ];
 
+const activeVisitStartedAt = new Date(Date.now() - 285000).toISOString();
+
 const visits = [
   {
     id: "visit-demo-1",
@@ -74,6 +76,22 @@ const visits = [
     endCoordinates: { lat: 31.96321, lng: 35.9304 },
     startAccuracy: 18,
     endAccuracy: 20,
+  },
+  {
+    id: "visit-demo-active",
+    customerId: "pharmacy-demo-1",
+    customerName: "DPM DEMO PHARMACY - SAFE QA",
+    customerType: "pharmacy",
+    visitType: "follow-up",
+    status: "in_progress",
+    serverStatus: "in_progress",
+    notes: "",
+    visitedAt: activeVisitStartedAt,
+    startedAt: activeVisitStartedAt,
+    durationSeconds: 0,
+    callDurationSeconds: 0,
+    coordinates: { lat: 31.958922, lng: 35.869876 },
+    startAccuracy: 22,
   },
 ];
 
@@ -265,6 +283,7 @@ async function main() {
       { key: "customers-mobile", path: "/customers", viewport: { width: 390, height: 844 } },
       { key: "customer-profile-mobile", path: "/customers/doctor/doctor-demo-1", viewport: { width: 390, height: 844 } },
       { key: "visits-mobile", path: "/visits", viewport: { width: 390, height: 844 } },
+      { key: "visit-flow-focused-mobile", path: "/visit-session/visit-demo-active", viewport: { width: 390, height: 844 } },
       { key: "today-route-mobile", path: "/today-route", viewport: { width: 390, height: 844 } },
       { key: "reports-mobile", path: "/reports", viewport: { width: 390, height: 844 } },
       { key: "live-map-mobile", path: "/live-map", viewport: { width: 390, height: 844 } },

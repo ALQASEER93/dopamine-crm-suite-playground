@@ -60,6 +60,7 @@ export default function VisitSessionPage() {
   const activeCallSeconds = useTicker(Boolean(callStartedAt), callStartedAt);
   const displayedVisitSeconds = isActive ? visitSeconds : deriveVisitDuration(visit || ({} as Visit));
   const lifecycle = visit ? visitLifecycleSteps(visit) : [];
+  const nextLifecycleIndex = lifecycle.findIndex((step) => !step.done);
 
   useEffect(() => {
     const load = async () => {
@@ -255,16 +256,28 @@ export default function VisitSessionPage() {
       {message ? <div className="card" style={{ color: "var(--warning)" }}>{message}</div> : null}
 
       <div className="card">
-        <div className="section-title">مراحل الزيارة</div>
-        <div className="lifecycle">
-          {lifecycle.map((step) => (
-            <span
-              key={step.label}
-              className={`lifecycle-step ${step.done ? "done" : ""} ${step.label === "داخل الزيارة" && step.done ? "active" : ""}`}
-            >
-              {step.label}
-            </span>
-          ))}
+        <div className="card-header">
+          <div>
+            <div className="section-title">رحلة الزيارة الميدانية</div>
+            <div className="muted">تسلسل واضح من اختيار العميل حتى المزامنة. لا يتم اعتبار GPS ناجحاً إلا بعد التقاط الإحداثيات فعلياً.</div>
+          </div>
+          <span className={`pill ${visit.serverStatus?.startsWith("pending") ? "status-pending" : isActive ? "status-active" : visit.endedAt ? "status-synced" : ""}`}>
+            {visitStatusLabel(visit.serverStatus || visit.status)}
+          </span>
+        </div>
+        <div className="workflow-steps">
+          {lifecycle.map((step, index) => {
+            const active = (isActive && step.label === "داخل الزيارة") || (!step.done && index === nextLifecycleIndex);
+            return (
+              <div key={step.label} className={`workflow-step ${step.done ? "done" : ""} ${active ? "active" : ""}`}>
+                <span className="workflow-index">{index + 1}</span>
+                <div>
+                  <strong>{step.label}</strong>
+                  <div className="muted">{step.done ? "تم التحقق" : active ? "الخطوة الحالية" : "بانتظار"}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -287,7 +300,13 @@ export default function VisitSessionPage() {
       </div>
 
       <div className="card">
-        <div className="section-title">المكالمة والملاحظات</div>
+        <div className="card-header">
+          <div>
+            <div className="section-title">المكالمة والملاحظات</div>
+            <div className="muted">الملاحظات مقفلة حتى يبدأ GPS بداية الزيارة، ثم تحفظ ضمن سجل الزيارة.</div>
+          </div>
+          <span className={`pill ${callStartedAt ? "status-active" : "status-pending"}`}>{callStartedAt ? "نقاش جار" : "لا توجد مكالمة نشطة"}</span>
+        </div>
         <div className="actions-row">
           <button type="button" disabled={!isActive || Boolean(callStartedAt)} onClick={() => setCallStartedAt(new Date().toISOString())}>بدء المكالمة</button>
           <button
@@ -301,6 +320,12 @@ export default function VisitSessionPage() {
           >
             إنهاء المكالمة
           </button>
+        </div>
+        <div className="chip-row">
+          <span className="mini-chip">موضوع النقاش</span>
+          <span className="mini-chip">احتياج العميل</span>
+          <span className="mini-chip">متابعة الزيارة القادمة</span>
+          <span className="mini-chip">بدون بيانات مرضى</span>
         </div>
         <label htmlFor="visit-notes">ملاحظات الزيارة</label>
         <div className="muted">اكتب النقاش أو محور المنتج بدون أي ادعاءات علاجية أو بيانات مرضى.</div>

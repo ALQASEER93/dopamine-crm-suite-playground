@@ -36,6 +36,9 @@ export default function ReportsPage() {
   const insights = useMemo(() => buildCustomerInsights(customers, visits), [customers, visits]);
   const plannedStops = routeStops.length;
   const completedStops = routeStops.filter((stop) => stop.status === "done").length;
+  const planCompletionPct = plannedStops ? Math.round((completedStops / plannedStops) * 100) : 0;
+  const frequencyStyle = { "--progress": `${summary.frequencyAchievedPct}%` } as React.CSSProperties;
+  const planStyle = { "--progress": `${planCompletionPct}%` } as React.CSSProperties;
   const repActivity = useMemo(() => {
     const rows = new Map<string, { customers: number; due: number; overdue: number; completed: number }>();
     for (const insight of insights) {
@@ -64,8 +67,22 @@ export default function ReportsPage() {
   return (
     <div className="page">
       <section className="hero-band">
-        <div className="section-title">تقارير التغطية الميدانية</div>
-        <div className="muted">مؤشرات الزيارات والتكرار الشهري للمندوبين والعملاء.</div>
+        <div className="card-header">
+          <div>
+            <div className="section-title">تقارير التغطية الميدانية</div>
+            <div className="muted">ملخص تنفيذي للمخطط مقابل المنجز، التكرار الشهري، والقطاعات المتأخرة.</div>
+          </div>
+          <span className="pill pill-strong">Field Force CRM</span>
+        </div>
+        <div className="progress-stack">
+          <div className="card-header" style={{ marginBottom: 0 }}>
+            <span className="muted">تحقيق التكرار الشهري</span>
+            <strong>{summary.frequencyAchievedPct}%</strong>
+          </div>
+          <div className="progress-track">
+            <div className={`progress-fill ${summary.frequencyAchievedPct < 40 ? "danger" : summary.frequencyAchievedPct < 80 ? "warning" : ""}`} style={frequencyStyle} />
+          </div>
+        </div>
       </section>
       {error ? <div className="card" style={{ color: "var(--warning)" }}>{error}</div> : null}
       <div className="metric-grid">
@@ -80,12 +97,21 @@ export default function ReportsPage() {
         <div className="metric"><span className="metric-value">{queueCount}</span><span className="muted">عمليات دون اتصال</span></div>
       </div>
       <div className="card">
-        <div className="section-title">المخطط مقابل المنجز اليوم</div>
+        <div className="card-header">
+          <div>
+            <div className="section-title">المخطط مقابل المنجز اليوم</div>
+            <div className="muted">قراءة سريعة لمسار اليوم قبل مراجعة تفاصيل القطاعات.</div>
+          </div>
+          <span className={`pill ${planCompletionPct >= 100 ? "status-covered" : planCompletionPct > 0 ? "status-active" : "status-pending"}`}>{planCompletionPct}%</span>
+        </div>
+        <div className="progress-track" style={{ marginBottom: 12 }}>
+          <div className={`progress-fill ${planCompletionPct < 40 ? "danger" : planCompletionPct < 80 ? "warning" : ""}`} style={planStyle} />
+        </div>
         <div className="grid">
           <div><span className="muted">زيارات مخططة</span><br />{plannedStops}</div>
           <div><span className="muted">زيارات مكتملة</span><br />{completedStops}</div>
           <div><span className="muted">المتبقي</span><br />{Math.max(plannedStops - completedStops, 0)}</div>
-          <div><span className="muted">نسبة الإنجاز</span><br />{plannedStops ? Math.round((completedStops / plannedStops) * 100) : 0}%</div>
+          <div><span className="muted">نسبة الإنجاز</span><br />{planCompletionPct}%</div>
         </div>
       </div>
       <div className="card">

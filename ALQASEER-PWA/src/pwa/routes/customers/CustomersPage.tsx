@@ -133,44 +133,57 @@ export default function CustomersPage() {
       {error ? <div className="card" style={{ color: "var(--warning)" }}>{error}</div> : null}
 
       <div className="list">
-        {filtered.map(({ customer, completedThisMonth, target, status, lastVisit }) => (
-          <div key={`${customer.type}-${customer.id}`} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
-            <div className="card-header">
-              <div>
-                <div style={{ fontWeight: 700 }}>{customer.name}</div>
-                <div className="muted">
-                  {customerDisplayType(customer.type)} • {customer.specialty || customer.category || "غير محدد"} • {customer.area || "بدون منطقة"}
+        {filtered.map(({ customer, completedThisMonth, target, status, lastVisit }) => {
+          const attainment = target ? Math.min(100, Math.round((completedThisMonth / target) * 100)) : 0;
+          const progressStyle = { "--progress": `${attainment}%` } as React.CSSProperties;
+          const progressClass = status === "overdue" ? "danger" : status === "due" ? "warning" : "";
+          return (
+            <div key={`${customer.type}-${customer.id}`} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+              <div className="card-header">
+                <div>
+                  <div style={{ fontWeight: 700 }}>{customer.name}</div>
+                  <div className="muted">
+                    {customerDisplayType(customer.type)} • {customer.specialty || customer.category || "غير محدد"} • {customer.area || "بدون منطقة"}
+                  </div>
+                </div>
+                <span className={`pill status-${status}`}>{statusLabel(status)}</span>
+              </div>
+              <div className="progress-stack">
+                <div className="card-header" style={{ marginBottom: 0 }}>
+                  <span className="muted">تحقيق التكرار</span>
+                  <strong>{completedThisMonth} / {target}</strong>
+                </div>
+                <div className="progress-track">
+                  <div className={`progress-fill ${progressClass}`} style={progressStyle} />
                 </div>
               </div>
-              <span className={`pill status-${status}`}>{statusLabel(status)}</span>
-            </div>
-            <div className="chip-row">
-              <span className="mini-chip">القطاع: {customer.territory || customer.area || "غير محدد"}</span>
-              <span className="mini-chip">المندوب: {customer.assignedRepEmail || user?.email || "غير محدد"}</span>
-              <span className="mini-chip">الإجراء التالي: {nextActionLabel(status)}</span>
-            </div>
-            <div className="grid">
-              <div><span className="muted">الأولوية</span><br />{priorityLabel(customer.priority)}</div>
-              <div><span className="muted">التكرار</span><br />{completedThisMonth} / {target}</div>
-              <div><span className="muted">آخر زيارة</span><br />{formatDateTime(lastVisit?.endedAt || lastVisit?.visitedAt || lastVisit?.startedAt)}</div>
-              <div><span className="muted">محور النقاش</span><br />{customer.productFocus || "غير محدد"}</div>
-            </div>
-            <div className="actions-row">
-              <button type="button" className="secondary-button" onClick={() => navigate(`/customers/${customer.type}/${customer.id}`)}>
-                ملف العميل
-              </button>
-              <button type="button" onClick={() => void startVisit(customer)}>
-                بدء زيارة
-              </button>
-              {customer.location ? (
-                <button type="button" className="secondary-button" onClick={() => navigate("/live-map")}>
-                  الخريطة
+              <div className="chip-row">
+                <span className="mini-chip">القطاع: {customer.territory || customer.area || "غير محدد"}</span>
+                <span className="mini-chip">المندوب: {customer.assignedRepEmail || user?.email || "غير محدد"}</span>
+                <span className="mini-chip">الإجراء التالي: {nextActionLabel(status)}</span>
+              </div>
+              <div className="grid">
+                <div><span className="muted">الأولوية</span><br />{priorityLabel(customer.priority)}</div>
+                <div><span className="muted">آخر زيارة</span><br />{formatDateTime(lastVisit?.endedAt || lastVisit?.visitedAt || lastVisit?.startedAt)}</div>
+                <div><span className="muted">محور النقاش</span><br />{customer.productFocus || "غير محدد"}</div>
+              </div>
+              <div className="actions-row">
+                <button type="button" className="secondary-button" onClick={() => navigate(`/customers/${customer.type}/${customer.id}`)}>
+                  ملف العميل
                 </button>
-              ) : null}
+                <button type="button" onClick={() => void startVisit(customer)}>
+                  بدء زيارة
+                </button>
+                {customer.location ? (
+                  <button type="button" className="secondary-button" onClick={() => navigate("/live-map")}>
+                    الخريطة
+                  </button>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
-        {!filtered.length ? <div className="card">لا يوجد عملاء يطابقون الفلاتر الحالية.</div> : null}
+          );
+        })}
+        {!filtered.length ? <div className="card empty-state">لا يوجد عملاء يطابقون الفلاتر الحالية.</div> : null}
       </div>
     </div>
   );

@@ -18,10 +18,20 @@ export default function LiveMapPage() {
   const [positionTimestamp, setPositionTimestamp] = useState<string | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [status, setStatus] = useState<string | null>(null);
+  const [permissionState, setPermissionState] = useState<string>("غير معروف");
   const { enqueue } = useOfflineQueue();
 
   useEffect(() => {
     let watchId: number | null = null;
+    if (navigator.permissions?.query) {
+      void navigator.permissions
+        .query({ name: "geolocation" as PermissionName })
+        .then((result) => {
+          setPermissionState(result.state);
+          result.onchange = () => setPermissionState(result.state);
+        })
+        .catch(() => setPermissionState("غير معروف"));
+    }
     if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
@@ -81,6 +91,11 @@ export default function LiveMapPage() {
           <div className="metric"><span className="metric-value">{customers.filter((customer) => customer.location).length}</span><span className="muted">لديهم إحداثيات</span></div>
           <div className="metric"><span className="metric-value">{positionAccuracy !== null ? `${Math.round(positionAccuracy)}م` : "—"}</span><span className="muted">دقة آخر قراءة</span></div>
           <div className="metric"><span className="metric-value">{position ? "نشط" : "بانتظار"}</span><span className="muted">حالة GPS</span></div>
+        </div>
+        <div className="chip-row">
+          <span className="mini-chip">إذن الموقع: {permissionState}</span>
+          <span className="mini-chip">الحالة: {position ? "موقع متاح" : "بانتظار إذن أو قراءة"}</span>
+          <span className="mini-chip">خرائط خارجية: Google / OpenStreetMap</span>
         </div>
         {status ? <div style={{ color: "var(--warning)" }}>{status}</div> : null}
       </section>
