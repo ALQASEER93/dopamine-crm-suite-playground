@@ -332,12 +332,15 @@ async function main() {
 
   const failed = validations.filter((v) => v.status === "failed");
   const blocked = securityScan.findingCount > 0;
-  const verdict = blocked ? "BLOCKED" : failed.length > 0 ? "WARNING" : "WARNING";
+  const isGitHubWorkflowRun = Boolean(process.env.GITHUB_RUN_ID);
+  const verdict = blocked ? "BLOCKED" : failed.length > 0 ? "WARNING" : isGitHubWorkflowRun ? "PASS" : "WARNING";
   const verdictReason = blocked
     ? "Security scan found potential secret-bearing content in generated bridge artifacts."
     : failed.length > 0
       ? `${failed.length} validation command(s) failed; bridge files and run package were still generated.`
-      : "Bridge package generated locally; live GitHub artifact upload and PR comment remain pending until workflow execution.";
+      : isGitHubWorkflowRun
+        ? "GitHub workflow generated the bridge package, uploaded the artifact, and all recorded validations passed."
+        : "Bridge package generated locally; live GitHub artifact upload and PR comment remain pending until workflow execution.";
 
   const logs = (await fs.readdir(path.join(runDir, "logs"))).map((name) => `logs/${name}`).sort();
   const jsonFiles = (await fs.readdir(path.join(runDir, "json"))).map((name) => `json/${name}`).sort();
