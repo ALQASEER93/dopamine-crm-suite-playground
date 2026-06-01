@@ -1,0 +1,3 @@
+customer_type,name,specialty_or_category,territory,address,latitude,longitude,assigned_rep,monthly_frequency_target,priority,status,phone_optional,notes_optional
+doctor,,,,,,,,,,,
+pharmacy,,,,,,,,,,,

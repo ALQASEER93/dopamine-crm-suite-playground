@@ -2,7 +2,7 @@ import { get as getFromIdb, set as setInIdb } from "idb-keyval";
 import { apiFetch } from "../api/client";
 import type { Visit } from "../api/types";
 
-type MutationType = "visit" | "visit-start" | "visit-end" | "location";
+type MutationType = "visit" | "visit-start" | "visit-note" | "visit-end" | "location";
 
 export type QueuedMutation = {
   id: string;
@@ -259,6 +259,9 @@ async function resolveVisitEndpoint(mutation: QueuedMutation, meta: QueueMeta) {
   if (mutation.type === "visit-end") {
     return mappedVisitId ? `visits/${mappedVisitId}/end` : null;
   }
+  if (mutation.type === "visit-note") {
+    return mappedVisitId ? `visits/${mappedVisitId}` : null;
+  }
   return mutation.endpoint;
 }
 
@@ -355,6 +358,17 @@ export async function replayQueuedMutations() {
           ...visit,
           id: resolvedVisitId || visit.id,
           serverStatus: "in_progress",
+        }));
+      }
+
+      if (mutation.type === "visit-note") {
+        const resolvedVisitId =
+          mutation.visitId || (mutation.localVisitId ? meta.localVisitIdMap?.[mutation.localVisitId] : undefined);
+        const payload = mutation.payload as { notes?: string };
+        await patchOfflineVisit({ id: resolvedVisitId, localVisitId: mutation.localVisitId }, (visit) => ({
+          ...visit,
+          id: resolvedVisitId || visit.id,
+          notes: payload?.notes ?? visit.notes,
         }));
       }
 

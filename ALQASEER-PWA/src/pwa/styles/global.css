@@ -55,6 +55,17 @@ button {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+.sticky-primary-action {
+  position: sticky;
+  bottom: 72px;
+  z-index: 30;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+}
+
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -163,6 +174,13 @@ label {
   color: var(--warning);
   border-color: rgba(148, 163, 184, 0.35);
   background: rgba(148, 163, 184, 0.12);
+}
+
+.pill.status-gps,
+.status-badge.status-gps {
+  color: var(--warning);
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.12);
 }
 
 .pill-strong {

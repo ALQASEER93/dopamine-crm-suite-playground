@@ -142,7 +142,9 @@ def _map_visit_status(status: str | None) -> str:
         return "success"
     if status == "cancelled":
         return "no-show"
-    return "reminder"
+    if status == "in_progress":
+        return "in_progress"
+    return "scheduled"
 
 
 @router.get("/visits")
@@ -186,6 +188,7 @@ def list_visits(
                 "customerType": customer_type,
                 "visitType": "follow-up",
                 "status": _map_visit_status(visit.status),
+                "serverStatus": visit.status,
                 "notes": visit.notes,
                 "coordinates": {
                     "lat": visit.start_lat,
@@ -195,6 +198,17 @@ def list_visits(
                 else None,
                 "visitedAt": (visit.started_at or datetime.combine(visit.visit_date, datetime.min.time(), tzinfo=timezone.utc)).isoformat()
                 if visit.visit_date
+                else None,
+                "startedAt": visit.started_at.isoformat() if visit.started_at else None,
+                "endedAt": visit.ended_at.isoformat() if visit.ended_at else None,
+                "durationSeconds": visit.duration_seconds,
+                "startAccuracy": visit.start_accuracy,
+                "endAccuracy": visit.end_accuracy,
+                "endCoordinates": {
+                    "lat": visit.end_lat,
+                    "lng": visit.end_lng,
+                }
+                if visit.end_lat is not None and visit.end_lng is not None
                 else None,
             }
         )
@@ -255,7 +269,8 @@ def create_visit(
         "customerName": payload.get("customerName") or "",
         "customerType": customer_type,
         "visitType": payload.get("visitType") or "follow-up",
-        "status": "reminder",
+        "status": "scheduled",
+        "serverStatus": "scheduled",
         "notes": visit.notes,
         "coordinates": None,
         "visitedAt": visited_at,

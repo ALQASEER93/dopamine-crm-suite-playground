@@ -81,6 +81,13 @@ export function nextActionLabel(status: CustomerStatus) {
   return "جدولة زيارة";
 }
 
+export function maskPhone(value?: string | null) {
+  if (!value) return "غير متوفر";
+  const digits = String(value).replace(/\D/g, "");
+  if (digits.length < 4) return "مخفي";
+  return `${"•".repeat(Math.max(0, digits.length - 4))}${digits.slice(-4)}`;
+}
+
 export function visitStatusLabel(status?: string | null) {
   if (!status) return "مجدولة";
   const normalized = status.toLowerCase();

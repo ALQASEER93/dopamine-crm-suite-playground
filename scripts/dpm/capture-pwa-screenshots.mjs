@@ -59,6 +59,17 @@ const activeVisitStartedAt = new Date(Date.now() - 285000).toISOString();
 
 const visits = [
   {
+    id: "visit-demo-scheduled",
+    customerId: "doctor-demo-1",
+    customerName: "DPM DEMO HCP - SAFE QA",
+    customerType: "doctor",
+    visitType: "follow-up",
+    status: "scheduled",
+    serverStatus: "scheduled",
+    notes: "",
+    visitedAt: new Date(Date.now() - 180000).toISOString(),
+  },
+  {
     id: "visit-demo-1",
     customerId: "doctor-demo-1",
     customerName: "DPM DEMO HCP - SAFE QA",
@@ -267,6 +278,14 @@ async function main() {
       if (pathname.endsWith("/pwa/tracking/pings")) {
         return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true }) });
       }
+      if (/\/api\/v1\/visits\/[^/]+$/.test(pathname) && method === "PUT") {
+        const payload = route.request().postDataJSON();
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ id: "visit-demo-active", ...visits.find((visit) => visit.id === "visit-demo-active"), ...payload }),
+        });
+      }
       if (pathname.endsWith("/pwa/visits") && method === "POST") {
         const payload = route.request().postDataJSON();
         return route.fulfill({
@@ -284,6 +303,16 @@ async function main() {
       { key: "customer-profile-mobile", path: "/customers/doctor/doctor-demo-1", viewport: { width: 390, height: 844 } },
       { key: "visits-mobile", path: "/visits", viewport: { width: 390, height: 844 } },
       { key: "visit-flow-focused-mobile", path: "/visit-session/visit-demo-active", viewport: { width: 390, height: 844 } },
+      { key: "visit-session-start-visit-mobile", path: "/visit-session/visit-demo-scheduled", viewport: { width: 390, height: 844 } },
+      {
+        key: "visit-session-start-call-mobile",
+        path: "/visit-session/visit-demo-active",
+        viewport: { width: 390, height: 844 },
+        action: async (currentPage) => {
+          await currentPage.getByRole("button", { name: "بدء المكالمة" }).click();
+          await currentPage.waitForTimeout(1200);
+        },
+      },
       { key: "today-route-mobile", path: "/today-route", viewport: { width: 390, height: 844 } },
       { key: "reports-mobile", path: "/reports", viewport: { width: 390, height: 844 } },
       { key: "live-map-mobile", path: "/live-map", viewport: { width: 390, height: 844 } },
@@ -295,6 +324,9 @@ async function main() {
     for (const item of routes) {
       await page.setViewportSize(item.viewport);
       const response = await page.goto(`${baseUrl}${item.path}`, { waitUntil: "networkidle" });
+      if (item.action) {
+        await item.action(page);
+      }
       await page.waitForTimeout(350);
       const screenshotPath = path.join(screenshotDir, `${item.key}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true });

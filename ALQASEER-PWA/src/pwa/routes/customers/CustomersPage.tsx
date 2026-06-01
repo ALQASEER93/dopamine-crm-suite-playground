@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createVisit, getCustomers, getVisits } from "../../api/client";
+import { getCustomers, getVisits } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
 import {
   buildCustomerInsights,
@@ -10,6 +10,7 @@ import {
   priorityLabel,
   statusLabel,
 } from "../../utils/fieldCrm";
+import { createOrResumeVisitSession } from "../../utils/visitSession";
 import { useAuthStore } from "../../state/auth";
 
 export default function CustomersPage() {
@@ -75,26 +76,25 @@ export default function CustomersPage() {
 
   const startVisit = async (customer: Customer) => {
     try {
-      const visit = await createVisit({
-        customerId: customer.id,
-        customerName: customer.name,
-        customerType: customer.type,
-        visitType: "follow-up",
-        status: "scheduled",
-        notes: "",
-      });
+      const { visit, message } = await createOrResumeVisitSession(customer);
+      setError(message);
       navigate(`/visit-session/${visit.id}`, { state: { visit, customer } });
     } catch (err) {
       console.error(err);
-      setError("تعذر إنشاء جلسة الزيارة.");
+      setError("تعذر إنشاء جلسة الزيارة. تحقق من الاتصال والصلاحيات قبل المحاولة.");
     }
   };
 
   return (
     <div className="page">
       <section className="hero-band">
-        <div className="section-title">العملاء المكلفون</div>
-        <div className="muted">أطباء وصيدليات حسب المنطقة والأولوية وحالة التكرار الشهري.</div>
+        <div className="card-header">
+          <div>
+            <div className="section-title">العملاء المكلفون</div>
+            <div className="muted">أطباء وصيدليات حسب المنطقة والأولوية وحالة التكرار الشهري.</div>
+          </div>
+          <span className="pill pill-strong">DOPAMINE PHARMA</span>
+        </div>
         <div className="metric-grid">
           <div className="metric"><span className="metric-value">{summary.doctors}</span><span className="muted">أطباء</span></div>
           <div className="metric"><span className="metric-value">{summary.pharmacies}</span><span className="muted">صيدليات</span></div>

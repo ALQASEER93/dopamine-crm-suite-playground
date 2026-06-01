@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createVisit, getCustomers, getVisits } from "../../api/client";
+import { getCustomers, getVisits } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
 import { buildGoogleMapsUrl, buildOpenStreetMapUrl } from "../../utils/mapLinks";
 import {
@@ -10,6 +10,7 @@ import {
   formatDuration,
   gpsEndLabel,
   gpsStartLabel,
+  maskPhone,
   nextActionLabel,
   priorityLabel,
   statusLabel,
@@ -17,6 +18,7 @@ import {
   visitSyncLabel,
 } from "../../utils/fieldCrm";
 import { useAuthStore } from "../../state/auth";
+import { createOrResumeVisitSession } from "../../utils/visitSession";
 
 export default function CustomerProfilePage() {
   const { customerId, customerType } = useParams();
@@ -54,18 +56,12 @@ export default function CustomerProfilePage() {
     if (!insight) return;
     setMessage(null);
     try {
-      const visit = await createVisit({
-        customerId: insight.customer.id,
-        customerName: insight.customer.name,
-        customerType: insight.customer.type,
-        visitType: "follow-up",
-        status: "scheduled",
-        notes: "",
-      });
+      const { visit, message: resultMessage } = await createOrResumeVisitSession(insight.customer);
+      setMessage(resultMessage);
       navigate(`/visit-session/${visit.id}`, { state: { visit, customer: insight.customer } });
     } catch (error) {
       console.error(error);
-      setMessage("تعذر إنشاء جلسة الزيارة. لن يتم بدء الزيارة قبل حفظ السجل.");
+      setMessage("تعذر إنشاء جلسة الزيارة. لن يتم بدء الزيارة قبل حفظ السجل أو وضعه في طابور عدم الاتصال.");
     }
   };
 
@@ -157,7 +153,7 @@ export default function CustomerProfilePage() {
           <div><span className="muted">محور النقاش</span><br />{customer.productFocus || "غير محدد"}</div>
         </div>
         <div style={{ marginTop: 10 }} className="muted text-break">{customer.address || "لا يوجد عنوان مفصل."}</div>
-        {customer.phone ? <div className="muted">الهاتف: {customer.phone}</div> : null}
+        {customer.phone ? <div className="muted">الهاتف: {maskPhone(customer.phone)} <span className="mini-chip">مخفي للخصوصية</span></div> : null}
       </div>
 
       <div className="card">

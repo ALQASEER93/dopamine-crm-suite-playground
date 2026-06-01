@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createVisit, getCustomers, getVisits } from "../../api/client";
+import { getCustomers, getVisits } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
 import {
   customerDisplayType,
@@ -14,6 +14,7 @@ import {
   visitSyncLabel,
 } from "../../utils/fieldCrm";
 import { getOfflineVisits, getQueueMeta, getQueuedMutations, replayQueuedMutations } from "../../offline/queue";
+import { createOrResumeVisitSession } from "../../utils/visitSession";
 
 export default function VisitsPage() {
   const navigate = useNavigate();
@@ -81,18 +82,12 @@ export default function VisitsPage() {
     }
     setLoading(true);
     try {
-      const visit = await createVisit({
-        customerId: customer.id,
-        customerName: customer.name,
-        customerType: customer.type,
-        visitType: "follow-up",
-        status: "scheduled",
-        notes: "",
-      });
+      const { visit, message: resultMessage } = await createOrResumeVisitSession(customer);
+      setMessage(resultMessage);
       navigate(`/visit-session/${visit.id}`, { state: { visit, customer } });
     } catch (error) {
       console.error(error);
-      setMessage("تعذر إنشاء زيارة مجدولة. تحقق من الاتصال والصلاحيات.");
+      setMessage("تعذر إنشاء زيارة مجدولة أو وضعها في طابور عدم الاتصال. تحقق من الاتصال والصلاحيات.");
     } finally {
       setLoading(false);
     }

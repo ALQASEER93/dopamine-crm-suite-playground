@@ -219,6 +219,26 @@ async function capturePwaScreenshots(validations) {
   });
 }
 
+async function summarizeClientImport(validations) {
+  const logFile = "logs/client-import-summary.log";
+  const logPath = path.join(runDir, logFile);
+  const backendPython = process.platform === "win32" && await exists("CRM/backend/.venv/Scripts/python.exe")
+    ? path.join(repoRoot, "CRM", "backend", ".venv", "Scripts", "python.exe")
+    : "python";
+  const result = await run(backendPython, ["scripts/dpm/normalize_dpm_clients.py", path.relative(repoRoot, runDir)], {
+    cwd: repoRoot,
+    logPath,
+    display: "python scripts/dpm/normalize_dpm_clients.py <runDir>",
+  });
+  validations.push({
+    command: "python scripts/dpm/normalize_dpm_clients.py <runDir>",
+    cwd: ".",
+    status: result.exitCode === 0 ? "passed" : "failed",
+    exitCode: result.exitCode,
+    log: logFile,
+  });
+}
+
 async function changedFiles() {
   const files = new Set();
   const baseRef = process.env.PR_BASE_REF || process.env.GITHUB_BASE_REF;
@@ -277,6 +297,15 @@ async function readPwaRouteProof() {
   }
 }
 
+async function readClientImportSummary() {
+  try {
+    const raw = await fs.readFile(path.join(runDir, "json", "client_import_summary.json"), "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 function routeProofMarkdown(routeProof) {
   const routes = routeProof?.routes || [];
   if (!routes.length) return "- No PWA route screenshot proof generated.";
@@ -286,6 +315,19 @@ function routeProofMarkdown(routeProof) {
     `  Screenshot: \`${route.screenshot}\``,
     `  Checks: notBlank=${route.notBlank}, arabicReadable=${route.arabicReadable}, unicodeEscapes=${route.unicodeEscapeCount}, mojibake=${route.mojibakeSuspicion}, forbiddenTerms=${route.forbiddenUiTermsCount}, primaryCta=${route.primaryCtaVisible}`,
   ].join("\n")).join("\n");
+}
+
+function clientImportMarkdown(summary) {
+  if (!summary) return "- Client import summary was not generated.";
+  if (!summary.sources?.length) {
+    return `- Status: ${summary.status}\n- OWNER_ACTION: ${summary.ownerAction || "Place/upload the real client workbook and rerun."}`;
+  }
+  return [
+    `- Status: ${summary.status}`,
+    `- Sources found: ${summary.sources.length}`,
+    ...summary.sources.map((source) => `- ${source.file}: rows=${source.rowCount}, doctors=${source.doctorCount}, pharmacies=${source.pharmacyCount}, locations=${source.withLocationCount}, reps=${source.representativeCount}`),
+    "- Privacy: names, phone numbers, addresses, and exact coordinates are redacted from bridge summaries.",
+  ].join("\n");
 }
 
 async function createZip() {
@@ -325,6 +367,7 @@ async function main() {
   const workflowRunUrl = process.env.GITHUB_RUN_ID ? `${serverUrl}/${repoSlug}/actions/runs/${process.env.GITHUB_RUN_ID}` : "pending";
 
   const validations = await runValidationPlan();
+  await summarizeClientImport(validations);
   await capturePwaScreenshots(validations);
   const files = await changedFiles();
   const groups = groupFiles(files);
@@ -346,6 +389,7 @@ async function main() {
   const jsonFiles = (await fs.readdir(path.join(runDir, "json"))).map((name) => `json/${name}`).sort();
   const screenshots = (await fs.readdir(path.join(runDir, "artifacts", "screenshots"))).map((name) => `artifacts/screenshots/${name}`).sort();
   const routeProof = await readPwaRouteProof();
+  const clientImport = await readClientImportSummary();
 
   const handoff = {
     marker,
@@ -376,6 +420,7 @@ async function main() {
       logs,
       jsonAndReports: ["report.md", "CHATGPT_HANDOFF.md", ...jsonFiles],
     },
+    clientImport,
     security: {
       noSecretsExposed: securityScan.findingCount === 0 ? "yes" : "no",
       noBackdoorProvisioningAuthBypass: "uncertain",
@@ -403,11 +448,11 @@ async function main() {
 
   await fs.writeFile(path.join(runDir, "json", "chatgpt_handoff.json"), `${JSON.stringify(handoff, null, 2)}\n`);
 
-  const handoffMd = `# CHATGPT HANDOFF\n\n## 1. RUN\n- Repo: ${repoSlug}\n- PR number/link: ${prNumber} / ${prLink}\n- Branch: ${branch}\n- Commit SHA: ${commit}\n- Run ID: ${runId}\n- Timestamp: ${stamp}\n- Workflow run URL if available: ${workflowRunUrl}\n- Artifact name: ${artifactName}\n- Artifact ID if available: ${process.env.ARTIFACT_ID || "unavailable"}\n\n## 2. VERDICT\n- ${verdict}\n- ${verdictReason}\n\n## 3. WHAT CODEX / WORKFLOW DID\n- Created a DPM Review Bridge run folder with logs, JSON summary, report, handoff file, and zip package.\n- Ran available backend, CRM frontend, and PWA validation commands without stopping the workflow on absent components.\n- Captured PWA route screenshots into the artifact when ALQASEER-PWA and Playwright were available.\n- Performed a generated-artifact secret-pattern scan.\n- Did not deploy, merge, change PR readiness, touch DNS, or create provisioning/auth-bypass endpoints.\n\n## 4. CHANGED FILES\n### Backend\n${mdList(groups.backend)}\n\n### Frontend\n${mdList(groups.frontend)}\n\n### PWA\n${mdList(groups.PWA)}\n\n### Docs\n${mdList(groups.docs)}\n\n### Scripts\n${mdList(groups.scripts)}\n\n### Workflows\n${mdList(groups.workflows)}\n\n### Tests\n${mdList(groups.tests)}\n\n### Other\n${mdList(groups.other)}\n\n## 5. VALIDATION\n${validationMarkdown(validations)}\n\n## 6. ARTIFACTS\n- Run folder path: \`docs/_runs/${runId}\`\n- Zip path: \`docs/_runs/${runId}.zip\`\n- GitHub artifact name: ${artifactName}\n- Screenshots included: ${screenshots.length > 0 ? "yes" : "no"} (${screenshots.length})\n- Screenshots list:\n${mdList(screenshots)}\n- Logs list:\n${mdList(logs)}\n- JSON/report files list:\n${mdList(["report.md", "CHATGPT_HANDOFF.md", ...jsonFiles])}\n\n## PWA ROUTE SCREENSHOT PROOF\n${routeProofMarkdown(routeProof)}\n\n## 7. SECURITY CHECK\n- No secrets exposed: ${handoff.security.noSecretsExposed}\n- No backdoor/provisioning/auth bypass: ${handoff.security.noBackdoorProvisioningAuthBypass}\n- No unsafe env leakage: ${handoff.security.noUnsafeEnvLeakage}\n- If uncertain, why: ${handoff.security.reason}\n\n## 8. DEPLOYMENT CHECK\n- Deploy happened: no\n- If yes, where and URL: none\n- If no: no deploy\n\n## 9. RISKS / BLOCKERS\n${mdList(handoff.risks)}\n\n## 10. NEXT BEST ACTION\n- Exact next Codex recommendation: ${handoff.nextBestAction.codexRecommendation}\n- Exact one-line message Omar should send to ChatGPT:\n\n${handoff.nextBestAction.chatgptMessage}\n`;
+  const handoffMd = `# CHATGPT HANDOFF\n\n## 1. RUN\n- Repo: ${repoSlug}\n- PR number/link: ${prNumber} / ${prLink}\n- Branch: ${branch}\n- Commit SHA: ${commit}\n- Run ID: ${runId}\n- Timestamp: ${stamp}\n- Workflow run URL if available: ${workflowRunUrl}\n- Artifact name: ${artifactName}\n- Artifact ID if available: ${process.env.ARTIFACT_ID || "unavailable"}\n\n## 2. VERDICT\n- ${verdict}\n- ${verdictReason}\n\n## 3. WHAT CODEX / WORKFLOW DID\n- Created a DPM Review Bridge run folder with logs, JSON summary, report, handoff file, and zip package.\n- Ran available backend, CRM frontend, and PWA validation commands without stopping the workflow on absent components.\n- Captured PWA route screenshots into the artifact when ALQASEER-PWA and Playwright were available.\n- Summarized the DOPAMINE client workbook without writing raw names, phone numbers, addresses, or exact coordinates to the bridge summary.\n- Performed a generated-artifact secret-pattern scan.\n- Did not deploy, merge, change PR readiness, touch DNS, or create provisioning/auth-bypass endpoints.\n\n## 4. CHANGED FILES\n### Backend\n${mdList(groups.backend)}\n\n### Frontend\n${mdList(groups.frontend)}\n\n### PWA\n${mdList(groups.PWA)}\n\n### Docs\n${mdList(groups.docs)}\n\n### Scripts\n${mdList(groups.scripts)}\n\n### Workflows\n${mdList(groups.workflows)}\n\n### Tests\n${mdList(groups.tests)}\n\n### Other\n${mdList(groups.other)}\n\n## 5. VALIDATION\n${validationMarkdown(validations)}\n\n## 6. ARTIFACTS\n- Run folder path: \`docs/_runs/${runId}\`\n- Zip path: \`docs/_runs/${runId}.zip\`\n- GitHub artifact name: ${artifactName}\n- Screenshots included: ${screenshots.length > 0 ? "yes" : "no"} (${screenshots.length})\n- Screenshots list:\n${mdList(screenshots)}\n- Logs list:\n${mdList(logs)}\n- JSON/report files list:\n${mdList(["report.md", "CHATGPT_HANDOFF.md", ...jsonFiles])}\n\n## PWA ROUTE SCREENSHOT PROOF\n${routeProofMarkdown(routeProof)}\n\n## CLIENT DATA IMPORT SUMMARY\n${clientImportMarkdown(clientImport)}\n\n## 7. SECURITY CHECK\n- No secrets exposed: ${handoff.security.noSecretsExposed}\n- No backdoor/provisioning/auth bypass: ${handoff.security.noBackdoorProvisioningAuthBypass}\n- No unsafe env leakage: ${handoff.security.noUnsafeEnvLeakage}\n- If uncertain, why: ${handoff.security.reason}\n\n## 8. DEPLOYMENT CHECK\n- Deploy happened: no\n- If yes, where and URL: none\n- If no: no deploy\n\n## 9. RISKS / BLOCKERS\n${mdList(handoff.risks)}\n\n## 10. NEXT BEST ACTION\n- Exact next Codex recommendation: ${handoff.nextBestAction.codexRecommendation}\n- Exact one-line message Omar should send to ChatGPT:\n\n${handoff.nextBestAction.chatgptMessage}\n`;
 
   await fs.writeFile(path.join(runDir, "CHATGPT_HANDOFF.md"), handoffMd);
 
-  const report = `# DPM Review Bridge Report\n\n## Executive Summary\nVerdict: ${verdict}\n\n${verdictReason}\n\n## What Ran\n${validationMarkdown(validations)}\n\n## PWA Route Screenshot Proof\n${routeProofMarkdown(routeProof)}\n\n## Real Device Readiness Backlog\n- Android tablet install/PWA test: required before field pilot.\n- iPhone Safari PWA limitations: verify install, storage persistence, and location permission behavior.\n- GPS permission test: verify precise location prompt and denied/unavailable/timeout states on device.\n- Start/End Visit real GPS test: run with the safe DEMO QA customer and capture start/end accuracy.\n- Offline pending test: create one safe queueable visit/note action while offline.\n- Reconnect/sync test: reconnect and verify no duplicate visit is created.\n- Service worker update/hard refresh test: verify latest field-force UI after update and hard refresh.\n\n## Security\n- Generated artifact scan: ${securityScan.status}\n- Findings: ${securityScan.findingCount}\n- Deploy happened: no\n- PR state mutation: none\n- DNS mutation: none\n\n## Artifacts\n- Run folder: docs/_runs/${runId}\n- Zip: docs/_runs/${runId}.zip\n- Handoff: docs/_runs/${runId}/CHATGPT_HANDOFF.md\n- JSON: docs/_runs/${runId}/json/chatgpt_handoff.json\n- Screenshots included: ${screenshots.length > 0 ? "yes" : "no"} (${screenshots.length})\n\n## Screenshots\n${mdList(screenshots)}\n\n## ChatGPT Copy Block\n${handoff.nextBestAction.chatgptMessage}\n`;
+  const report = `# DPM Review Bridge Report\n\n## Executive Summary\nVerdict: ${verdict}\n\n${verdictReason}\n\n## What Ran\n${validationMarkdown(validations)}\n\n## PWA Route Screenshot Proof\n${routeProofMarkdown(routeProof)}\n\n## Client Data Import Summary\n${clientImportMarkdown(clientImport)}\n\n## Real Device Readiness Backlog\n- Android tablet install/PWA test: required before field pilot.\n- iPhone Safari PWA limitations: verify install, storage persistence, and location permission behavior.\n- GPS permission test: verify precise location prompt and denied/unavailable/timeout states on device.\n- Start/End Visit real GPS test: run with the safe DEMO QA customer and capture start/end accuracy.\n- Offline pending test: create one safe queueable visit/note action while offline.\n- Reconnect/sync test: reconnect and verify no duplicate visit is created.\n- Service worker update/hard refresh test: verify latest field-force UI after update and hard refresh.\n\n## Security\n- Generated artifact scan: ${securityScan.status}\n- Findings: ${securityScan.findingCount}\n- Deploy happened: no\n- PR state mutation: none\n- DNS mutation: none\n\n## Artifacts\n- Run folder: docs/_runs/${runId}\n- Zip: docs/_runs/${runId}.zip\n- Handoff: docs/_runs/${runId}/CHATGPT_HANDOFF.md\n- JSON: docs/_runs/${runId}/json/chatgpt_handoff.json\n- Screenshots included: ${screenshots.length > 0 ? "yes" : "no"} (${screenshots.length})\n\n## Screenshots\n${mdList(screenshots)}\n\n## ChatGPT Copy Block\n${handoff.nextBestAction.chatgptMessage}\n`;
   await fs.writeFile(path.join(runDir, "report.md"), report);
 
   const audit = `# Master Audit\n\n- Repo: ${repoSlug}\n- PR: ${prNumber}\n- Branch: ${branch}\n- Commit: ${commit}\n- Run: ${runId}\n- Workflow URL: ${workflowRunUrl}\n- Artifact: ${artifactName}\n- Verdict: ${verdict}\n- Generated artifact secret findings: ${securityScan.findingCount}\n- Deploy: no\n- DNS/www touched: no\n- Merge/Ready-for-review touched: no\n`;

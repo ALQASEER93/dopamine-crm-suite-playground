@@ -61,6 +61,7 @@ export default function VisitSessionPage() {
   const displayedVisitSeconds = isActive ? visitSeconds : deriveVisitDuration(visit || ({} as Visit));
   const lifecycle = visit ? visitLifecycleSteps(visit) : [];
   const nextLifecycleIndex = lifecycle.findIndex((step) => !step.done);
+  const localVisitId = String(visit?.id || "").startsWith("offline-visit-") ? String(visit?.id) : undefined;
 
   useEffect(() => {
     const load = async () => {
@@ -133,7 +134,8 @@ export default function VisitSessionPage() {
         method: "POST",
         payload: { lat: position.coords.lat, lng: position.coords.lng, accuracy: position.accuracy, started_at: startedAt },
         type: "visit-start",
-        visitId: String(visit.id),
+        visitId: localVisitId ? undefined : String(visit.id),
+        localVisitId,
       });
       const next = { ...visit, startedAt, serverStatus: "pending_start", coordinates: position.coords, startAccuracy: position.accuracy };
       await upsertOfflineVisit(next);
@@ -169,18 +171,33 @@ export default function VisitSessionPage() {
     const finalCallDuration = callDuration + activeCallSeconds;
     setCallStartedAt(null);
     setCallDuration(finalCallDuration);
+    const finalNotes = [
+      notes.trim(),
+      finalCallDuration > 0 ? `مدة المكالمة/النقاش: ${formatDuration(finalCallDuration)}` : "",
+    ].filter(Boolean).join("\n");
 
     if (!navigator.onLine) {
+      if (finalNotes && finalNotes !== (visit.notes || "")) {
+        await enqueueMutation({
+          endpoint: `visits/${visit.id}`,
+          method: "PUT",
+          payload: { notes: finalNotes },
+          type: "visit-note",
+          visitId: localVisitId ? undefined : String(visit.id),
+          localVisitId,
+        });
+      }
       await enqueueMutation({
         endpoint: `visits/${visit.id}/end`,
         method: "POST",
         payload: { lat: position.coords.lat, lng: position.coords.lng, accuracy: position.accuracy, ended_at: endedAt },
         type: "visit-end",
-        visitId: String(visit.id),
+        visitId: localVisitId ? undefined : String(visit.id),
+        localVisitId,
       });
       const next = {
         ...visit,
-        notes,
+        notes: finalNotes,
         endedAt,
         serverStatus: "pending_end",
         endCoordinates: position.coords,
@@ -195,13 +212,13 @@ export default function VisitSessionPage() {
     }
 
     try {
-      if (isActive && notes !== (visit.notes || "")) {
-        await updateVisitNotes(String(visit.id), notes);
+      if (isActive && finalNotes !== (visit.notes || "")) {
+        await updateVisitNotes(String(visit.id), finalNotes);
       }
       await endVisit(String(visit.id), { lat: position.coords.lat, lng: position.coords.lng, accuracy: position.accuracy, endedAt });
       setVisit({
         ...visit,
-        notes,
+        notes: finalNotes,
         endedAt,
         serverStatus: "completed",
         endCoordinates: position.coords,
@@ -339,7 +356,7 @@ export default function VisitSessionPage() {
         />
       </div>
 
-      <div className="card">
+      <div className="card sticky-primary-action">
         <div className="section-title">إنهاء العمل</div>
         <div className="muted">عمليات الطابور الحالية: {queueCount}</div>
         <div className="actions-row">
