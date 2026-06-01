@@ -35,7 +35,7 @@ jobs:
   dpm-review-bridge:
     name: DPM Review Bridge
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == 'codex/field-ready-completion')
     permissions:
       contents: read
       actions: read
@@ -46,25 +46,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 50
-
       - name: Fetch PR base for changed-file summary
         if: github.event_name == 'pull_request' && github.base_ref != ''
         run: git fetch --no-tags origin "${{ github.base_ref }}" --depth=50
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Create DPM Review Bridge bundle
         id: bundle
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || (github.ref_name == 'codex/field-ready-completion' && '83') || '' }}
           HEAD_REF: ${{ github.head_ref || github.ref_name }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PR_BASE_REF: ${{ github.base_ref }}
@@ -72,7 +68,6 @@ jobs:
         run: |
           node scripts/dpm/create-review-bridge-bundle.mjs | tee bridge-result.json
           node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('bridge-result.json','utf8')); for (const [k,v] of Object.entries({run_id:r.runId,zip_path:r.zipPath,verdict:r.verdict})) console.log(k+'='+v)" >> "$GITHUB_OUTPUT"
-
       - name: Upload DPM Review Bridge artifact
         id: upload
         uses: actions/upload-artifact@v4
@@ -81,18 +76,16 @@ jobs:
           path: ${{ steps.bundle.outputs.zip_path }}
           retention-days: 14
           if-no-files-found: error
-
       - name: Post or update PR handoff comment
-        if: (github.event_name == 'pull_request' || github.event.inputs.pr_number != '') && steps.bundle.outputs.run_id != ''
+        if: (github.event_name == 'pull_request' || github.event.inputs.pr_number != '' || (github.event_name == 'push' && github.ref_name == 'codex/field-ready-completion')) && steps.bundle.outputs.run_id != ''
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || (github.ref_name == 'codex/field-ready-completion' && '83') || '' }}
           RUN_ID: ${{ steps.bundle.outputs.run_id }}
           ARTIFACT_NAME: dpm-review-bridge-${{ github.run_id }}-${{ github.run_attempt }}
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
           WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: node scripts/dpm/post-review-bridge-comment.mjs
-
       - name: Write GitHub step summary
         if: always()
         env:
@@ -101,7 +94,7 @@ jobs:
           ARTIFACT_NAME: dpm-review-bridge-${{ github.run_id }}-${{ github.run_attempt }}
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
           WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || (github.ref_name == 'codex/field-ready-completion' && '83') || '' }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           {
