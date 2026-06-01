@@ -35,6 +35,9 @@ function commentBody(summary) {
   const artifactId = process.env.ARTIFACT_ID || summary.artifactId || "unavailable";
   const artifactName = process.env.ARTIFACT_NAME || summary.artifactName || "unavailable";
   const workflowRunUrl = process.env.WORKFLOW_RUN_URL || summary.workflowRunUrl || "unavailable";
+  const webCiVerdict = summary.verdicts?.webCiVerdict || summary.verdict || "unavailable";
+  const realDeviceVerdict = summary.verdicts?.realDeviceVerdict || "unavailable";
+  const fieldPilotVerdict = summary.verdicts?.fieldPilotVerdict || "unavailable";
   const screenshots = summary.artifacts?.screenshots || [];
   const screenshotLine = screenshots.length
     ? `yes (${screenshots.length}): ${screenshots.slice(0, 12).join(", ")}`
@@ -43,7 +46,7 @@ function commentBody(summary) {
     .map((v) => `- ${v.status}: \`${v.cwd && v.cwd !== "." ? `cd ${v.cwd} && ` : ""}${v.command}\` (${v.log})`)
     .join("\n") || "- No validation records.";
   const risks = (summary.risks || ["Review generated report for residual risks."]).map((risk) => `- ${risk}`).join("\n");
-  const copyBlock = `راجع DPM Review Bridge:\nRepo: ${summary.repo}\nPR: ${summary.prNumber}\nRun ID: ${summary.runId}\nVerdict: ${summary.verdict}\nCommit: ${summary.commit}\nWorkflow Run: ${workflowRunUrl}\nArtifact: ${artifactName}\nArtifact ID: ${artifactId}`;
+  const copyBlock = `راجع DPM Review Bridge:\nRepo: ${summary.repo}\nPR: ${summary.prNumber}\nRun ID: ${summary.runId}\nWeb/CI Verdict: ${webCiVerdict}\nReal Device Verdict: ${realDeviceVerdict}\nField Pilot Verdict: ${fieldPilotVerdict}\nCommit: ${summary.commit}\nWorkflow Run: ${workflowRunUrl}\nArtifact: ${artifactName}\nArtifact ID: ${artifactId}`;
 
   return `${marker}
 
@@ -55,6 +58,9 @@ function commentBody(summary) {
 - Commit: ${summary.commit}
 - Run ID: ${summary.runId}
 - Verdict: ${summary.verdict}
+- Web/CI Verdict: ${webCiVerdict}
+- Real Device Verdict: ${realDeviceVerdict}
+- Field Pilot Verdict: ${fieldPilotVerdict}
 - Workflow Run URL: ${workflowRunUrl}
 - Artifact name: ${artifactName}
 - Artifact ID: ${artifactId}

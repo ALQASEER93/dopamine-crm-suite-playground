@@ -257,6 +257,7 @@ export default function VisitSessionPage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
+            <div className="hero-kicker">VISIT CONTROL</div>
             <div className="section-title">{customerHeader}</div>
             <div className="muted">حالة الجلسة: {visitStatusLabel(visit.serverStatus || visit.status)}</div>
           </div>

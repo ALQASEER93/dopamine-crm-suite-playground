@@ -69,6 +69,7 @@ export default function ReportsPage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
+            <div className="hero-kicker">FIELD MANAGEMENT REPORTS</div>
             <div className="section-title">تقارير التغطية الميدانية</div>
             <div className="muted">ملخص تنفيذي للمخطط مقابل المنجز، التكرار الشهري، والقطاعات المتأخرة.</div>
           </div>
@@ -95,6 +96,20 @@ export default function ReportsPage() {
         <div className="metric"><span className="metric-value">{summary.avgVisitDurationMinutes}</span><span className="muted">متوسط مدة الزيارة/دقيقة</span></div>
         <div className="metric"><span className="metric-value">{summary.avgCallDurationMinutes}</span><span className="muted">متوسط المكالمة/دقيقة</span></div>
         <div className="metric"><span className="metric-value">{queueCount}</span><span className="muted">عمليات دون اتصال</span></div>
+      </div>
+      <div className="grid">
+        <div className="field-command">
+          <span className="field-command__title">أولوية الإدارة اليوم</span>
+          <span className="muted">{summary.overdueCustomers ? "ابدأ بالعملاء المتأخرين قبل تغطية العملاء المستحقين." : "لا يوجد تأخير حرج ظاهر في بيانات اليوم."}</span>
+        </div>
+        <div className="field-command">
+          <span className="field-command__title">سلامة GPS</span>
+          <span className="muted">{summary.gpsMissingOrLowAccuracy} زيارة تحتاج مراجعة دقة أو اكتمال GPS.</span>
+        </div>
+        <div className="field-command">
+          <span className="field-command__title">المزامنة</span>
+          <span className="muted">{queueCount ? `${queueCount} عملية تنتظر المزامنة.` : "لا توجد عمليات معلقة في الطابور المحلي."}</span>
+        </div>
       </div>
       <div className="card">
         <div className="card-header">

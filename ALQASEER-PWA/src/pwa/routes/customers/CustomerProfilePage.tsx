@@ -95,6 +95,7 @@ export default function CustomerProfilePage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
+            <div className="hero-kicker">CUSTOMER 360</div>
             <div className="section-title">{customer.name}</div>
             <div className="muted">
               {customerDisplayType(customer.type)} • {customer.specialty || "غير محدد"} • {customer.area || "منطقة غير محددة"}

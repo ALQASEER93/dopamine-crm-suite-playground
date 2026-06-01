@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleMapWidget } from "../../components/map/GoogleMap";
-import { createVisit, getCustomers, getTodayRoute, getVisits } from "../../api/client";
+import { getCustomers, getTodayRoute, getVisits } from "../../api/client";
 import type { Customer, RouteStop, Visit } from "../../api/types";
+import { createOrResumeVisitSession } from "../../utils/visitSession";
 import {
   buildCoverageSummary,
   buildCustomerInsights,
@@ -68,16 +69,14 @@ export default function TodayRoutePage() {
 
   const startVisitForStop = async (stop: RouteStop) => {
     try {
-      const visit = await createVisit({
-        customerId: stop.customerId,
-        customerName: stop.customerName,
-        customerType: stop.customerType,
-        visitType: "follow-up",
-        status: "scheduled",
-        notes: "",
-      });
       const customer = customers.find((item) => item.id === stop.customerId && item.type === stop.customerType);
-      navigate(`/visit-session/${visit.id}`, { state: { visit, customer } });
+      if (!customer) {
+        setError("تعذر فتح جلسة الزيارة لأن بيانات العميل غير متوفرة.");
+        return;
+      }
+      const session = await createOrResumeVisitSession(customer);
+      if (session.message) setError(session.message);
+      navigate(`/visit-session/${session.visit.id}`, { state: { visit: session.visit, customer } });
     } catch (err) {
       console.error(err);
       setError("تعذر إنشاء جلسة الزيارة لهذا العميل.");
@@ -89,6 +88,7 @@ export default function TodayRoutePage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
+            <div className="hero-kicker">TODAY FIELD ROUTE</div>
             <div className="section-title">مسار اليوم</div>
             <div className="muted">{user?.name || user?.email || "مندوب"} • العملاء المكلفون حسب المنطقة والقطاع</div>
             <div className="muted">القطاعات: {routeTerritories.join("، ") || "غير محددة"}</div>

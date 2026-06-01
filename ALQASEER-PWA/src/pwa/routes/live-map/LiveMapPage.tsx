@@ -81,6 +81,7 @@ export default function LiveMapPage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
+            <div className="hero-kicker">FIELD MAP</div>
             <div className="section-title">خريطة الميدان</div>
             <div className="muted">آخر موقع ملتقط والعملاء المكلفون مع دقة GPS ووقت الالتقاط. هذا فحص موقع لجلسة العمل الحالية وليس تتبعاً حياً دائماً.</div>
           </div>

@@ -104,6 +104,25 @@ const visits = [
     coordinates: { lat: 31.958922, lng: 35.869876 },
     startAccuracy: 22,
   },
+  {
+    id: "offline-visit-demo-pending",
+    customerId: "doctor-demo-1",
+    customerName: "DPM DEMO HCP - SAFE QA",
+    customerType: "doctor",
+    visitType: "follow-up",
+    status: "pending_end",
+    serverStatus: "pending_end",
+    notes: "QA offline pending note - DEMO.",
+    visitedAt: activeVisitStartedAt,
+    startedAt: activeVisitStartedAt,
+    endedAt: new Date(Date.now() - 60000).toISOString(),
+    durationSeconds: 225,
+    callDurationSeconds: 90,
+    coordinates: { lat: 31.963158, lng: 35.930359 },
+    endCoordinates: { lat: 31.9632, lng: 35.93039 },
+    startAccuracy: 24,
+    endAccuracy: 26,
+  },
 ];
 
 const routeStops = [
@@ -236,7 +255,7 @@ async function main() {
         "dpm-auth",
         JSON.stringify({
           state: {
-            token: "qa-local-token",
+            token: "qa",
             user: {
               id: "qa-rep",
               name: "DPM DEMO Rep",
@@ -280,10 +299,12 @@ async function main() {
       }
       if (/\/api\/v1\/visits\/[^/]+$/.test(pathname) && method === "PUT") {
         const payload = route.request().postDataJSON();
+        const visitId = pathname.split("/").pop();
+        const existing = visits.find((visit) => visit.id === visitId) || visits.find((visit) => visit.id === "visit-demo-active");
         return route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ id: "visit-demo-active", ...visits.find((visit) => visit.id === "visit-demo-active"), ...payload }),
+          body: JSON.stringify({ id: visitId, ...existing, ...payload }),
         });
       }
       if (pathname.endsWith("/pwa/visits") && method === "POST") {
@@ -304,6 +325,8 @@ async function main() {
       { key: "visits-mobile", path: "/visits", viewport: { width: 390, height: 844 } },
       { key: "visit-flow-focused-mobile", path: "/visit-session/visit-demo-active", viewport: { width: 390, height: 844 } },
       { key: "visit-session-start-visit-mobile", path: "/visit-session/visit-demo-scheduled", viewport: { width: 390, height: 844 } },
+      { key: "visit-session-active-mobile", path: "/visit-session/visit-demo-active", viewport: { width: 390, height: 844 } },
+      { key: "visit-session-offline-pending-mobile", path: "/visit-session/offline-visit-demo-pending", viewport: { width: 390, height: 844 } },
       {
         key: "visit-session-start-call-mobile",
         path: "/visit-session/visit-demo-active",
@@ -316,6 +339,7 @@ async function main() {
       { key: "today-route-mobile", path: "/today-route", viewport: { width: 390, height: 844 } },
       { key: "reports-mobile", path: "/reports", viewport: { width: 390, height: 844 } },
       { key: "live-map-mobile", path: "/live-map", viewport: { width: 390, height: 844 } },
+      { key: "device-diagnostics-mobile", path: "/account", viewport: { width: 390, height: 844 } },
       { key: "customers-desktop", path: "/customers", viewport: { width: 1280, height: 900 } },
       { key: "reports-desktop", path: "/reports", viewport: { width: 1280, height: 900 } },
     ];
@@ -343,9 +367,41 @@ async function main() {
         unicodeEscapeCount: (text.match(/\\u[0-9a-fA-F]{4}/g) || []).length,
         mojibakeSuspicion: mojibakePattern.test(text),
         forbiddenUiTermsCount: (text.match(forbiddenPattern) || []).length,
-        primaryCtaVisible: /بدء زيارة|ملف العميل|الخريطة|مزامنة الآن|تحديث الحالة|فتح في/.test(text),
+        primaryCtaVisible: /بدء زيارة|بدء الزيارة|بدء المكالمة|إنهاء الزيارة|ملف العميل|الخريطة|مزامنة الآن|تحديث الحالة|فتح في/.test(text),
         textSample: text.slice(0, 500),
       });
+    }
+
+    try {
+      await context.clearPermissions();
+      await page.setViewportSize({ width: 390, height: 844 });
+      const response = await page.goto(`${baseUrl}/visit-session/visit-demo-scheduled`, { waitUntil: "networkidle" });
+      const startButton = page.getByRole("button", { name: "بدء الزيارة" });
+      if (await startButton.isVisible()) {
+        await startButton.click();
+        await page.waitForTimeout(900);
+      }
+      const screenshotPath = path.join(screenshotDir, "visit-session-gps-denied-mobile.png");
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      const text = await page.locator("body").innerText();
+      results.push({
+        route: "/visit-session/visit-demo-scheduled",
+        viewport: { width: 390, height: 844 },
+        finalUrl: page.url(),
+        status: response?.status() ?? null,
+        screenshot: path.relative(runDir, screenshotPath).replaceAll(path.sep, "/"),
+        notBlank: text.trim().length > 100,
+        redirectedToLogin: page.url().includes("/login"),
+        arabicReadable: /[ء-ي]/.test(text),
+        unicodeEscapeCount: (text.match(/\\u[0-9a-fA-F]{4}/g) || []).length,
+        mojibakeSuspicion: mojibakePattern.test(text),
+        forbiddenUiTermsCount: (text.match(forbiddenPattern) || []).length,
+        primaryCtaVisible: /بدء زيارة|GPS|الموقع|إذن/.test(text),
+        textSample: text.slice(0, 500),
+        proofMode: "gps-permission-denied-attempt",
+      });
+    } catch (gpsDeniedError) {
+      consoleMessages.push({ type: "warning", text: `GPS denied screenshot attempt skipped: ${gpsDeniedError.message}`.slice(0, 300) });
     }
 
     await browser.close();

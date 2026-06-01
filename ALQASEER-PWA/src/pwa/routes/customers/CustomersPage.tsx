@@ -90,6 +90,7 @@ export default function CustomersPage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
+            <div className="hero-kicker">DPM CUSTOMER WORKLIST</div>
             <div className="section-title">العملاء المكلفون</div>
             <div className="muted">أطباء وصيدليات حسب المنطقة والأولوية وحالة التكرار الشهري.</div>
           </div>

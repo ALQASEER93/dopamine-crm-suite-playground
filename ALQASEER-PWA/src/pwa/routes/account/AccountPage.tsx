@@ -34,6 +34,9 @@ export default function AccountPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
   const [geoPermission, setGeoPermission] = useState("غير معروف");
+  const [serviceWorkerStatus, setServiceWorkerStatus] = useState("جار الفحص");
+  const [standaloneMode, setStandaloneMode] = useState("متصفح");
+  const [platformInfo, setPlatformInfo] = useState("غير معروف");
 
   const refreshQueue = async () => {
     try {
@@ -64,6 +67,19 @@ export default function AccountPage() {
         .query({ name: "geolocation" as PermissionName })
         .then((result) => setGeoPermission(result.state))
         .catch(() => setGeoPermission("غير معروف"));
+    }
+    const userAgentData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
+    setPlatformInfo(userAgentData?.platform || navigator.platform || "غير معروف");
+    const isStandalone = window.matchMedia?.("(display-mode: standalone)").matches
+      || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setStandaloneMode(isStandalone ? "PWA مثبت" : "متصفح");
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker
+        .getRegistration()
+        .then((registration) => setServiceWorkerStatus(registration?.active ? "نشط" : registration ? "مسجل" : "غير مسجل"))
+        .catch(() => setServiceWorkerStatus("تعذر الفحص"));
+    } else {
+      setServiceWorkerStatus("غير مدعوم");
     }
     const handleOnline = () => setOnline(true);
     const handleOffline = () => setOnline(false);
@@ -96,6 +112,7 @@ export default function AccountPage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
+            <div className="hero-kicker">DOPAMINE FIELD OPS</div>
             <div className="section-title">حسابي</div>
             <div className="muted">ملف تشغيل ميداني وتشخيص مزامنة دون عرض أي أسرار.</div>
           </div>
@@ -139,11 +156,15 @@ export default function AccountPage() {
 
       <div className="card">
         <div className="section-title">تشخيص التطبيق</div>
-        <div className="grid">
-          <div><span className="muted">API</span><br /><span className="mono-value">{API_BASE_URL}</span></div>
-          <div><span className="muted">إصدار الواجهة</span><br />{import.meta.env.VITE_APP_VERSION || "0.2.0"}</div>
-          <div><span className="muted">Service Worker</span><br />{"serviceWorker" in navigator ? "مدعوم" : "غير مدعوم"}</div>
-          <div><span className="muted">وضع التطبيق</span><br />Field Force CRM</div>
+        <div className="diagnostics-grid">
+          <div className="diagnostic-tile"><span className="muted">API</span><br /><span className="mono-value">{API_BASE_URL}</span></div>
+          <div className="diagnostic-tile"><span className="muted">سلامة الأصل</span><br />{API_BASE_URL.startsWith("/api/v1") ? "نفس الأصل /api/v1" : "يتطلب مراجعة"}</div>
+          <div className="diagnostic-tile"><span className="muted">إصدار الواجهة</span><br />{import.meta.env.VITE_APP_VERSION || "0.2.0"}</div>
+          <div className="diagnostic-tile"><span className="muted">Service Worker</span><br />{serviceWorkerStatus}</div>
+          <div className="diagnostic-tile"><span className="muted">وضع التشغيل</span><br />{standaloneMode}</div>
+          <div className="diagnostic-tile"><span className="muted">النظام/المتصفح</span><br />{platformInfo}</div>
+          <div className="diagnostic-tile"><span className="muted">الموقع الجغرافي</span><br />{"geolocation" in navigator ? `مدعوم - ${geoPermission}` : "غير مدعوم"}</div>
+          <div className="diagnostic-tile"><span className="muted">هوية المنتج</span><br />Field Force CRM</div>
         </div>
       </div>
 
