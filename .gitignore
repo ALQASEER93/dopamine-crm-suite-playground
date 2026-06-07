@@ -55,6 +55,10 @@ CRM/backend/data/
 
 # Local archives
 ARCHIVE/
+docs/DPM_HCPs_CRM_Import_Location_Preparation.xlsx
+docs/from chatgpt/
+docs/run_20260602_041449.zip
+scripts/local/
 
 # Binaries
 *.exe
