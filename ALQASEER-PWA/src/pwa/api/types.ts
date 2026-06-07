@@ -19,6 +19,10 @@ export type RouteStop = {
     lat: number;
     lng: number;
   };
+  isDemo?: boolean;
+  dataOrigin?: string;
+  visitFrequency?: string;
+  monthlyFrequencyTarget?: number | null;
 };
 
 export type Customer = {
@@ -38,6 +42,12 @@ export type Customer = {
   phone?: string;
   address?: string;
   lastVisit?: string;
+  rawName?: string;
+  isDemo?: boolean;
+  dataOrigin?: string;
+  visitFrequency?: string;
+  frequencyPlanSource?: "route" | "none" | string;
+  isAssignedToCurrentRep?: boolean;
   location?: {
     lat: number;
     lng: number;
@@ -83,6 +93,11 @@ export type CoverageSummary = {
   frequencyAchievedPct: number;
   dueCustomers: number;
   overdueCustomers: number;
+  coveredCustomers: number;
+  noPlanCustomers: number;
+  unassignedCustomers: number;
+  plannedCustomers: number;
+  frequencyStatusNote: string;
   avgVisitDurationMinutes: number;
   avgCallDurationMinutes: number;
   visitsByArea: Array<{ area: string; visits: number }>;

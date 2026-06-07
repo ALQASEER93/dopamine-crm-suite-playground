@@ -5,9 +5,11 @@ import type { Customer, Visit } from "../../api/types";
 import { buildGoogleMapsUrl, buildOpenStreetMapUrl } from "../../utils/mapLinks";
 import {
   buildCustomerInsights,
+  customerDisplayName,
   customerDisplayType,
   formatDateTime,
   formatDuration,
+  formatFrequencyTarget,
   gpsEndLabel,
   gpsStartLabel,
   maskPhone,
@@ -96,7 +98,10 @@ export default function CustomerProfilePage() {
         <div className="card-header">
           <div>
             <div className="hero-kicker">CUSTOMER 360</div>
-            <div className="section-title">{customer.name}</div>
+            <div className="section-title">
+              {customerDisplayName(customer)}
+              {customer.isDemo ? <span className="mini-chip demo-chip">DEMO</span> : null}
+            </div>
             <div className="muted">
               {customerDisplayType(customer.type)} • {customer.specialty || "غير محدد"} • {customer.area || "منطقة غير محددة"}
             </div>
@@ -105,7 +110,9 @@ export default function CustomerProfilePage() {
         </div>
         <div className="chip-row">
           <span className="mini-chip">القطاع: {customer.territory || customer.area || "غير محدد"}</span>
-          <span className="mini-chip">المندوب: {customer.assignedRepEmail || user?.email || "غير محدد"}</span>
+          <span className="mini-chip">المندوب: {customer.assignedRepEmail || "غير مكلف"}</span>
+          <span className="mini-chip">خطة التكرار: {customer.visitFrequency || "غير مثبتة"}</span>
+          <span className="mini-chip">المصدر: {customer.dataOrigin || "غير موثق"}</span>
           <span className="mini-chip">الإجراء التالي: {nextActionLabel(insight.status)}</span>
         </div>
         <div className="metric-grid">
@@ -114,7 +121,7 @@ export default function CustomerProfilePage() {
             <span className="muted">زيارات الشهر</span>
           </div>
           <div className="metric">
-            <span className="metric-value">{insight.target}</span>
+            <span className="metric-value">{formatFrequencyTarget(insight.target)}</span>
             <span className="muted">هدف التكرار الشهري</span>
           </div>
           <div className="metric">
@@ -129,11 +136,12 @@ export default function CustomerProfilePage() {
         <div className="progress-stack">
           <div className="card-header" style={{ marginBottom: 0 }}>
             <span className="muted">تحقيق هدف الزيارة الشهري</span>
-            <strong>{insight.completedThisMonth} / {insight.target}</strong>
+            <strong>{insight.completedThisMonth} / {formatFrequencyTarget(insight.target)}</strong>
           </div>
           <div className="progress-track" aria-label="frequency-attainment">
             <div className={`progress-fill ${progressClass}`} style={progressStyle} />
           </div>
+          <div className="muted">{insight.statusReason}</div>
         </div>
         <div className="actions-row">
           <button type="button" onClick={startVisitFromProfile}>بدء زيارة</button>
@@ -150,6 +158,7 @@ export default function CustomerProfilePage() {
           <div><span className="muted">القطاع</span><br />{customer.territory || "غير متوفر"}</div>
           <div><span className="muted">الأولوية</span><br />{priorityLabel(customer.priority)}</div>
           <div><span className="muted">المندوب</span><br /><span className="text-break">{customer.assignedRepEmail || "غير متوفر"}</span></div>
+          <div><span className="muted">مصدر البيانات</span><br />{customer.dataOrigin || "غير موثق"}</div>
           <div><span className="muted">آخر زيارة</span><br />{formatDateTime(insight.lastVisit ? insight.lastVisit.visitedAt || insight.lastVisit.startedAt : customer.lastVisit)}</div>
           <div><span className="muted">محور النقاش</span><br />{customer.productFocus || "غير محدد"}</div>
         </div>
@@ -160,7 +169,8 @@ export default function CustomerProfilePage() {
       <div className="card">
         <div className="section-title">ملف 360 للعميل</div>
         <div className="field-row"><span className="muted">حالة التغطية</span><strong>{statusLabel(insight.status)}</strong></div>
-        <div className="field-row"><span className="muted">التكرار الشهري</span><strong>{insight.completedThisMonth} / {insight.target}</strong></div>
+        <div className="field-row"><span className="muted">التكرار الشهري</span><strong>{insight.completedThisMonth} / {formatFrequencyTarget(insight.target)}</strong></div>
+        <div className="field-row"><span className="muted">سبب الحالة</span><span>{insight.statusReason}</span></div>
         <div className="field-row"><span className="muted">الإجراء التالي</span><strong>{nextActionLabel(insight.status)}</strong></div>
         <div className="field-row"><span className="muted">آخر ملاحظة</span><span className="text-break">{insight.lastVisit?.notes || customer.notes || "لا توجد ملاحظات حديثة"}</span></div>
         <div className="field-row"><span className="muted">الموضوع/المنتج</span><span>{customer.productFocus || "غير محدد"}</span></div>

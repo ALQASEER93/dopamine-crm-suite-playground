@@ -97,6 +97,15 @@
   text-transform: capitalize;
 }
 
+.layout__header-build {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
 .layout__header-user {
   display: flex;
   align-items: center;

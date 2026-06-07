@@ -177,7 +177,7 @@ export default function VisitsPage() {
                 {lifecycle.map((step) => (
                   <span
                     key={step.label}
-                    className={`lifecycle-step ${step.done ? "done" : ""} ${step.label === "داخل الزيارة" && step.done ? "active" : ""}`}
+                    className={`lifecycle-step ${step.done ? "done" : ""} ${step.label.startsWith("In Visit") && step.done ? "active" : ""}`}
                   >
                     {step.label}
                   </span>

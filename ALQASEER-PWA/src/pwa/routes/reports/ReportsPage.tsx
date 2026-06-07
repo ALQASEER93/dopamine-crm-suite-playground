@@ -40,25 +40,32 @@ export default function ReportsPage() {
   const frequencyStyle = { "--progress": `${summary.frequencyAchievedPct}%` } as React.CSSProperties;
   const planStyle = { "--progress": `${planCompletionPct}%` } as React.CSSProperties;
   const repActivity = useMemo(() => {
-    const rows = new Map<string, { customers: number; due: number; overdue: number; completed: number }>();
+    const rows = new Map<string, { customers: number; due: number; overdue: number; covered: number; noPlan: number; unassigned: number; completed: number }>();
     for (const insight of insights) {
       const rep = insight.customer.assignedRepEmail || "غير محدد";
-      const current = rows.get(rep) || { customers: 0, due: 0, overdue: 0, completed: 0 };
+      const current = rows.get(rep) || { customers: 0, due: 0, overdue: 0, covered: 0, noPlan: 0, unassigned: 0, completed: 0 };
       current.customers += 1;
       if (insight.status === "due") current.due += 1;
       if (insight.status === "overdue") current.overdue += 1;
+      if (insight.status === "covered") current.covered += 1;
+      if (insight.status === "no-plan") current.noPlan += 1;
+      if (insight.status === "unassigned") current.unassigned += 1;
       current.completed += insight.completedThisMonth;
       rows.set(rep, current);
     }
     return Array.from(rows, ([rep, values]) => ({ rep, ...values }));
   }, [insights]);
   const territoryCoverage = useMemo(() => {
-    const rows = new Map<string, { total: number; covered: number; due: number; overdue: number }>();
+    const rows = new Map<string, { total: number; covered: number; due: number; overdue: number; noPlan: number; unassigned: number }>();
     for (const insight of insights) {
       const territory = insight.customer.territory || insight.customer.area || "غير محدد";
-      const current = rows.get(territory) || { total: 0, covered: 0, due: 0, overdue: 0 };
+      const current = rows.get(territory) || { total: 0, covered: 0, due: 0, overdue: 0, noPlan: 0, unassigned: 0 };
       current.total += 1;
-      current[insight.status] += 1;
+      if (insight.status === "covered") current.covered += 1;
+      if (insight.status === "due") current.due += 1;
+      if (insight.status === "overdue") current.overdue += 1;
+      if (insight.status === "no-plan") current.noPlan += 1;
+      if (insight.status === "unassigned") current.unassigned += 1;
       rows.set(territory, current);
     }
     return Array.from(rows, ([territory, values]) => ({ territory, ...values }));
@@ -71,14 +78,14 @@ export default function ReportsPage() {
           <div>
             <div className="hero-kicker">FIELD MANAGEMENT REPORTS</div>
             <div className="section-title">تقارير التغطية الميدانية</div>
-            <div className="muted">ملخص تنفيذي للمخطط مقابل المنجز، التكرار الشهري، والقطاعات المتأخرة.</div>
+            <div className="muted">ملخص تنفيذي يفصل المخطط الفعلي عن العملاء بلا خطة أو بلا تكليف، حتى لا تظهر أرقام تأخير مضللة.</div>
           </div>
           <span className="pill pill-strong">Field Force CRM</span>
         </div>
         <div className="progress-stack">
           <div className="card-header" style={{ marginBottom: 0 }}>
-            <span className="muted">تحقيق التكرار الشهري</span>
-            <strong>{summary.frequencyAchievedPct}%</strong>
+            <span className="muted">تحقيق التكرار الشهري للعملاء المخططين فقط</span>
+            <strong>{summary.monthlyFrequencyTarget ? `${summary.frequencyAchievedPct}%` : "غير محسوب"}</strong>
           </div>
           <div className="progress-track">
             <div className={`progress-fill ${summary.frequencyAchievedPct < 40 ? "danger" : summary.frequencyAchievedPct < 80 ? "warning" : ""}`} style={frequencyStyle} />
@@ -87,12 +94,16 @@ export default function ReportsPage() {
       </section>
       {error ? <div className="card" style={{ color: "var(--warning)" }}>{error}</div> : null}
       <div className="metric-grid">
-        <div className="metric"><span className="metric-value">{summary.totalAssignedCustomers}</span><span className="muted">عملاء مكلفون</span></div>
+        <div className="metric"><span className="metric-value">{summary.totalAssignedCustomers}</span><span className="muted">إجمالي السجل</span></div>
+        <div className="metric"><span className="metric-value">{summary.plannedCustomers}</span><span className="muted">لديهم خطة تكرار</span></div>
         <div className="metric"><span className="metric-value">{summary.visitedToday}</span><span className="muted">تمت زيارتهم اليوم</span></div>
         <div className="metric"><span className="metric-value">{summary.remainingToday}</span><span className="muted">متبقون اليوم</span></div>
-        <div className="metric"><span className="metric-value">{summary.frequencyAchievedPct}%</span><span className="muted">تحقيق التكرار</span></div>
+        <div className="metric"><span className="metric-value">{summary.monthlyFrequencyTarget ? `${summary.frequencyAchievedPct}%` : "غير محسوب"}</span><span className="muted">تحقيق التكرار</span></div>
+        <div className="metric"><span className="metric-value">{summary.coveredCustomers}</span><span className="muted">مغطون</span></div>
         <div className="metric"><span className="metric-value">{summary.dueCustomers}</span><span className="muted">عملاء مستحقون</span></div>
         <div className="metric"><span className="metric-value">{summary.overdueCustomers}</span><span className="muted">عملاء متأخرون</span></div>
+        <div className="metric"><span className="metric-value">{summary.noPlanCustomers}</span><span className="muted">بلا خطة</span></div>
+        <div className="metric"><span className="metric-value">{summary.unassignedCustomers}</span><span className="muted">غير مكلفين</span></div>
         <div className="metric"><span className="metric-value">{summary.avgVisitDurationMinutes}</span><span className="muted">متوسط مدة الزيارة/دقيقة</span></div>
         <div className="metric"><span className="metric-value">{summary.avgCallDurationMinutes}</span><span className="muted">متوسط المكالمة/دقيقة</span></div>
         <div className="metric"><span className="metric-value">{queueCount}</span><span className="muted">عمليات دون اتصال</span></div>
@@ -100,7 +111,11 @@ export default function ReportsPage() {
       <div className="grid">
         <div className="field-command">
           <span className="field-command__title">أولوية الإدارة اليوم</span>
-          <span className="muted">{summary.overdueCustomers ? "ابدأ بالعملاء المتأخرين قبل تغطية العملاء المستحقين." : "لا يوجد تأخير حرج ظاهر في بيانات اليوم."}</span>
+          <span className="muted">{summary.overdueCustomers ? "ابدأ بالعملاء المتأخرين المثبتين في خطة تكرار." : "لا يوجد تأخير حرج مثبت في بيانات الخطة الحالية."}</span>
+        </div>
+        <div className="field-command">
+          <span className="field-command__title">منهجية التكرار</span>
+          <span className="muted">{summary.frequencyStatusNote}</span>
         </div>
         <div className="field-command">
           <span className="field-command__title">سلامة GPS</span>
@@ -164,8 +179,11 @@ export default function ReportsPage() {
               </div>
               <div className="grid">
                 <div><span className="muted">زيارات مكتملة هذا الشهر</span><br />{row.completed}</div>
+                <div><span className="muted">مغطى</span><br />{row.covered}</div>
                 <div><span className="muted">مستحق</span><br />{row.due}</div>
                 <div><span className="muted">متأخر</span><br />{row.overdue}</div>
+                <div><span className="muted">بلا خطة</span><br />{row.noPlan}</div>
+                <div><span className="muted">غير مكلف</span><br />{row.unassigned}</div>
               </div>
             </div>
           ))}
@@ -185,6 +203,8 @@ export default function ReportsPage() {
                 <span className="mini-chip">{statusLabel("covered")}: {row.covered}</span>
                 <span className="mini-chip">{statusLabel("due")}: {row.due}</span>
                 <span className="mini-chip">{statusLabel("overdue")}: {row.overdue}</span>
+                <span className="mini-chip">{statusLabel("no-plan")}: {row.noPlan}</span>
+                <span className="mini-chip">{statusLabel("unassigned")}: {row.unassigned}</span>
               </div>
             </div>
           ))}

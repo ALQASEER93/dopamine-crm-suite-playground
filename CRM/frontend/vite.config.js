@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const LOCAL_API_DEFAULT = 'http://127.0.0.1:8000/api/v1';
+const SAME_ORIGIN_API_BASE = '/api/v1';
 
 const isLocalApiUrl = (value) => {
   const normalized = (value || '').trim();
@@ -37,17 +37,17 @@ const resolveApiBaseUrl = (env) => {
   const legacy = env.VITE_API_URL?.trim();
   if (legacy) return legacy;
 
-  return LOCAL_API_DEFAULT;
+  return SAME_ORIGIN_API_BASE;
 };
 
 const validateProdApiBaseUrl = (apiBaseUrl) => {
   const normalized = (apiBaseUrl || '').trim();
 
-  if (!normalized || isLocalApiUrl(normalized) || normalized === LOCAL_API_DEFAULT) {
+  if (!normalized || isLocalApiUrl(normalized) || /\.vercel\.app(?:\/|$)/i.test(normalized)) {
     throw new Error(
       [
         'Production build blocked: invalid API base URL.',
-        'Set VITE_API_BASE_URL (or VITE_API_URL) to your deployed API host before running `npm run build`.',
+        'Use same-origin /api/v1 or set VITE_API_BASE_URL to an approved deployed API host.',
         `Current value: "${normalized || '(empty)'}"`,
       ].join(' ')
     );

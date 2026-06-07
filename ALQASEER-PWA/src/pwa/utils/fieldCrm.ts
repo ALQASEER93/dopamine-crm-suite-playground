@@ -1,14 +1,17 @@
 import type { CoverageSummary, Customer, RouteStop, Visit } from "../api/types";
 
-export type CustomerStatus = "covered" | "due" | "overdue";
+export type CustomerStatus = "covered" | "due" | "overdue" | "no-plan" | "unassigned";
 
 export type CustomerInsight = {
   customer: Customer;
   visits: Visit[];
   lastVisit?: Visit;
-  target: number;
+  target: number | null;
   completedThisMonth: number;
   status: CustomerStatus;
+  statusReason: string;
+  isDemo: boolean;
+  frequencyPlanSource?: string;
 };
 
 const monthKey = (value: Date) => value.toISOString().slice(0, 7);
@@ -23,7 +26,7 @@ export function isCompletedVisit(visit: Visit) {
 }
 
 export function customerDisplayType(customerType: Customer["type"]) {
-  return customerType === "doctor" ? "طبيب" : "صيدلية";
+  return customerType === "doctor" ? "طبيب / HCP" : "صيدلية / HCO";
 }
 
 export function priorityLabel(priority?: string) {
@@ -31,14 +34,18 @@ export function priorityLabel(priority?: string) {
 }
 
 export function enrichCustomer(customer: Customer, currentUserEmail?: string): Customer {
+  void currentUserEmail;
+  const rawTarget = customer.monthlyFrequencyTarget;
+  const monthlyFrequencyTarget =
+    typeof rawTarget === "number" && Number.isFinite(rawTarget) && rawTarget > 0 ? rawTarget : undefined;
   return {
     ...customer,
     specialty: customer.specialty || customer.category || (customer.type === "doctor" ? "تخصص غير محدد" : "صيدلية"),
     territory: customer.territory || customer.area || "منطقة غير محددة",
     priority: customer.priority || "B",
-    monthlyFrequencyTarget: Number(customer.monthlyFrequencyTarget || 2),
+    monthlyFrequencyTarget,
     visitsThisMonth: Number(customer.visitsThisMonth || 0),
-    assignedRepEmail: customer.assignedRepEmail || currentUserEmail,
+    assignedRepEmail: customer.assignedRepEmail,
     productFocus: customer.productFocus || "غير محدد",
   };
 }
@@ -60,25 +67,62 @@ export function buildCustomerInsights(customers: Customer[], visits: Visit[], cu
     const lastVisitAgeDays = lastVisit
       ? Math.floor((now.getTime() - (Date.parse(visitDateValue(lastVisit)) || now.getTime())) / 86400000)
       : null;
-    const target = Number(customer.monthlyFrequencyTarget || 2);
-    let status: CustomerStatus = completedThisMonth >= target ? "covered" : "due";
-    if (lastVisitAgeDays === null || lastVisitAgeDays > 35 || completedThisMonth === 0) {
-      status = "overdue";
+    const target = typeof customer.monthlyFrequencyTarget === "number" ? customer.monthlyFrequencyTarget : null;
+    const assigned = Boolean(customer.assignedRepEmail || customer.isAssignedToCurrentRep);
+    const hasPlan = target !== null && target > 0;
+    let status: CustomerStatus = "no-plan";
+    let statusReason = "لا يوجد هدف تكرار شهري مثبت لهذا العميل، لذلك لا يتم احتسابه كمتأخر.";
+    if (!assigned) {
+      status = "unassigned";
+      statusReason = "لا يوجد مندوب/مسار مثبت لهذا العميل في بيانات التشغيل الحالية.";
+    } else if (hasPlan) {
+      status = completedThisMonth >= target ? "covered" : "due";
+      statusReason = completedThisMonth >= target ? "تم تحقيق هدف التكرار الشهري." : "مستحق لأن الهدف الشهري لم يكتمل بعد.";
+      if (lastVisitAgeDays !== null && lastVisitAgeDays > 35 && completedThisMonth < target) {
+        status = "overdue";
+        statusReason = "متأخر لأن آخر زيارة موثقة أقدم من 35 يوماً والهدف الشهري لم يكتمل.";
+      }
     }
-    return { customer: { ...customer, visitsThisMonth: completedThisMonth, lastVisit: visitDateValue(lastVisit || ({} as Visit)) || undefined }, visits: customerVisits, lastVisit, target, completedThisMonth, status };
+    return {
+      customer: { ...customer, visitsThisMonth: completedThisMonth, lastVisit: visitDateValue(lastVisit || ({} as Visit)) || undefined },
+      visits: customerVisits,
+      lastVisit,
+      target,
+      completedThisMonth,
+      status,
+      statusReason,
+      isDemo: Boolean(customer.isDemo || customer.dataOrigin === "DEMO_SEED"),
+      frequencyPlanSource: customer.frequencyPlanSource,
+    };
   });
 }
 
 export function statusLabel(status: CustomerStatus) {
   if (status === "covered") return "مغطى";
   if (status === "overdue") return "متأخر";
+  if (status === "no-plan") return "بلا خطة تكرار";
+  if (status === "unassigned") return "غير مكلف";
   return "مستحق";
 }
 
 export function nextActionLabel(status: CustomerStatus) {
   if (status === "covered") return "متابعة دورية";
   if (status === "overdue") return "زيارة عاجلة";
+  if (status === "no-plan") return "تحديد خطة التكرار";
+  if (status === "unassigned") return "تعيين مندوب/مسار";
   return "جدولة زيارة";
+}
+
+export function formatFrequencyTarget(target: number | null) {
+  return target && target > 0 ? String(target) : "لا يوجد هدف";
+}
+
+export function customerDisplayName(customer: Pick<Customer, "name" | "isDemo" | "dataOrigin">) {
+  const name = customer.name || "عميل غير معروف";
+  if (customer.isDemo || customer.dataOrigin === "DEMO_SEED") {
+    return name.includes("[DEMO]") ? name : `[DEMO] ${name}`;
+  }
+  return name;
 }
 
 export function maskPhone(value?: string | null) {
@@ -130,14 +174,14 @@ export function visitSyncLabel(visit: Visit) {
 
 export function visitLifecycleSteps(visit: Visit) {
   return [
-    { label: "مخططة", done: Boolean(visit.id) },
-    { label: "بدأت", done: Boolean(visit.startedAt) },
-    { label: "GPS بداية", done: Boolean(visit.coordinates) },
-    { label: "داخل الزيارة", done: Boolean(visit.startedAt && !visit.endedAt) },
-    { label: "مكالمة/نقاش", done: Boolean(visit.callDurationSeconds || visit.notes) },
-    { label: "انتهت", done: Boolean(visit.endedAt) },
-    { label: "GPS نهاية", done: Boolean(visit.endCoordinates) },
-    { label: "مزامنة", done: !String(visit.id).startsWith("offline-") && !visit.serverStatus?.startsWith("pending") },
+    { label: "Planned / مخططة", done: Boolean(visit.id) },
+    { label: "Started / بدأت", done: Boolean(visit.startedAt) },
+    { label: "Checked-in GPS / تحقق GPS", done: Boolean(visit.coordinates) },
+    { label: "In Visit / داخل الزيارة", done: Boolean(visit.startedAt && !visit.endedAt) },
+    { label: "Call Recorded / نقاش مسجل", done: Boolean(visit.callDurationSeconds || visit.notes) },
+    { label: "Ended / انتهت", done: Boolean(visit.endedAt) },
+    { label: "Submitted / مرسلة", done: Boolean(visit.endedAt && !visit.serverStatus?.startsWith("pending")) },
+    { label: "Synced / مزامنة", done: !String(visit.id).startsWith("offline-") && !visit.serverStatus?.startsWith("pending") },
   ];
 }
 
@@ -173,7 +217,8 @@ export function buildCoverageSummary(customers: Customer[], visits: Visit[], rou
       .filter((visit) => visitDateValue(visit).startsWith(today))
       .map((visit) => `${visit.customerType}:${visit.customerId}`),
   );
-  const target = insights.reduce((sum, insight) => sum + insight.target, 0);
+  const plannedInsights = insights.filter((insight) => typeof insight.target === "number" && insight.target > 0);
+  const target = plannedInsights.reduce((sum, insight) => sum + (insight.target || 0), 0);
   const durations = visits.map(deriveVisitDuration).filter((value) => value > 0);
   const callDurations = visits.map((visit) => visit.callDurationSeconds || 0).filter((value) => value > 0);
   const visitsByArea = new Map<string, number>();
@@ -199,8 +244,15 @@ export function buildCoverageSummary(customers: Customer[], visits: Visit[], rou
     completedVisitsThisMonth: completedThisMonth.length,
     monthlyFrequencyTarget: target,
     frequencyAchievedPct: target ? Math.round((completedThisMonth.length / target) * 100) : 0,
+    coveredCustomers: insights.filter((item) => item.status === "covered").length,
     dueCustomers: insights.filter((item) => item.status === "due").length,
     overdueCustomers: insights.filter((item) => item.status === "overdue").length,
+    noPlanCustomers: insights.filter((item) => item.status === "no-plan").length,
+    unassignedCustomers: insights.filter((item) => item.status === "unassigned").length,
+    plannedCustomers: plannedInsights.length,
+    frequencyStatusNote: target
+      ? "تحقيق التكرار محسوب فقط على العملاء الذين لديهم هدف شهري مثبت في خطة المسار."
+      : "لا يوجد هدف تكرار شهري مثبت؛ لا يتم احتساب نسبة أو تأخير افتراضي.",
     avgVisitDurationMinutes: durations.length ? Math.round(durations.reduce((sum, value) => sum + value, 0) / durations.length / 60) : 0,
     avgCallDurationMinutes: callDurations.length ? Math.round(callDurations.reduce((sum, value) => sum + value, 0) / callDurations.length / 60) : 0,
     visitsByArea: Array.from(visitsByArea, ([area, visitCount]) => ({ area, visits: visitCount })),

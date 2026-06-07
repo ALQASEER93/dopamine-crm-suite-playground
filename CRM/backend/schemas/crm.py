@@ -291,6 +291,10 @@ class RouteStopOut(BaseModel):
     status: Literal["planned", "in-progress", "done", "skipped"] = "planned"
     scheduled_for: Optional[datetime] = Field(None, alias="scheduledFor")
     location: Optional[RouteStopLocation] = None
+    is_demo: bool = Field(False, alias="isDemo")
+    data_origin: Optional[str] = Field(None, alias="dataOrigin")
+    visit_frequency: Optional[str] = Field(None, alias="visitFrequency")
+    monthly_frequency_target: Optional[int] = Field(None, alias="monthlyFrequencyTarget")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

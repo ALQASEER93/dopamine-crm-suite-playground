@@ -1,22 +1,22 @@
 import PropTypes from 'prop-types';
 
 const CARD_CONFIG = [
-  { key: 'totalVisits', label: 'Total Visits', emphasisColor: '#3f83f8' },
-  { key: 'completedVisits', label: 'Completed Visits', emphasisColor: '#0e9f6e' },
-  { key: 'inProgressVisits', label: 'In Progress', emphasisColor: '#2cb1bc' },
-  { key: 'scheduledVisits', label: 'Scheduled Visits', emphasisColor: '#f6ad55' },
-  { key: 'cancelledVisits', label: 'Cancelled Visits', emphasisColor: '#c53030' },
+  { key: 'totalVisits', label: 'إجمالي الزيارات', emphasisColor: '#60a5fa' },
+  { key: 'completedVisits', label: 'زيارات مكتملة', emphasisColor: '#34d399' },
+  { key: 'inProgressVisits', label: 'قيد التنفيذ', emphasisColor: '#2dd4bf' },
+  { key: 'scheduledVisits', label: 'زيارات مجدولة', emphasisColor: '#fbbf24' },
+  { key: 'cancelledVisits', label: 'زيارات ملغاة', emphasisColor: '#fb7185' },
   {
     key: 'completionRate',
-    label: 'Completion Rate',
-    emphasisColor: '#7c3aed',
+    label: 'نسبة الإكمال',
+    emphasisColor: '#a78bfa',
     formatter: value => `${Number(value ?? 0).toFixed(1)}%`,
   },
   {
     key: 'avgDurationMinutes',
-    label: 'Avg Duration (min)',
-    emphasisColor: '#0ea5e9',
-    formatter: value => (value == null ? 'N/A' : `${Number(value).toFixed(1)} min`),
+    label: 'متوسط المدة بالدقائق',
+    emphasisColor: '#38bdf8',
+    formatter: value => (value == null ? 'غير متوفر' : `${Number(value).toFixed(1)} دقيقة`),
   },
 ];
 
@@ -33,7 +33,7 @@ const formatValue = (value, formatter) => {
     return formatter(value);
   }
   if (value == null) {
-    return 'N/A';
+    return 'غير متوفر';
   }
   return value.toLocaleString();
 };
@@ -50,14 +50,14 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
           color: '#b83232',
         }}
       >
-        Unable to load summary metrics: {error}
+        تعذر تحميل مؤشرات الزيارات: {error}
       </div>
     );
   }
 
   return (
     <section
-      aria-label="Visits summary metrics"
+      aria-label="مؤشرات ملخص الزيارات"
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -72,7 +72,7 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
         const displayValue = isLoading ? '...' : formatValue(value, formatter);
         const deltaDisplay =
           typeof delta === 'number'
-            ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% WoW`
+            ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% أسبوعياً`
             : summary?.weekOverWeek && typeof summary.weekOverWeek === 'object'
             ? summary.weekOverWeek[card.key]
             : undefined;
@@ -82,19 +82,19 @@ const VisitsSummaryCards = ({ summary, isLoading, error }) => {
             key={card.key}
             style={{
               borderRadius: '8px',
-              border: '1px solid #d9e2ec',
+              border: '1px solid var(--color-border)',
               padding: '16px',
-              backgroundColor: '#ffffff',
-              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
+              backgroundColor: 'var(--color-surface)',
+              boxShadow: 'var(--shadow-sm)',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
             }}
           >
-            <span style={{ color: '#52606d', fontSize: '14px', fontWeight: 600 }}>{card.label}</span>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '14px', fontWeight: 600 }}>{card.label}</span>
             <strong style={{ fontSize: '28px', color: card.emphasisColor, minHeight: '36px' }}>{displayValue}</strong>
-            <span style={{ color: '#9aa5b1', fontSize: '12px' }}>
-              {isLoading ? 'Refreshing metrics...' : deltaDisplay || 'Week-over-week change pending'}
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>
+              {isLoading ? 'جاري تحديث المؤشرات...' : deltaDisplay || 'تغير أسبوعي قيد الاحتساب'}
             </span>
           </article>
         );

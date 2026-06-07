@@ -81,9 +81,9 @@ export default function LiveMapPage() {
       <section className="hero-band">
         <div className="card-header">
           <div>
-            <div className="hero-kicker">FIELD MAP</div>
-            <div className="section-title">خريطة الميدان</div>
-            <div className="muted">آخر موقع ملتقط والعملاء المكلفون مع دقة GPS ووقت الالتقاط. هذا فحص موقع لجلسة العمل الحالية وليس تتبعاً حياً دائماً.</div>
+            <div className="hero-kicker">OPERATIONAL MAP CONTEXT</div>
+            <div className="section-title">سياق الخريطة والتنقل</div>
+            <div className="muted">يعرض آخر قراءة GPS لجلسة العمل الحالية وروابط تنقل للعملاء المكلفين. هذه ليست شاشة تتبع مباشر أو مراقبة مستمرة.</div>
           </div>
           <span className="pill">{navigator.onLine ? "متصل" : "دون اتصال"}</span>
         </div>
@@ -91,12 +91,13 @@ export default function LiveMapPage() {
           <div className="metric"><span className="metric-value">{customers.length}</span><span className="muted">عملاء مكلفون</span></div>
           <div className="metric"><span className="metric-value">{customers.filter((customer) => customer.location).length}</span><span className="muted">لديهم إحداثيات</span></div>
           <div className="metric"><span className="metric-value">{positionAccuracy !== null ? `${Math.round(positionAccuracy)}م` : "—"}</span><span className="muted">دقة آخر قراءة</span></div>
-          <div className="metric"><span className="metric-value">{position ? "نشط" : "بانتظار"}</span><span className="muted">حالة GPS</span></div>
+          <div className="metric"><span className="metric-value">{position ? "قراءة متاحة" : "بانتظار"}</span><span className="muted">قراءة GPS الحالية</span></div>
         </div>
         <div className="chip-row">
           <span className="mini-chip">إذن الموقع: {permissionState}</span>
-          <span className="mini-chip">الحالة: {position ? "موقع متاح" : "بانتظار إذن أو قراءة"}</span>
-          <span className="mini-chip">خرائط خارجية: Google / OpenStreetMap</span>
+          <span className="mini-chip">الحالة: {position ? "موقع جلسة العمل متاح" : "بانتظار إذن أو قراءة"}</span>
+          <span className="mini-chip">روابط تنقل: Google / OpenStreetMap</span>
+          <span className="mini-chip">لا يوجد تتبع مباشر مستمر</span>
         </div>
         {status ? <div style={{ color: "var(--warning)" }}>{status}</div> : null}
       </section>
@@ -116,7 +117,7 @@ export default function LiveMapPage() {
       />
 
       <div className="card">
-        <div className="section-title">معلومات GPS</div>
+        <div className="section-title">قراءة GPS لجلسة العمل</div>
         <div className="grid">
           <div><span className="muted">الإحداثيات</span><br /><span className="mono-value">{position ? `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}` : "بانتظار تحديد الموقع"}</span></div>
           <div><span className="muted">الدقة</span><br />{positionAccuracy !== null ? `${Math.round(positionAccuracy)}م` : "غير متوفر"}</div>

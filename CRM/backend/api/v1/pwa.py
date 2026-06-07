@@ -5,12 +5,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils_gps import GPSValidationError, validate_accuracy
 from core.db import get_db
 from core.security import get_current_user, require_roles
-from models.crm import Doctor, Pharmacy, User, Visit
+from models.crm import Doctor, Pharmacy, Route, RouteAccount, User, Visit
 
 router = APIRouter(
     prefix="/pwa",
@@ -40,6 +40,39 @@ _PWA_LIFECYCLE_FIELDS = {
     "endLng",
     "endAccuracy",
 }
+_DEMO_CUSTOMER_NAMES = {
+    "Dr. Lina Haddad",
+    "Dr. Omar Saleh",
+    "Dr. Rana Qasem",
+    "WellCare Pharmacy",
+    "CityCare Pharmacy",
+    "Hope Pharmacy",
+}
+
+
+def _is_demo_customer(name: str | None) -> bool:
+    return bool(name and name.strip() in _DEMO_CUSTOMER_NAMES)
+
+
+def _display_customer_name(name: str | None) -> str:
+    if not name:
+        return ""
+    return f"[DEMO] {name}" if _is_demo_customer(name) and not name.startswith("[DEMO]") else name
+
+
+def _monthly_target_from_frequency(value: str | None) -> int | None:
+    normalized = (value or "").strip().lower().replace("_", "-")
+    if not normalized:
+        return None
+    if normalized in {"weekly", "1/week", "every-week"}:
+        return 4
+    if normalized in {"bi-weekly", "biweekly", "every-2-weeks", "fortnightly"}:
+        return 2
+    if normalized in {"monthly", "1/month"}:
+        return 1
+    if normalized in {"quarterly"}:
+        return 0
+    return None
 
 
 def _format_address(*parts: Optional[str]) -> Optional[str]:
@@ -68,10 +101,39 @@ def list_customers(
     area: Optional[str] = None,
     specialty: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     _user: User = Depends(require_roles("sales_manager", "medical_rep", "admin")),
 ) -> list[dict]:
     normalized_type = (type or "").lower()
     results: list[dict] = []
+    route_accounts = (
+        db.query(RouteAccount)
+        .options(joinedload(RouteAccount.route).joinedload(Route.rep))
+        .all()
+    )
+    assignment_by_customer = {
+        (account.account_type, str(account.doctor_id or account.pharmacy_id)): account
+        for account in route_accounts
+        if account.doctor_id or account.pharmacy_id
+    }
+
+    def assignment_meta(customer_type: str, customer_id: int) -> dict:
+        account = assignment_by_customer.get((customer_type, str(customer_id)))
+        if not account:
+            return {
+                "assignedRepEmail": None,
+                "visitFrequency": None,
+                "monthlyFrequencyTarget": None,
+                "frequencyPlanSource": "none",
+            }
+        target = _monthly_target_from_frequency(account.visit_frequency or account.route.frequency)
+        return {
+            "assignedRepEmail": account.route.rep.email if account.route and account.route.rep else None,
+            "visitFrequency": account.visit_frequency or account.route.frequency,
+            "monthlyFrequencyTarget": target,
+            "frequencyPlanSource": "route",
+            "isAssignedToCurrentRep": bool(account.route and account.route.rep_id == current_user.id),
+        }
 
     if normalized_type in {"", "doctor"}:
         query = db.query(Doctor)
@@ -91,10 +153,12 @@ def list_customers(
             query = query.filter(Doctor.specialty.ilike(f"%{specialty.strip().lower()}%"))
 
         for doc in query.order_by(Doctor.name.asc()).all():
+            meta = assignment_meta("doctor", doc.id)
             results.append(
                 {
                     "id": str(doc.id),
-                    "name": doc.name,
+                    "name": _display_customer_name(doc.name),
+                    "rawName": doc.name,
                     "type": "doctor",
                     "area": doc.area,
                     "specialty": doc.specialty,
@@ -102,6 +166,9 @@ def list_customers(
                     "address": _format_address(doc.clinic, doc.area, doc.city),
                     "lastVisit": None,
                     "location": None,
+                    "isDemo": _is_demo_customer(doc.name),
+                    "dataOrigin": "DEMO_SEED" if _is_demo_customer(doc.name) else "UNVERIFIED_SOURCE",
+                    **meta,
                 }
             )
 
@@ -120,10 +187,12 @@ def list_customers(
             query = query.filter(Pharmacy.area.ilike(f"%{area.strip().lower()}%"))
 
         for pharmacy in query.order_by(Pharmacy.name.asc()).all():
+            meta = assignment_meta("pharmacy", pharmacy.id)
             results.append(
                 {
                     "id": str(pharmacy.id),
-                    "name": pharmacy.name,
+                    "name": _display_customer_name(pharmacy.name),
+                    "rawName": pharmacy.name,
                     "type": "pharmacy",
                     "area": pharmacy.area,
                     "specialty": None,
@@ -131,6 +200,9 @@ def list_customers(
                     "address": _format_address(pharmacy.area, pharmacy.city),
                     "lastVisit": None,
                     "location": None,
+                    "isDemo": _is_demo_customer(pharmacy.name),
+                    "dataOrigin": "DEMO_SEED" if _is_demo_customer(pharmacy.name) else "UNVERIFIED_SOURCE",
+                    **meta,
                 }
             )
 

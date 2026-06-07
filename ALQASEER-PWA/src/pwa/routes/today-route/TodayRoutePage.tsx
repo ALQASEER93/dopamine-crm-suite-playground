@@ -7,8 +7,10 @@ import { createOrResumeVisitSession } from "../../utils/visitSession";
 import {
   buildCoverageSummary,
   buildCustomerInsights,
+  customerDisplayName,
   customerDisplayType,
   formatDateTime,
+  formatFrequencyTarget,
   nextActionLabel,
   priorityLabel,
   routeStopStatusLabel,
@@ -96,11 +98,14 @@ export default function TodayRoutePage() {
           <span className="pill">{navigator.onLine ? "متصل" : "دون اتصال"}</span>
         </div>
         <div className="metric-grid">
-          <div className="metric"><span className="metric-value">{summary.totalAssignedCustomers}</span><span className="muted">إجمالي العملاء</span></div>
+          <div className="metric"><span className="metric-value">{stops.length}</span><span className="muted">محطات خطة اليوم</span></div>
           <div className="metric"><span className="metric-value">{summary.visitedToday}</span><span className="muted">زيارات اليوم</span></div>
           <div className="metric"><span className="metric-value">{summary.remainingToday}</span><span className="muted">المتبقي اليوم</span></div>
           <div className="metric"><span className="metric-value">{summary.overdueCustomers}</span><span className="muted">متأخرون</span></div>
+          <div className="metric"><span className="metric-value">{summary.noPlanCustomers}</span><span className="muted">بلا خطة تكرار</span></div>
+          <div className="metric"><span className="metric-value">{summary.unassignedCustomers}</span><span className="muted">غير مكلفين</span></div>
         </div>
+        <div className="muted">زيارات اليوم تعني زيارات مكتملة/مفتوحة بتاريخ اليوم؛ المتبقي يعني محطات خطة الطريق التي لم ترتبط بزيارة اليوم.</div>
       </section>
 
       <GoogleMapWidget
@@ -124,13 +129,16 @@ export default function TodayRoutePage() {
           const insight = insightByCustomer.get(`${stop.customerType}:${stop.customerId}`);
           const customerVisits = visits.filter((visit) => visit.customerId === stop.customerId && visit.customerType === stop.customerType);
           const lastVisit = customerVisits[0];
-          const dueStatus = insight?.status || (customerVisits.length ? "due" : "overdue");
+          const dueStatus = insight?.status || "no-plan";
           const stopIndex = stops.findIndex((item) => item.id === stop.id) + 1;
           return (
             <div key={stop.id} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
               <div className="card-header">
                 <div>
-                  <div style={{ fontWeight: 700 }}>{stop.customerName}</div>
+                  <div style={{ fontWeight: 700 }}>
+                    {customer ? customerDisplayName(customer) : stop.customerName}
+                    {(customer?.isDemo || stop.isDemo) ? <span className="mini-chip demo-chip">DEMO</span> : null}
+                  </div>
                   <div className="muted">
                     {customerDisplayType(stop.customerType)} • {customer?.specialty || customer?.category || "غير محدد"} • {customer?.territory || customer?.area || "قطاع غير محدد"}
                   </div>
@@ -141,7 +149,8 @@ export default function TodayRoutePage() {
                 <span className="mini-chip">ترتيب المسار: #{stopIndex}</span>
                 <span className="mini-chip">حالة المسار: {routeStopStatusLabel(stop.status)}</span>
                 <span className="mini-chip">الأولوية: {priorityLabel(customer?.priority)}</span>
-                <span className="mini-chip">التكرار: {insight?.completedThisMonth ?? 0} / {insight?.target ?? customer?.monthlyFrequencyTarget ?? 2}</span>
+                <span className="mini-chip">التكرار: {insight?.completedThisMonth ?? 0} / {formatFrequencyTarget(insight?.target ?? stop.monthlyFrequencyTarget ?? null)}</span>
+                <span className="mini-chip">خطة التكرار: {customer?.visitFrequency || stop.visitFrequency || "غير مثبتة"}</span>
                 <span className="mini-chip">التالي: {nextActionLabel(dueStatus)}</span>
               </div>
               <div className="muted">{stop.address || customer?.address || "عنوان غير متوفر"}</div>

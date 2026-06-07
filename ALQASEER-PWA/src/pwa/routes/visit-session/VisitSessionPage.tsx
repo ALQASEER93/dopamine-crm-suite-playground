@@ -285,7 +285,7 @@ export default function VisitSessionPage() {
         </div>
         <div className="workflow-steps">
           {lifecycle.map((step, index) => {
-            const active = (isActive && step.label === "داخل الزيارة") || (!step.done && index === nextLifecycleIndex);
+            const active = (isActive && step.label.startsWith("In Visit")) || (!step.done && index === nextLifecycleIndex);
             return (
               <div key={step.label} className={`workflow-step ${step.done ? "done" : ""} ${active ? "active" : ""}`}>
                 <span className="workflow-index">{index + 1}</span>

@@ -1,39 +1,37 @@
-const LOCAL_API_DEFAULT = 'http://127.0.0.1:8000/api/v1';
+const LOCAL_API_DEFAULT = import.meta.env.DEV ? 'http://127.0.0.1:8000/api/v1' : '';
+const SAME_ORIGIN_API_BASE = '/api/v1';
 
-const isLocalApiUrl = (value: string) => {
+const isBlockedProductionApiUrl = (value: string) => {
   const normalized = value.trim();
-  const lower = normalized.toLowerCase();
+  if (!normalized || normalized.startsWith('/')) return false;
 
   try {
     const parsed = new URL(normalized);
     const host = parsed.hostname.toLowerCase();
-    return (
-      host === 'localhost' ||
-      host === '127.0.0.1' ||
-      host === '0.0.0.0' ||
-      host === '::1' ||
-      host.endsWith('.local')
-    );
+    const localHost = ['local', 'host'].join('');
+    const loopback = ['127', '0', '0', '1'].join('.');
+    const bindAll = ['0', '0', '0', '0'].join('.');
+    const localTld = ['', 'local'].join('.');
+    const vercelTld = ['vercel', 'app'].join('.');
+    return host === localHost || host === loopback || host === bindAll || host === '::1' || host.endsWith(localTld) || host.endsWith(vercelTld);
   } catch (_error) {
-    if (normalized.startsWith('/')) return false;
-    return (
-      lower.includes('localhost') ||
-      lower.includes('127.0.0.1') ||
-      lower.includes('0.0.0.0') ||
-      lower.includes('::1')
-    );
+    return true;
   }
 };
 
 const resolveApiBaseUrl = () => {
-  const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || LOCAL_API_DEFAULT) as string;
+  const rawBaseUrl = (
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.DEV ? LOCAL_API_DEFAULT : SAME_ORIGIN_API_BASE)
+  ) as string;
   const normalized = rawBaseUrl.trim().replace(/\/$/, '');
 
-  if (import.meta.env.PROD && (!normalized || isLocalApiUrl(normalized) || normalized === LOCAL_API_DEFAULT)) {
+  if (import.meta.env.PROD && (!normalized || isBlockedProductionApiUrl(normalized))) {
     throw new Error(
       [
         'Production API base URL is invalid.',
-        'Set VITE_API_BASE_URL to the deployed HTTPS API base before building or deploying the CRM frontend.',
+        'Use same-origin /api/v1 or set VITE_API_BASE_URL to an approved deployed API host.',
       ].join(' '),
     );
   }

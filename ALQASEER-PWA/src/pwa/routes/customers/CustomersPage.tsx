@@ -4,8 +4,10 @@ import { getCustomers, getVisits } from "../../api/client";
 import type { Customer, Visit } from "../../api/types";
 import {
   buildCustomerInsights,
+  customerDisplayName,
   customerDisplayType,
   formatDateTime,
+  formatFrequencyTarget,
   nextActionLabel,
   priorityLabel,
   statusLabel,
@@ -71,6 +73,8 @@ export default function CustomersPage() {
       covered: insights.filter((item) => item.status === "covered").length,
       due: insights.filter((item) => item.status === "due").length,
       overdue: insights.filter((item) => item.status === "overdue").length,
+      noPlan: insights.filter((item) => item.status === "no-plan").length,
+      unassigned: insights.filter((item) => item.status === "unassigned").length,
     };
   }, [insights]);
 
@@ -91,8 +95,8 @@ export default function CustomersPage() {
         <div className="card-header">
           <div>
             <div className="hero-kicker">DPM CUSTOMER WORKLIST</div>
-            <div className="section-title">العملاء المكلفون</div>
-            <div className="muted">أطباء وصيدليات حسب المنطقة والأولوية وحالة التكرار الشهري.</div>
+            <div className="section-title">سجل العملاء الميداني</div>
+            <div className="muted">أطباء/HCPs وصيدليات/HCOs مع فصل واضح بين المخطط، المستحق، المتأخر، وغير المكلف.</div>
           </div>
           <span className="pill pill-strong">DOPAMINE PHARMA</span>
         </div>
@@ -101,6 +105,8 @@ export default function CustomersPage() {
           <div className="metric"><span className="metric-value">{summary.pharmacies}</span><span className="muted">صيدليات</span></div>
           <div className="metric"><span className="metric-value">{summary.due}</span><span className="muted">مستحقون</span></div>
           <div className="metric"><span className="metric-value">{summary.overdue}</span><span className="muted">متأخرون</span></div>
+          <div className="metric"><span className="metric-value">{summary.noPlan}</span><span className="muted">بلا خطة</span></div>
+          <div className="metric"><span className="metric-value">{summary.unassigned}</span><span className="muted">غير مكلفين</span></div>
         </div>
       </section>
 
@@ -127,6 +133,8 @@ export default function CustomersPage() {
             <option value="covered">مغطى</option>
             <option value="due">مستحق</option>
             <option value="overdue">متأخر</option>
+            <option value="no-plan">بلا خطة تكرار</option>
+            <option value="unassigned">غير مكلف</option>
           </select>
         </div>
       </div>
@@ -142,7 +150,10 @@ export default function CustomersPage() {
             <div key={`${customer.type}-${customer.id}`} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
               <div className="card-header">
                 <div>
-                  <div style={{ fontWeight: 700 }}>{customer.name}</div>
+                  <div style={{ fontWeight: 700 }}>
+                    {customerDisplayName(customer)}
+                    {customer.isDemo ? <span className="mini-chip demo-chip">DEMO</span> : null}
+                  </div>
                   <div className="muted">
                     {customerDisplayType(customer.type)} • {customer.specialty || customer.category || "غير محدد"} • {customer.area || "بدون منطقة"}
                   </div>
@@ -152,7 +163,7 @@ export default function CustomersPage() {
               <div className="progress-stack">
                 <div className="card-header" style={{ marginBottom: 0 }}>
                   <span className="muted">تحقيق التكرار</span>
-                  <strong>{completedThisMonth} / {target}</strong>
+                  <strong>{completedThisMonth} / {formatFrequencyTarget(target)}</strong>
                 </div>
                 <div className="progress-track">
                   <div className={`progress-fill ${progressClass}`} style={progressStyle} />
@@ -160,7 +171,9 @@ export default function CustomersPage() {
               </div>
               <div className="chip-row">
                 <span className="mini-chip">القطاع: {customer.territory || customer.area || "غير محدد"}</span>
-                <span className="mini-chip">المندوب: {customer.assignedRepEmail || user?.email || "غير محدد"}</span>
+                <span className="mini-chip">المندوب: {customer.assignedRepEmail || "غير مكلف"}</span>
+                <span className="mini-chip">خطة التكرار: {customer.visitFrequency || "غير مثبتة"}</span>
+                <span className="mini-chip">المصدر: {customer.dataOrigin || "غير موثق"}</span>
                 <span className="mini-chip">الإجراء التالي: {nextActionLabel(status)}</span>
               </div>
               <div className="grid">

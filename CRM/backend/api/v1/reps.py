@@ -51,6 +51,41 @@ def _format_address(*parts: Optional[str]) -> Optional[str]:
     return ", ".join(cleaned) if cleaned else None
 
 
+_DEMO_CUSTOMER_NAMES = {
+    "Dr. Lina Haddad",
+    "Dr. Omar Saleh",
+    "Dr. Rana Qasem",
+    "WellCare Pharmacy",
+    "CityCare Pharmacy",
+    "Hope Pharmacy",
+}
+
+
+def _is_demo_customer(name: str | None) -> bool:
+    return bool(name and name.strip() in _DEMO_CUSTOMER_NAMES)
+
+
+def _display_customer_name(name: str | None) -> str:
+    if not name:
+        return ""
+    return f"[DEMO] {name}" if _is_demo_customer(name) and not name.startswith("[DEMO]") else name
+
+
+def _monthly_target_from_frequency(value: str | None) -> int | None:
+    normalized = (value or "").strip().lower().replace("_", "-")
+    if not normalized:
+        return None
+    if normalized in {"weekly", "1/week", "every-week"}:
+        return 4
+    if normalized in {"bi-weekly", "biweekly", "every-2-weeks", "fortnightly"}:
+        return 2
+    if normalized in {"monthly", "1/month"}:
+        return 1
+    if normalized == "quarterly":
+        return 0
+    return None
+
+
 @router.get("/reps", response_model=list[UserOut])
 def list_reps(
     name: Optional[str] = None,
@@ -212,7 +247,11 @@ def create_route(payload: RouteCreate, db: Session = Depends(get_db)) -> Route:
     return route
 
 
-@router.get("/routes/today", response_model=list[RouteStopOut])
+@router.get(
+    "/routes/today",
+    response_model=list[RouteStopOut],
+    dependencies=[Depends(require_roles("admin", "sales_manager", "manager", "medical_rep"))],
+)
 def get_today_route(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -245,12 +284,16 @@ def get_today_route(
             RouteStopOut(
                 id=account.id,
                 customer_id=customer.id,
-                customer_name=customer.name,
+                customer_name=_display_customer_name(customer.name),
                 customer_type=account.account_type,
                 address=address,
                 status="planned",
                 scheduled_for=None,
                 location=None,
+                is_demo=_is_demo_customer(customer.name),
+                data_origin="DEMO_SEED" if _is_demo_customer(customer.name) else "UNVERIFIED_SOURCE",
+                visit_frequency=account.visit_frequency or route.frequency,
+                monthly_frequency_target=_monthly_target_from_frequency(account.visit_frequency or route.frequency),
             )
         )
 

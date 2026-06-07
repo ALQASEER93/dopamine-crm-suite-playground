@@ -8,22 +8,21 @@ const NAV_ITEMS = [
   { label: 'الأطباء', path: '/doctors' },
   { label: 'الصيدليات', path: '/pharmacies' },
   { label: 'المنتجات', path: '/products' },
-  { label: 'الطلبات', path: '/orders' },
   { label: 'الزيارات', path: '/visits' },
   { label: 'المسارات', path: '/routes' },
-  { label: 'المخزون', path: '/stock' },
   { label: 'الأهداف', path: '/targets' },
-  { label: 'التحصيلات', path: '/collections' },
   { label: 'التقارير', path: '/reports', roles: ['admin', 'sales_manager'] },
   { label: 'الإعدادات', path: '/settings' },
   { label: 'الإدارة', path: '/settings/users', roles: ['admin', 'sales_manager'] },
 ];
 
+const CRM_BUILD_MARKER = import.meta.env.VITE_APP_VERSION || 'crm-1.0.0-phase-a';
+
 const MainLayout = () => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'light';
+    if (typeof window === 'undefined') return 'dark';
     try {
       const stored = window.localStorage?.getItem('theme');
       if (stored === 'light' || stored === 'dark') {
@@ -32,15 +31,15 @@ const MainLayout = () => {
     } catch (error) {
       console.warn('Theme storage unavailable', error);
     }
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
   });
   const [isUserOverride, setIsUserOverride] = useState(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') return true;
     try {
       const stored = window.localStorage?.getItem('theme');
-      return stored === 'light' || stored === 'dark';
+      return stored === 'light' || stored === 'dark' || !stored;
     } catch (error) {
-      return false;
+      return true;
     }
   });
   const navigate = useNavigate();
@@ -149,6 +148,7 @@ const MainLayout = () => {
             <div>
               <span className="layout__header-app">DOPAMINE CRM</span>
               <span className="layout__header-role">{roleLabel}</span>
+              <span className="layout__header-build">Build {CRM_BUILD_MARKER}</span>
             </div>
             <div className="layout__header-user">
               <div className="layout__avatar">{userInitial}</div>
