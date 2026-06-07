@@ -50,6 +50,8 @@ npm test --if-present
   - الملفات المتغيرة
   - أوامر الاختبار التي تم تشغيلها
   - خطوات تحقق قصيرة
+- ممنوع استخدام مرفقات الشات كمصدر تنفيذ مباشر؛ مصدر الحقيقة هو ملفات الريبو ومخرجات `docs/_runs/run_<YYYYMMDD_HHMMSS>/` وملفات bridge/handoff المولدة.
+- كل تشغيل DPM مهم لازم يولد على الأقل: `CHATGPT_HANDOFF.md` و `json/chatgpt_handoff.json` و `json/review_bridge_manifest.json` و `artifacts/review_bridge_summary.md`.
 
 ### 1) تعريف المشروع (Monorepo)
 هذا الريبو يحتوي عادة على:
@@ -117,6 +119,8 @@ npm test --if-present
 - No destructive commands. No mass deletion/cleanup.
 - Always work via branch + PR (no direct push to main).
 - Any “done” claim must include: files changed + tests run + quick verification.
+- Do not use chat attachments as the execution source. Use repo files, `docs/_runs/run_<YYYYMMDD_HHMMSS>/`, and generated bridge/handoff outputs as the source of truth.
+- Every meaningful DPM run must generate `CHATGPT_HANDOFF.md`, `json/chatgpt_handoff.json`, `json/review_bridge_manifest.json`, and `artifacts/review_bridge_summary.md`.
 
 ### Project goals (DPM Pharma CRM)
 - Arabic UI + default Dark Mode
