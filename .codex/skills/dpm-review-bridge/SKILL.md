@@ -1,3 +1,8 @@
+---
+name: dpm-review-bridge
+description: Use for meaningful DOPAMINE CRM Suite runs that need safe Omar-to-ChatGPT handoff evidence, docs/_runs artifacts, and PR review bridge reporting.
+---
+
 # DPM Review Bridge Skill
 
 Use this skill for every meaningful DOPAMINE CRM Suite run that needs Omar-to-ChatGPT handoff evidence.
