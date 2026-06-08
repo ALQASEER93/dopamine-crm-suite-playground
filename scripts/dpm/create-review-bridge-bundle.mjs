@@ -500,6 +500,83 @@ async function main() {
     },
   };
 
+  const finalVerdict = {
+    result: verdict,
+    runId,
+    generatedBy: "scripts/dpm/create-review-bridge-bundle.mjs",
+    repo: repoSlug,
+    prNumber,
+    branch,
+    commit,
+    workflowRunUrl,
+    artifactName,
+    artifactId: process.env.ARTIFACT_ID || "unavailable",
+    verdictReason,
+    verdicts: {
+      webCiVerdict,
+      realDeviceVerdict,
+      fieldPilotVerdict,
+    },
+    validations: validations.map((validation) => ({
+      command: validation.command,
+      cwd: validation.cwd,
+      status: validation.status,
+      exitCode: validation.exitCode,
+      log: validation.log,
+      reason: validation.reason,
+    })),
+    security: {
+      generatedArtifactScan: securityScan.status,
+      findingCount: securityScan.findingCount,
+      noSecretsExposed: securityScan.findingCount === 0,
+    },
+    deployment: {
+      happened: false,
+      target: "none",
+      dnsMutation: false,
+      prStateMutation: false,
+    },
+    finalFieldAcceptanceGate: "Real-device GPS/offline proof remains deferred to the Final Field Acceptance Gate.",
+    blockers: blocked ? ["Generated bridge artifact secret-pattern scan found potential sensitive content."] : [],
+    warnings: failed.map((validation) => `Validation failed: ${validation.cwd} ${validation.command}`),
+  };
+
+  const reviewBridgeManifest = {
+    result: verdict,
+    runId,
+    repo: repoSlug,
+    prNumber,
+    branch,
+    commit,
+    workflowRunUrl,
+    artifactName,
+    artifactId: process.env.ARTIFACT_ID || "unavailable",
+    generatedAt: new Date().toISOString(),
+    requiredEntries: [
+      "report.md",
+      "master_audit.md",
+      "size_breakdown.md",
+      "CHATGPT_HANDOFF.md",
+      "json/final_verdict.json",
+      "json/review_bridge_manifest.json",
+      "json/chatgpt_handoff.json",
+      "logs/",
+    ],
+    includedEntries: {
+      reports: ["report.md", "master_audit.md", "size_breakdown.md", "CHATGPT_HANDOFF.md"],
+      json: ["json/final_verdict.json", "json/review_bridge_manifest.json", "json/chatgpt_handoff.json", ...jsonFiles],
+      logs,
+      screenshots,
+    },
+    artifactContractVersion: 2,
+    notes: [
+      "Generated artifact is a zip uploaded by GitHub Actions; required entries are inside that zip.",
+      "No deploy, DNS mutation, merge, or PR readiness mutation is performed by this bundle generator.",
+    ],
+  };
+
+  await fs.writeFile(path.join(runDir, "json", "final_verdict.json"), `${JSON.stringify(finalVerdict, null, 2)}\n`);
+  await fs.writeFile(path.join(runDir, "json", "review_bridge_manifest.json"), `${JSON.stringify(reviewBridgeManifest, null, 2)}\n`);
   await fs.writeFile(path.join(runDir, "json", "chatgpt_handoff.json"), `${JSON.stringify(handoff, null, 2)}\n`);
 
   const handoffMd = `# CHATGPT HANDOFF\n\n## 1. RUN\n- Repo: ${repoSlug}\n- PR number/link: ${prNumber} / ${prLink}\n- Branch: ${branch}\n- Commit SHA: ${commit}\n- Run ID: ${runId}\n- Timestamp: ${stamp}\n- Workflow run URL if available: ${workflowRunUrl}\n- Artifact name: ${artifactName}\n- Artifact ID if available: ${process.env.ARTIFACT_ID || "unavailable"}\n\n## 2. VERDICT\n- ${verdict}\n- ${verdictReason}\n- Web/CI Verdict: ${webCiVerdict}\n- Real Device Verdict: ${realDeviceVerdict}\n- Field Pilot Verdict: ${fieldPilotVerdict}\n\n## 3. WHAT CODEX / WORKFLOW DID\n- Created a DPM Review Bridge run folder with logs, JSON summary, report, handoff file, and zip package.\n- Ran available backend, CRM frontend, and PWA validation commands without stopping the workflow on absent components.\n- Captured PWA route screenshots into the artifact when ALQASEER-PWA and Playwright were available.\n- Summarized the DOPAMINE client workbook without writing raw names, phone numbers, addresses, or exact coordinates to the bridge summary.\n- Performed read-only Android/ADB discovery and separated web CI from real-device readiness.\n- Performed a generated-artifact secret-pattern scan.\n- Did not deploy, merge, change PR readiness, touch DNS, or create provisioning/auth-bypass endpoints.\n\n## 4. CHANGED FILES\n### Backend\n${mdList(groups.backend)}\n\n### Frontend\n${mdList(groups.frontend)}\n\n### PWA\n${mdList(groups.PWA)}\n\n### Docs\n${mdList(groups.docs)}\n\n### Scripts\n${mdList(groups.scripts)}\n\n### Workflows\n${mdList(groups.workflows)}\n\n### Tests\n${mdList(groups.tests)}\n\n### Other\n${mdList(groups.other)}\n\n## 5. VALIDATION\n${validationMarkdown(validations)}\n\n## 6. ARTIFACTS\n- Run folder path: \`docs/_runs/${runId}\`\n- Zip path: \`docs/_runs/${runId}.zip\`\n- GitHub artifact name: ${artifactName}\n- Screenshots included: ${screenshots.length > 0 ? "yes" : "no"} (${screenshots.length})\n- Screenshots list:\n${mdList(screenshots)}\n- Logs list:\n${mdList(logs)}\n- JSON/report files list:\n${mdList(["report.md", "CHATGPT_HANDOFF.md", ...jsonFiles])}\n\n## PWA ROUTE SCREENSHOT PROOF\n${routeProofMarkdown(routeProof)}\n\n## CLIENT DATA IMPORT SUMMARY\n${clientImportMarkdown(clientImport)}\n\n## ANDROID DEVICE QA STATUS\n${androidDeviceMarkdown(androidDevice)}\n\n## 7. SECURITY CHECK\n- No secrets exposed: ${handoff.security.noSecretsExposed}\n- No backdoor/provisioning/auth bypass: ${handoff.security.noBackdoorProvisioningAuthBypass}\n- No unsafe env leakage: ${handoff.security.noUnsafeEnvLeakage}\n- If uncertain, why: ${handoff.security.reason}\n\n## 8. DEPLOYMENT CHECK\n- Deploy happened: no\n- If yes, where and URL: none\n- If no: no deploy\n\n## 9. RISKS / BLOCKERS\n${mdList(handoff.risks)}\n\n## 10. NEXT BEST ACTION\n- Exact next Codex recommendation: ${handoff.nextBestAction.codexRecommendation}\n- Exact one-line message Omar should send to ChatGPT:\n\n${handoff.nextBestAction.chatgptMessage}\n`;
