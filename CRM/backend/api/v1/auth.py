@@ -21,6 +21,8 @@ _RATE_WINDOW_SECONDS = 60
 _RATE_MAX_ATTEMPTS = 10
 _login_attempts: dict[str, deque[float]] = {}
 _login_attempts_lock = Lock()
+_NON_BOOTSTRAP_VERCEL_ENVS = {"preview", "production"}
+_BOOTSTRAP_APP_ENVS = {"development", "local", "test"}
 
 
 def _login_rate_key(request: Request, email: str) -> str:
@@ -46,6 +48,12 @@ def _enforce_login_rate_limit(request: Request, email: str) -> None:
         bucket.append(now)
 
 
+def _bootstrap_allowed_in_runtime() -> bool:
+    app_env = (settings.app_env or "").strip().lower()
+    vercel_env = (settings.vercel_env or "").strip().lower()
+    return vercel_env not in _NON_BOOTSTRAP_VERCEL_ENVS and app_env in _BOOTSTRAP_APP_ENVS
+
+
 @router.post("/login", response_model=AuthResponse)
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)) -> AuthResponse:
     _enforce_login_rate_limit(request, payload.email)
@@ -62,6 +70,8 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
 
 @router.post("/bootstrap", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 def bootstrap(payload: BootstrapRequest, db: Session = Depends(get_db)) -> AuthResponse:
+    if not _bootstrap_allowed_in_runtime():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bootstrap disabled.")
     if not settings.bootstrap_code:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bootstrap disabled.")
     if payload.code != settings.bootstrap_code:

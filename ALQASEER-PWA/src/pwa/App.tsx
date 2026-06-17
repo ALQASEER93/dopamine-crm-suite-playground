@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { BuildVersionStrip } from "./components/BuildVersionStrip";
 import { BottomNav } from "./components/navigation/BottomNav";
 import { RequireAuth } from "./components/layout/RequireAuth";
 import LoginPage from "./routes/login/LoginPage";
@@ -41,6 +42,7 @@ export default function App() {
     <div dir="rtl">
       <div className="app-shell">
         {!isOnline ? <div className="offline-banner">الاتصال مفقود، يتم استخدام البيانات المخزنة.</div> : null}
+        {token ? <BuildVersionStrip /> : null}
 
         {/* Exactly one main landmark for a11y (axe: landmark-one-main). */}
         <main className="app-main">
@@ -52,6 +54,7 @@ export default function App() {
               <Route path="/live-map" element={<LiveMapPage />} />
               <Route path="/visits" element={<VisitsPage />} />
               <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/customers/:id" element={<CustomerProfilePage />} />
               <Route path="/customers/:customerType/:customerId" element={<CustomerProfilePage />} />
               <Route path="/visit-session/:visitId" element={<VisitSessionPage />} />
               <Route path="/reports" element={<ReportsPage />} />

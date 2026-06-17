@@ -89,6 +89,36 @@ class PharmacyOut(PharmacyBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PharmacyFieldCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=150)
+    area: Optional[str] = None
+    city: Optional[str] = None
+    segment: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+
+
+class PharmacyFieldUpdate(BaseModel):
+    name: Optional[str] = None
+    area: Optional[str] = None
+    city: Optional[str] = None
+    segment: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+
+
+class PharmacyFieldOut(PharmacyFieldCreate):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PharmacyMini(BaseModel):
     id: int
     name: str
@@ -123,6 +153,28 @@ class ProductUpdate(BaseModel):
 
 
 class ProductOut(ProductBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProductFieldCreate(BaseModel):
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=2, max_length=150)
+    line: Optional[str] = None
+    pack: Optional[str] = None
+
+
+class ProductFieldUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    line: Optional[str] = None
+    pack: Optional[str] = None
+
+
+class ProductFieldOut(ProductFieldCreate):
     id: int
     created_at: datetime
     updated_at: datetime
@@ -648,9 +700,6 @@ class MedicalEventBase(BaseModel):
     ends_at: datetime
     location: Optional[str] = Field(default=None, max_length=255)
     organizer: Optional[str] = Field(default=None, max_length=150)
-    budget: Optional[Decimal] = Field(default=None, ge=0)
-    actual_cost: Optional[Decimal] = Field(default=None, ge=0)
-    revenue_impact: Optional[Decimal] = None
     notes: Optional[str] = None
 
 
@@ -666,9 +715,6 @@ class MedicalEventUpdate(BaseModel):
     ends_at: Optional[datetime] = None
     location: Optional[str] = Field(default=None, max_length=255)
     organizer: Optional[str] = Field(default=None, max_length=150)
-    budget: Optional[Decimal] = Field(default=None, ge=0)
-    actual_cost: Optional[Decimal] = Field(default=None, ge=0)
-    revenue_impact: Optional[Decimal] = None
     notes: Optional[str] = None
 
 
@@ -724,16 +770,11 @@ class MedicalEventOut(MedicalEventBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class MedicalEventROIOut(BaseModel):
+class MedicalEventEngagementOut(BaseModel):
     event_id: int
     title: str
     starts_at: datetime
     attendees_count: int
-    budget: float
-    actual_cost: float
-    revenue_impact: float
-    roi_value: float
-    roi_percent: Optional[float] = None
 
 
 class KOLEngagementOut(BaseModel):

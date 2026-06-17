@@ -72,3 +72,26 @@ AI-Orchestrator/set-ai-env.ps1
 
 CRM/package-lock.ROOT_UNUSED.json
 
+# Local ALQASEER backend artifacts not used by the current Vercel PWA runtime.
+ALQASEER-PWA/CRM/backend/.vercel/
+ALQASEER-PWA/CRM/backend/LOG.md
+ALQASEER-PWA/CRM/backend/LOG_WRITE_TEST.tmp
+ALQASEER-PWA/CRM/backend/legacy-express/
+ALQASEER-PWA/CRM/backend/package.json
+ALQASEER-PWA/CRM/backend/package-lock.json
+ALQASEER-PWA/CRM/backend/jest.config.js
+ALQASEER-PWA/CRM/backend/jest.setup.js
+ALQASEER-PWA/CRM/backend/Dockerfile
+ALQASEER-PWA/CRM/backend/render.yaml
+ALQASEER-PWA/CRM/backend/alembic.ini
+ALQASEER-PWA/CRM/backend/vercel.json
+ALQASEER-PWA/CRM/backend/api/index.py
+ALQASEER-PWA/CRM/backend/run-backend-dev.ps1
+ALQASEER-PWA/CRM/backend/scripts/*.ps1
+ALQASEER-PWA/CRM/backend/scripts/smoke_*.py
+ALQASEER-PWA/CRM/backend/README.md
+ALQASEER-PWA/CRM/backend/README_FASTAPI.md
+ALQASEER-PWA/CRM/backend/WSL_SETUP.md
+ALQASEER-PWA/CRM/backend/ai_agents_overview.md
+
+.vercel

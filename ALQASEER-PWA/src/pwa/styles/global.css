@@ -542,6 +542,10 @@ form {
   font-weight: 700;
 }
 
+.qa-build-strip {
+  margin-bottom: 12px;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

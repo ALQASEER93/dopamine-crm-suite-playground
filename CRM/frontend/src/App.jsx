@@ -9,15 +9,11 @@ import RoutesPage from './pages/RoutesPage.jsx';
 import DoctorsPage from './pages/DoctorsPage.jsx';
 import PharmaciesPage from './pages/PharmaciesPage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
-import OrdersPage from './pages/OrdersPage.jsx';
-import StockPage from './pages/StockPage.jsx';
 import TargetsPage from './pages/TargetsPage.jsx';
-import CollectionsPage from './pages/CollectionsPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import RepsPage from './pages/RepsPage.jsx';
-import SamplesInventoryPage from './pages/SamplesInventoryPage.jsx';
 import SamplesDistributePage from './pages/SamplesDistributePage.jsx';
 import SamplesHistoryPage from './pages/SamplesHistoryPage.jsx';
 import MedicalEventsPage from './pages/MedicalEventsPage.jsx';
@@ -49,13 +45,9 @@ const AppRoutes = () => {
         <Route path="/hcps" element={<Navigate to="/doctors" replace />} />
         <Route path="/pharmacies" element={<PharmaciesPage />} />
         <Route path="/products" element={<ProductsPage />} />
-        <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/stock" element={<StockPage />} />
-        <Route path="/samples/inventory" element={<SamplesInventoryPage />} />
         <Route path="/samples/distribute" element={<SamplesDistributePage />} />
         <Route path="/samples/history" element={<SamplesHistoryPage />} />
         <Route path="/targets" element={<TargetsPage />} />
-        <Route path="/collections" element={<CollectionsPage />} />
         <Route
           path="/medical/events"
           element={

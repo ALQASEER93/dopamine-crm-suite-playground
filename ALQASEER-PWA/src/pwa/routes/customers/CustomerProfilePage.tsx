@@ -23,7 +23,8 @@ import { useAuthStore } from "../../state/auth";
 import { createOrResumeVisitSession } from "../../utils/visitSession";
 
 export default function CustomerProfilePage() {
-  const { customerId, customerType } = useParams();
+  const { customerId, customerType, id } = useParams();
+  const effectiveCustomerId = customerId ?? id;
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -49,10 +50,12 @@ export default function CustomerProfilePage() {
   }, []);
 
   const insight = useMemo(() => {
-    const customer = customers.find((item) => String(item.id) === String(customerId) && item.type === customerType);
+    const customer = customers.find(
+      (item) => String(item.id) === String(effectiveCustomerId) && (!customerType || item.type === customerType),
+    );
     if (!customer) return null;
     return buildCustomerInsights([customer], visits, user?.email)[0];
-  }, [customerId, customerType, customers, user?.email, visits]);
+  }, [effectiveCustomerId, customerType, customers, user?.email, visits]);
 
   const startVisitFromProfile = async () => {
     if (!insight) return;

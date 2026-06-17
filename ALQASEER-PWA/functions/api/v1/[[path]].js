@@ -1,4 +1,5 @@
-const UPSTREAM_API_BASE = "https://dopamine-crm-api.vercel.app/api/v1";
+const LOCAL_DEV_UPSTREAM_API_BASE = "http://127.0.0.1:8000/api/v1";
+const UPSTREAM_ENV_KEYS = ["DPM_UPSTREAM_API_BASE_URL", "DPM_API_BASE_URL", "API_BASE_URL"];
 
 const FORWARDED_HEADERS = ["accept", "authorization", "content-type"];
 const HOP_BY_HOP_HEADERS = [
@@ -20,10 +21,30 @@ function normalizePath(pathParam) {
   return String(pathParam).replace(/^\/+/, "");
 }
 
-function buildUpstreamUrl(requestUrl, pathParam) {
+function normalizeApiBase(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
+function isLocalPagesRequest(requestUrl) {
+  const { hostname } = new URL(requestUrl);
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname.endsWith(".local");
+}
+
+function resolveUpstreamApiBase(requestUrl, env = {}) {
+  for (const key of UPSTREAM_ENV_KEYS) {
+    const value = normalizeApiBase(env[key]);
+    if (value) return value;
+  }
+
+  if (isLocalPagesRequest(requestUrl)) return LOCAL_DEV_UPSTREAM_API_BASE;
+
+  throw new Error("UPSTREAM_API_BASE_MISSING");
+}
+
+function buildUpstreamUrl(requestUrl, pathParam, env) {
   const incoming = new URL(requestUrl);
   const upstreamPath = normalizePath(pathParam);
-  const upstream = new URL(`${UPSTREAM_API_BASE}/${upstreamPath}`);
+  const upstream = new URL(`${resolveUpstreamApiBase(requestUrl, env)}/${upstreamPath}`);
   upstream.search = incoming.search;
   return upstream;
 }
@@ -71,7 +92,7 @@ function safeJson(payload, init) {
 }
 
 export async function onRequest(context) {
-  const { request, params } = context;
+  const { request, params, env } = context;
   const corsHeaders = buildCorsHeaders(request);
 
   if (request.method === "OPTIONS") {
@@ -85,7 +106,18 @@ export async function onRequest(context) {
     });
   }
 
-  const upstreamUrl = buildUpstreamUrl(request.url, params.path);
+  let upstreamUrl;
+  try {
+    upstreamUrl = buildUpstreamUrl(request.url, params.path, env);
+  } catch (_error) {
+    return safeJson(
+      {
+        error: "UPSTREAM_API_BASE_MISSING",
+        message: "Cloudflare Pages API proxy requires DPM_UPSTREAM_API_BASE_URL.",
+      },
+      { status: 502, headers: corsHeaders },
+    );
+  }
   const init = {
     method: request.method,
     headers: buildForwardHeaders(request),
@@ -93,7 +125,7 @@ export async function onRequest(context) {
   };
 
   if (!["GET", "HEAD"].includes(request.method.toUpperCase())) {
-    init.body = request.body;
+    init.body = await request.arrayBuffer();
   }
 
   try {

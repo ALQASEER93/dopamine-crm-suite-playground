@@ -9,7 +9,7 @@ from core.db import get_db
 from core.security import get_current_user, require_roles
 from models.crm import Product
 from schemas.common import PaginatedResponse
-from schemas.crm import ProductCreate, ProductOut, ProductUpdate
+from schemas.crm import ProductFieldCreate, ProductFieldOut, ProductFieldUpdate
 
 router = APIRouter(
     prefix="/products",
@@ -18,14 +18,14 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=PaginatedResponse[ProductOut])
+@router.get("/", response_model=PaginatedResponse[ProductFieldOut])
 def list_products(
     page: int = Query(DEFAULT_PAGE, ge=1),
     page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500),
     line: str | None = None,
     search: str | None = None,
     db: Session = Depends(get_db),
-) -> PaginatedResponse[ProductOut]:
+) -> PaginatedResponse[ProductFieldOut]:
     query = db.query(Product)
     if line:
         query = query.filter(Product.line.ilike(f"%{line}%"))
@@ -46,11 +46,11 @@ def list_products(
 
 @router.post(
     "/",
-    response_model=ProductOut,
+    response_model=ProductFieldOut,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_roles("sales_manager", "admin"))],
 )
-def create_product(payload: ProductCreate, db: Session = Depends(get_db)) -> Product:
+def create_product(payload: ProductFieldCreate, db: Session = Depends(get_db)) -> Product:
     product = Product(**payload.model_dump())
     db.add(product)
     db.commit()
@@ -60,10 +60,10 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)) -> Pro
 
 @router.put(
     "/{product_id}",
-    response_model=ProductOut,
+    response_model=ProductFieldOut,
     dependencies=[Depends(require_roles("sales_manager", "admin"))],
 )
-def update_product(product_id: int, payload: ProductUpdate, db: Session = Depends(get_db)) -> Product:
+def update_product(product_id: int, payload: ProductFieldUpdate, db: Session = Depends(get_db)) -> Product:
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")

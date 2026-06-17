@@ -5,6 +5,86 @@ from typing import Annotated
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+DEFAULT_DATABASE_URL = "sqlite:///./data/fastapi.db"
+PREVIEW_DB_BRANCH = "codex/field-ready-completion"
+PREVIEW_APP_ENVS = {"preview", "staging", "vercel-preview"}
+
+
+def _clean_env_value(value: str | None) -> str:
+    return (value or "").strip()
+
+
+def _is_preview_runtime(
+    *,
+    app_env: str,
+    vercel_env: str | None,
+    vercel_git_commit_ref: str | None,
+) -> bool:
+    normalized_app_env = _clean_env_value(app_env).lower()
+    normalized_vercel_env = _clean_env_value(vercel_env).lower()
+    normalized_branch = _clean_env_value(vercel_git_commit_ref)
+
+    return (
+        normalized_vercel_env == "preview"
+        or normalized_branch == PREVIEW_DB_BRANCH
+        or normalized_app_env in PREVIEW_APP_ENVS
+    )
+
+
+def resolve_database_url(
+    *,
+    database_url: str | None,
+    preview_database_url: str | None,
+    prod_database_url: str | None,
+    app_env: str,
+    vercel_env: str | None,
+    vercel_git_commit_ref: str | None,
+) -> tuple[str, str]:
+    """Resolve the effective DB URL without exposing secret values in errors."""
+    db_url = _clean_env_value(database_url)
+    preview_url = _clean_env_value(preview_database_url)
+    prod_url = _clean_env_value(prod_database_url)
+    normalized_app_env = _clean_env_value(app_env).lower()
+    normalized_vercel_env = _clean_env_value(vercel_env).lower()
+
+    if normalized_vercel_env == "production":
+        if db_url and db_url != DEFAULT_DATABASE_URL:
+            return db_url, "DATABASE_URL"
+        if prod_url:
+            return prod_url, "PROD_DATABASE_URL"
+        if db_url:
+            return db_url, "DATABASE_URL"
+        raise ValueError("DATABASE_URL or PROD_DATABASE_URL is required in Vercel production.")
+
+    preview_runtime = _is_preview_runtime(
+        app_env=app_env,
+        vercel_env=vercel_env,
+        vercel_git_commit_ref=vercel_git_commit_ref,
+    )
+
+    if preview_runtime:
+        if not preview_url:
+            raise ValueError("PREVIEW_DATABASE_URL is required in Vercel Preview.")
+        if not prod_url:
+            raise ValueError("PROD_DATABASE_URL is required to validate Preview database isolation.")
+        if preview_url == prod_url:
+            raise ValueError("Preview database URL is not isolated from production database URL.")
+        return preview_url, "PREVIEW_DATABASE_URL"
+
+    if normalized_app_env == "production":
+        if db_url and db_url != DEFAULT_DATABASE_URL:
+            return db_url, "DATABASE_URL"
+        if prod_url:
+            return prod_url, "PROD_DATABASE_URL"
+        if db_url:
+            return db_url, "DATABASE_URL"
+        raise ValueError("DATABASE_URL or PROD_DATABASE_URL is required in production.")
+
+    if db_url:
+        return db_url, "DATABASE_URL"
+
+    raise ValueError("DATABASE_URL is required outside a verified Preview runtime.")
+
 
 def _default_allowed_origins() -> list[str]:
     return [
@@ -23,13 +103,17 @@ class Settings(BaseSettings):
     app_env: str = Field("development", validation_alias="DPM_ENV")
     app_name: str = "ALQASEER CRM API"
     database_url: str = Field(
-        "sqlite:///./data/fastapi.db",
+        DEFAULT_DATABASE_URL,
         validation_alias=AliasChoices("DATABASE_URL", "SQLALCHEMY_DATABASE_URL"),
     )
+    preview_database_url: str | None = Field(default=None, validation_alias="PREVIEW_DATABASE_URL")
     prod_database_url: str | None = Field(
         default=None,
         validation_alias=AliasChoices("PROD_DATABASE_URL", "PRODUCTION_DATABASE_URL"),
     )
+    database_url_source: str = "DATABASE_URL"
+    vercel_env: str | None = Field(default=None, validation_alias="VERCEL_ENV")
+    vercel_git_commit_ref: str | None = Field(default=None, validation_alias="VERCEL_GIT_COMMIT_REF")
     echo_sql: bool = False
     prod_echo_sql: bool | None = None
     jwt_secret: str | None = Field(default=None, validation_alias="JWT_SECRET")
@@ -57,6 +141,7 @@ class Settings(BaseSettings):
     geofence_radius_m: float = Field(default=120.0, validation_alias="GEOFENCE_RADIUS_M")
     geofence_enabled: bool = Field(default=False, validation_alias="GEOFENCE_ENABLED")
     geofence_require_target_coords: bool | None = Field(default=None, validation_alias="GEOFENCE_REQUIRE_TARGET_COORDS")
+    enable_legacy_erp_api: bool = Field(default=False, validation_alias="DPM_ENABLE_LEGACY_ERP_API")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -100,9 +185,17 @@ class Settings(BaseSettings):
     def model_post_init(self, __context: dict[str, object] | None = None) -> None:
         """Apply environment-specific overrides after loading settings."""
         env = (self.app_env or "").lower()
+        effective_database_url, database_url_source = resolve_database_url(
+            database_url=self.database_url,
+            preview_database_url=self.preview_database_url,
+            prod_database_url=self.prod_database_url,
+            app_env=self.app_env,
+            vercel_env=self.vercel_env,
+            vercel_git_commit_ref=self.vercel_git_commit_ref,
+        )
+        object.__setattr__(self, "database_url", effective_database_url)
+        object.__setattr__(self, "database_url_source", database_url_source)
         if env == "production":
-            if self.prod_database_url:
-                object.__setattr__(self, "database_url", self.prod_database_url)
             if self.prod_echo_sql is not None:
                 object.__setattr__(self, "echo_sql", self.prod_echo_sql)
             if bool(self.seed_default_users):
@@ -131,6 +224,10 @@ class Settings(BaseSettings):
             if bool(self.allow_dev_token_endpoint) or bool(self.allow_dev_token):
                 raise ValueError(
                     "Dev token toggles must be disabled when DPM_ENV=production."
+                )
+            if bool(self.enable_legacy_erp_api):
+                raise ValueError(
+                    "DPM_ENABLE_LEGACY_ERP_API must stay disabled in production."
                 )
             if self.database_url.strip().lower().startswith("sqlite"):
                 raise ValueError("DATABASE_URL or PROD_DATABASE_URL must use managed PostgreSQL in production.")

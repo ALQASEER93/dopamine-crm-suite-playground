@@ -45,9 +45,6 @@ const ProductPerformanceTable = ({ from, to }) => {
               <tr>
                 <th>المنتج</th>
                 <th>عدد الزيارات</th>
-                <th>إجمالي الكمية</th>
-                <th>متوسط الكمية / زيارة</th>
-                <th>إجمالي الطلبات (JOD)</th>
               </tr>
             </thead>
             <tbody>
@@ -55,9 +52,6 @@ const ProductPerformanceTable = ({ from, to }) => {
                 <tr key={row.productName}>
                   <td>{row.productName}</td>
                   <td>{row.visitsCount}</td>
-                  <td>{row.totalQuantity}</td>
-                  <td>{row.avgQuantityPerVisit}</td>
-                  <td>{row.totalOrderValueJOD}</td>
                 </tr>
               ))}
             </tbody>

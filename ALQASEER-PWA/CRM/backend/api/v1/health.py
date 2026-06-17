@@ -12,6 +12,6 @@ router = APIRouter(tags=["health"])
 def health() -> dict:
     return {
         "status": "ok",
-        "db": engine.url.render_as_string(hide_password=True),
+        "db": engine.url.get_backend_name(),
         "version": settings.app_version,
     }

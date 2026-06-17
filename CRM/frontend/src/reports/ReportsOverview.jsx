@@ -38,14 +38,6 @@ const ReportsOverview = ({ from, to }) => {
             <p className="label">الزيارات الناجحة</p>
             <p className="value">{data.successfulVisits ?? '-'}</p>
           </div>
-          <div className="overview-card">
-            <p className="label">عدد الطلبات</p>
-            <p className="value">{data.ordersCount ?? '-'}</p>
-          </div>
-          <div className="overview-card">
-            <p className="label">إجمالي الطلبات (JOD)</p>
-            <p className="value">{data.ordersTotal ?? '-'}</p>
-          </div>
         </div>
       )}
     </section>

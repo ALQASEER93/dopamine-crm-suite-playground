@@ -1,12 +1,23 @@
 {
+  "name": "dopamine-crm-suite-playground",
+  "version": 2,
   "rewrites": [
-    { "source": "/api/v1", "destination": "/api/index.py" },
-    { "source": "/api/v1/(.*)", "destination": "/api/index.py" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/v1",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/v1/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "functions": {
     "api/index.py": {
-      "excludeFiles": "CRM/backend/{tests/**,__tests__/**,**/__pycache__/**,**/.pytest_cache/**,**/.venv/**,**/docs/**,**/data/**,**/node_modules/**,**/scripts/**,**/alembic/**,**/*.pyc,**/*.pyo,**/*.db,**/*.sqlite,**/*.sqlite3,**/*.tmp}"
+      "excludeFiles": "CRM/backend/{tests/**,__tests__/**,**/__pycache__/**,**/.pytest_cache/**,**/.venv/**,**/docs/**,**/data/**,**/node_modules/**,**/alembic/**,**/*.pyc,**/*.pyo,**/*.db,**/*.sqlite,**/*.sqlite3,**/*.tmp}"
     }
   }
 }

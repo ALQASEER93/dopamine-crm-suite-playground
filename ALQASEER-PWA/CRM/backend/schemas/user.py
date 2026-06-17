@@ -34,7 +34,7 @@ class UserUpdate(BaseModel):
 
 
 class UserOut(BaseModel):
-    id: int
+    id: int | str
     name: str
     email: EmailStr
     is_active: bool
@@ -59,3 +59,37 @@ class RepUpdate(BaseModel):
     is_active: Optional[bool] = None
     role_slug: Optional[str] = None
     role_id: Optional[int] = None
+
+
+class SalesRepInfo(BaseModel):
+    repType: str
+    territoryId: Optional[int] = None
+    territoryName: Optional[str] = None
+
+
+class AdminUserCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+    userType: str = Field(..., min_length=1)
+    territoryId: Optional[int] = None
+
+
+class AdminUserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = Field(default=None, min_length=6)
+    userType: Optional[str] = None
+    territoryId: Optional[int] = None
+    isActive: Optional[bool] = None
+
+
+class AdminUserOut(BaseModel):
+    id: int | str
+    name: str
+    email: EmailStr
+    isActive: bool
+    role: RoleOut
+    salesRep: Optional[SalesRepInfo] = None
+
+    model_config = ConfigDict(from_attributes=True)

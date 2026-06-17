@@ -21,18 +21,13 @@ tags_metadata = [
     {"name": "default", "description": "Health and default info endpoints."},
     {"name": "health", "description": "Service health and readiness."},
     {"name": "hcps", "description": "Healthcare providers CRUD."},
-    {"name": "dpm_ledger", "description": "DPM Ledger summaries and statements."},
-    {"name": "admin_ai", "description": "AI insights, tasks, drafts, and collection plans."},
     {"name": "auth", "description": "Authentication and current user endpoints."},
     {"name": "doctors", "description": "Doctor master data management."},
     {"name": "pharmacies", "description": "Pharmacy master data management."},
-    {"name": "products", "description": "Product catalog and pricing."},
+    {"name": "products", "description": "Field-safe product catalog."},
     {"name": "reps", "description": "Sales reps and routes."},
     {"name": "visits", "description": "Field visit capture and reporting."},
-    {"name": "orders", "description": "Order capture and line items."},
-    {"name": "stock", "description": "Stock locations and movements."},
     {"name": "targets", "description": "Sales targets tracking."},
-    {"name": "collections", "description": "Collections and receipts."},
 ]
 
 

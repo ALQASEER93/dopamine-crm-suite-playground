@@ -9,7 +9,7 @@ from core.db import get_db
 from core.security import get_current_user, require_roles
 from models.crm import Pharmacy
 from schemas.common import PaginatedResponse
-from schemas.crm import PharmacyCreate, PharmacyOut, PharmacyUpdate
+from schemas.crm import PharmacyFieldCreate, PharmacyFieldOut, PharmacyFieldUpdate
 
 router = APIRouter(
     prefix="/pharmacies",
@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=PaginatedResponse[PharmacyOut])
+@router.get("/", response_model=PaginatedResponse[PharmacyFieldOut])
 def list_pharmacies(
     page: int = Query(DEFAULT_PAGE, ge=1),
     page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500),
@@ -27,7 +27,7 @@ def list_pharmacies(
     segment: str | None = None,
     search: str | None = None,
     db: Session = Depends(get_db),
-) -> PaginatedResponse[PharmacyOut]:
+) -> PaginatedResponse[PharmacyFieldOut]:
     query = db.query(Pharmacy)
     if area:
         query = query.filter(Pharmacy.area.ilike(f"%{area}%"))
@@ -51,10 +51,10 @@ def list_pharmacies(
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
-    response_model=PharmacyOut,
+    response_model=PharmacyFieldOut,
     dependencies=[Depends(require_roles("sales_manager", "admin", "medical_rep"))],
 )
-def create_pharmacy(payload: PharmacyCreate, db: Session = Depends(get_db)) -> Pharmacy:
+def create_pharmacy(payload: PharmacyFieldCreate, db: Session = Depends(get_db)) -> Pharmacy:
     pharmacy = Pharmacy(**payload.model_dump())
     db.add(pharmacy)
     db.commit()
@@ -62,7 +62,7 @@ def create_pharmacy(payload: PharmacyCreate, db: Session = Depends(get_db)) -> P
     return pharmacy
 
 
-@router.get("/{pharmacy_id}", response_model=PharmacyOut)
+@router.get("/{pharmacy_id}", response_model=PharmacyFieldOut)
 def get_pharmacy(pharmacy_id: int, db: Session = Depends(get_db)) -> Pharmacy:
     pharmacy = db.get(Pharmacy, pharmacy_id)
     if not pharmacy:
@@ -72,11 +72,11 @@ def get_pharmacy(pharmacy_id: int, db: Session = Depends(get_db)) -> Pharmacy:
 
 @router.put(
     "/{pharmacy_id}",
-    response_model=PharmacyOut,
+    response_model=PharmacyFieldOut,
     dependencies=[Depends(require_roles("sales_manager", "admin"))],
 )
 def update_pharmacy(
-    pharmacy_id: int, payload: PharmacyUpdate, db: Session = Depends(get_db)
+    pharmacy_id: int, payload: PharmacyFieldUpdate, db: Session = Depends(get_db)
 ) -> Pharmacy:
     pharmacy = db.get(Pharmacy, pharmacy_id)
     if not pharmacy:

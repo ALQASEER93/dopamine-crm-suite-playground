@@ -60,7 +60,7 @@ const RepPerformanceTable = ({ from, to }) => {
       >
         <div>
           <h2>أداء المندوبين</h2>
-          <p>الزيارات وقيمة الطلبات والجودة لكل مندوب.</p>
+          <p>الزيارات والجودة لكل مندوب.</p>
         </div>
         {canExport && rows.length > 0 && (
           <button type="button" className="btn btn-secondary" onClick={handleExport}>
@@ -103,8 +103,6 @@ const RepPerformanceTable = ({ from, to }) => {
                 <th>المجدولة</th>
                 <th>الملغاة</th>
                 <th>الحسابات الفريدة</th>
-                <th>إجمالي الطلبات (JOD)</th>
-                <th>متوسط الطلب (JOD)</th>
                 <th>متوسط التقييم</th>
               </tr>
             </thead>
@@ -121,8 +119,6 @@ const RepPerformanceTable = ({ from, to }) => {
                   <td>{row.scheduledVisits}</td>
                   <td>{row.cancelledVisits}</td>
                   <td>{row.uniqueAccounts}</td>
-                  <td>{row.totalOrderValueJOD}</td>
-                  <td>{row.avgOrderValueJOD}</td>
                   <td>{row.avgRating}</td>
                 </tr>
               ))}
