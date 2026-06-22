@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+import re
 
 from api import _should_mount_dev_router
-from api.v1 import auth as auth_module
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+AUTH_ROUTE_FILES = [
+    REPO_ROOT / "CRM/backend/api/v1/auth.py",
+    REPO_ROOT / "ALQASEER-PWA/CRM/backend/api/v1/auth.py",
+]
 
 
 def _bootstrap_payload() -> dict[str, str]:
@@ -15,39 +22,42 @@ def _bootstrap_payload() -> dict[str, str]:
     }
 
 
-def test_bootstrap_endpoint_disabled_in_preview(client, monkeypatch):
-    monkeypatch.setattr(auth_module.settings, "app_env", "development")
-    monkeypatch.setattr(auth_module.settings, "vercel_env", "preview")
-    monkeypatch.setattr(auth_module.settings, "bootstrap_code", "owner-code")
-
+def test_bootstrap_endpoint_not_exposed_in_preview(client):
     resp = client.post("/api/v1/auth/bootstrap", json=_bootstrap_payload())
 
     assert resp.status_code == 404
-    assert resp.json()["detail"] == "Bootstrap disabled."
 
 
-def test_bootstrap_endpoint_disabled_in_production(client, monkeypatch):
-    monkeypatch.setattr(auth_module.settings, "app_env", "production")
-    monkeypatch.setattr(auth_module.settings, "vercel_env", "production")
-    monkeypatch.setattr(auth_module.settings, "bootstrap_code", "owner-code")
-
+def test_bootstrap_endpoint_not_exposed_in_production(client):
     resp = client.post("/api/v1/auth/bootstrap", json=_bootstrap_payload())
 
     assert resp.status_code == 404
-    assert resp.json()["detail"] == "Bootstrap disabled."
 
 
-def test_bootstrap_disabled_error_is_sanitized(client, monkeypatch):
-    monkeypatch.setattr(auth_module.settings, "app_env", "production")
-    monkeypatch.setattr(auth_module.settings, "vercel_env", "production")
-    monkeypatch.setattr(auth_module.settings, "bootstrap_code", "owner-code")
-
+def test_missing_bootstrap_endpoint_error_is_sanitized(client):
     resp = client.post("/api/v1/auth/bootstrap", json=_bootstrap_payload())
     detail = resp.json()["detail"]
 
     assert "@" not in detail
     assert "Secret" not in detail
     assert "owner-code" not in detail
+
+
+def test_no_auth_bootstrap_or_provisioning_route_in_backend_copies():
+    forbidden_patterns = {
+        "bootstrap path": re.compile(r'["\']/bootstrap["\']'),
+        "bootstrap router decorator": re.compile(r"@router\.(get|post|put|patch|delete)\([^)]*bootstrap"),
+        "bootstrap handler": re.compile(r"\bdef\s+bootstrap\s*\("),
+        "bootstrap schema import": re.compile(r"\bBootstrapRequest\b"),
+        "bootstrap service import": re.compile(r"\b(bootstrap_admin|has_admin_user)\b"),
+        "provisioning route": re.compile(r"\bprovision(?:ing)?\b", re.IGNORECASE),
+        "auth bypass route": re.compile(r"\b(auth[_ -]?bypass|backdoor|hidden[_ -]?admin)\b", re.IGNORECASE),
+    }
+
+    for route_file in AUTH_ROUTE_FILES:
+        source = route_file.read_text(encoding="utf-8")
+        for label, pattern in forbidden_patterns.items():
+            assert not pattern.search(source), f"{label} found in {route_file.relative_to(REPO_ROOT)}"
 
 
 def test_dev_token_router_mount_guard_refuses_preview_and_production(monkeypatch):
