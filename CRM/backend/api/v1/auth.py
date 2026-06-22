@@ -12,17 +12,15 @@ from core.config import settings
 from core.db import get_db
 from core.security import get_current_user
 from models.crm import User
-from schemas.auth import AuthResponse, BootstrapRequest, LoginRequest
+from schemas.auth import AuthResponse, LoginRequest
 from schemas.user import UserOut
-from services.auth import authenticate, bootstrap_admin, has_admin_user, issue_token
+from services.auth import authenticate, issue_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _RATE_WINDOW_SECONDS = 60
 _RATE_MAX_ATTEMPTS = 10
 _login_attempts: dict[str, deque[float]] = {}
 _login_attempts_lock = Lock()
-_NON_BOOTSTRAP_VERCEL_ENVS = {"preview", "production"}
-_BOOTSTRAP_APP_ENVS = {"development", "local", "test"}
 
 
 def _login_rate_key(request: Request, email: str) -> str:
@@ -48,12 +46,6 @@ def _enforce_login_rate_limit(request: Request, email: str) -> None:
         bucket.append(now)
 
 
-def _bootstrap_allowed_in_runtime() -> bool:
-    app_env = (settings.app_env or "").strip().lower()
-    vercel_env = (settings.vercel_env or "").strip().lower()
-    return vercel_env not in _NON_BOOTSTRAP_VERCEL_ENVS and app_env in _BOOTSTRAP_APP_ENVS
-
-
 @router.post("/login", response_model=AuthResponse)
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)) -> AuthResponse:
     _enforce_login_rate_limit(request, payload.email)
@@ -63,31 +55,6 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
         )
-
-    token = issue_token(user, settings.jwt_expires_minutes)
-    return AuthResponse(token=token, user=user)  # type: ignore[arg-type]
-
-
-@router.post("/bootstrap", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def bootstrap(payload: BootstrapRequest, db: Session = Depends(get_db)) -> AuthResponse:
-    if not _bootstrap_allowed_in_runtime():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bootstrap disabled.")
-    if not settings.bootstrap_code:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bootstrap disabled.")
-    if payload.code != settings.bootstrap_code:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid bootstrap code.")
-    if has_admin_user(db):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Admin already exists.")
-
-    try:
-        user = bootstrap_admin(
-            db,
-            email=payload.email,
-            name=payload.name,
-            password=payload.password,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     token = issue_token(user, settings.jwt_expires_minutes)
     return AuthResponse(token=token, user=user)  # type: ignore[arg-type]
