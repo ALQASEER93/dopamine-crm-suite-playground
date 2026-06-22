@@ -50,6 +50,8 @@ docs/_runs/*.zip
 docs/_runs/*.log
 docs/_runs/*.json
 docs/_runs/LATEST.txt
+docs/project_context/docs/_runs/
+docs/project_context/*.zip
 
 CRM/backend/data/
 
