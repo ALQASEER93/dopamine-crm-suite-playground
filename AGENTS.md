@@ -1,140 +1,235 @@
-# AGENTS.md — dopamine-crm-suite-playground
+# AGENTS.md - DOPAMINE CRM Suite Root Guardrails
 
-## Phase 0 guardrails (must stay in future phases)
-- No destructive operations (no `rm -rf`, no folder wipes).
-- Always branch + PR; keep commits small and traceable.
-- Arabic-first UI with Dark Mode default across frontend/PWA surfaces.
-- Visits + GPS + offline/PWA support are always in scope; never regress these paths.
-- Maps + exports are strategic; keep CSV/Excel/PDF paths intact when touching reports.
+This root file is a routing and safety guardrail for Codex work in this repository. Keep it small, stable, and defer product truth to the current canon.
 
-## Project layout
-- CRM/backend = FastAPI (Python)
-- CRM/frontend = Vite/React (Node)
+## Read First
 
-## How to run tests (must run before PR)
-### Backend
+Before implementation, audit, or planning work that depends on project context, read:
+
+- `docs/project_context/PROJECT_CANON_CURRENT.md`
+- `docs/project_context/PROJECT_INSTRUCTIONS_CLEAN_CURRENT.md`
+- `docs/_runs/LATEST.txt` if present
+
+## Source Of Truth
+
+- `docs/project_context/PROJECT_CANON_CURRENT.md` is the current project source of truth.
+- `AGENTS.md` is a root routing and guardrail file only.
+- If `AGENTS.md` conflicts with `PROJECT_CANON_CURRENT.md`, the canon wins.
+- `README.md`, `MASTER_PACK.md`, old reports, old deployment notes, and chat attachments are references only, not current truth unless verified.
+
+## Project Identity
+
+DOPAMINE CRM is an Arabic-first, true RTL, dark-mode, mobile-first Field Force CRM for pharmaceutical field operations in Jordan.
+
+It is not ERP, billing, accounting, collection, payment, inventory-selling, fake/demo CRM, or visual-only prototype work.
+
+Core scope includes doctors/HCPs, pharmacies/HCOs, territories, rep assignments, customer profiles, today route, visit lifecycle, GPS start/end, offline-capable visit capture, monthly frequency targets, due/overdue logic, manager reports, and genuine exports where supported.
+
+## Project Layout
+
+- `CRM/backend` - FastAPI backend
+- `CRM/frontend` - CRM frontend
+- `ALQASEER-PWA` - field PWA
+- `docs/project_context` - current project canon and instructions
+- `docs/_runs` - generated evidence runs only
+
+## Hard Safety Rules
+
+- No fake PASS, DONE, or READY.
+- Evidence first.
+- No destructive operations or broad folder wipes.
+- No deploy, DNS change, push, merge, release, publish, or PR state change without explicit Omar approval.
+- Do not touch `www.dopaminepharma.com` unless explicitly requested.
+- Do not create provisioning endpoints, bootstrap endpoints, hidden admin routes, auth bypasses, temporary login bypasses, or backdoors.
+- Do not expose secrets, tokens, cookies, env values, passwords, API keys, private keys, private credentials, or raw connection strings in code, docs, screenshots, reports, logs, JSON, artifacts, PR comments, or ZIPs.
+- Do not invent real-looking doctors, pharmacies, customer names, phone numbers, emails, areas, addresses, or coordinates.
+- Do not import real customer data into any DB unless Omar explicitly approves the target DB and command.
+- Do not generate GPS coordinates unless from trusted geocoding with confidence/status. Low-confidence and ungeocoded locations stay blank/review.
+- Preserve Visits, GPS, Offline, PWA, Exports, RBAC, and Auth.
+- Arabic must render as real Arabic, not unicode escapes.
+- UI must be true RTL and mobile-first.
+- Dark mode is default.
+
+## Real Customer Data
+
+- Current real workbook path: `docs/DPM_HCPs_CRM_Import_Location_Preparation.xlsx`
+- Do not import it without explicit approval.
+- Do not geocode it without explicit approval.
+- Dry-run profiling is allowed only if it performs no DB writes and does not print raw customer values.
+- Test fixtures are allowed only when synthetic, tiny, and clearly labeled test-only.
+- Missing phone/email remains blank, not placeholder-filled.
+- Latitude/longitude remains blank unless trusted geocoding succeeds with acceptable confidence/status.
+
+## Required CRM Routes Before Field PASS
+
+Field PASS requires these routes to exist and work under the relevant authenticated runtime:
+
+- `/account`
+- `/customers`
+- `/customers/:id`
+- `/customers/:customerType/:customerId`
+- `/visits`
+- `/today-route`
+- `/live-map`
+- `/reports`
+
+Before claiming customer visibility PASS, prove authenticated live UI and `/api/v1/pwa/customers` agree under the same runtime/DB conditions.
+
+## API Routing
+
+- Local development may use `http://127.0.0.1:8000/api/v1`.
+- Public, preview, production, field, Cloudflare Pages, Vercel, or real-device browser builds must not point browser API traffic to localhost.
+- For public, preview, or field builds, use same-origin `/api/v1` or an explicitly approved and audited proxy/API route.
+- Any public or field build that sends browser traffic to `127.0.0.1`, `localhost`, or an accidental direct backend domain is BLOCKED until audited.
+
+## Cloudflare And Deployment Caution
+
+- Do not mix Cloudflare Pages and Workers accidentally.
+- Do not add a random Worker entrypoint or root `wrangler.toml` just to satisfy a deploy command.
+- Cloudflare Pages Direct Upload or GitHub Actions may be used only when explicitly requested and audited.
+- No deploy, DNS, Pages project mutation, Worker mutation, or production change without explicit Omar approval.
+
+## Required Output Discipline
+
+All generated reports, logs, JSON, screenshots, artifacts, and ZIPs must go under:
+
+`docs/_runs/run_<YYYYMMDD_HHMMSS>/`
+
+Required structure:
+
+```text
+docs/_runs/run_<YYYYMMDD_HHMMSS>/
+  report.md
+  master_audit.md
+  size_breakdown.md
+  logs/
+  json/
+  artifacts/
+docs/_runs/run_<YYYYMMDD_HHMMSS>.zip
+docs/_runs/LATEST.txt
+```
+
+Never write final outputs to repo root, `docs_runs/`, `reports/`, random temp folders, or outside the repo. If a tool creates output elsewhere, copy/move it into the current run folder and document original and final locations in `report.md`.
+
+Generated run outputs should remain untracked unless intentionally committed as templates or README-only documentation.
+
+## Evidence Rules
+
+Every serious run must include:
+
+- scope
+- branch and HEAD
+- before/after working tree status
+- files inspected
+- files changed
+- commands/checks run
+- tests/build results
+- skipped checks and reasons
+- screenshots when UI is touched
+- browser validation when frontend/PWA runtime behavior is touched
+- visible build/version proof when UI/PWA is touched
+- service-worker/cache proof when PWA is touched
+- offline queue proof when offline behavior is touched
+- no-secrets statement
+- no deploy/DNS/push/merge/PR mutation statement
+- PASS, WARNING, or BLOCKED verdict
+- remaining blockers
+- next actions
+
+PASS requires direct evidence. Do not claim PASS from DB counts, source inspection, build output, env existence, or deployment readiness alone when the requirement is live/authenticated UI, runtime DB, service worker activation, real-device offline/GPS, or map-coordinate proof.
+
+## Quality Gates
+
+Run only gates relevant to files changed.
+
+For an `AGENTS.md`-only governance task, do not run backend, frontend, or PWA full tests unless needed. At minimum run:
+
+- `git status --short`
+- `git diff -- AGENTS.md`
+- a repository-safe text scan over `AGENTS.md` for duplicate H1 headings and forbidden/conflicting text
+- any available markdown lint/check if already configured and safe
+
+Document skipped backend, frontend, and PWA tests when application code was not changed.
+
+Standard gates for future product changes:
+
+Backend:
+
+```powershell
 cd CRM/backend
-python -m venv .venv || true
-# Linux/mac:
-. .venv/bin/activate || true
-# Windows (if available):
-# .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
 python -m pytest -q
+```
 
-### Frontend
+CRM frontend:
+
+```powershell
 cd CRM/frontend
 npm ci
-npm run build
 npm test --if-present
+npm run build
+```
 
-## Definition of Done for any task
-- Backend pytest passes (python -m pytest -q)
-- Frontend build passes (npm run build)
-- Update README if behavior or run steps changed
-- Keep API base URL stable: http://127.0.0.1:8000/api/v1
+PWA:
 
-# AGENTS.md — DOPAMINE CRM SUITE (DPM)
+```powershell
+cd ALQASEER-PWA
+npm ci
+npm test --if-present
+npm run build
+```
 
-> This file is authoritative for agents (Codex CLI/Cloud/Review).  
-> Closest AGENTS.md to the changed file wins.
+## Git And PR Rules
 
----
+- Work through branch and PR.
+- Keep commits small and traceable.
+- No direct push to main.
+- No push at all without explicit Omar approval.
+- No merge or PR state change without explicit Omar approval.
+- PR notes must say what changed, how it was tested, and what remains.
 
-## العربية — قواعد عمل الوكيل (غير قابلة للنقاش)
+## Codex Tooling Stance
 
-### 0) أمان وسلوك
-- ممنوع حذف ملفات/مجلدات أو “تنظيف شامل” (لا rm -rf / Remove-Item -Recurse على مسارات واسعة).
-- أي تغيير لازم يكون عبر Branch + PR. ممنوع push مباشر إلى main.
-- كل Claim “تم” لازم معه:
-  - الملفات المتغيرة
-  - أوامر الاختبار التي تم تشغيلها
-  - خطوات تحقق قصيرة
-- ممنوع استخدام مرفقات الشات كمصدر تنفيذ مباشر؛ مصدر الحقيقة هو ملفات الريبو ومخرجات `docs/_runs/run_<YYYYMMDD_HHMMSS>/` وملفات bridge/handoff المولدة.
-- كل تشغيل DPM مهم لازم يولد على الأقل: `CHATGPT_HANDOFF.md` و `json/chatgpt_handoff.json` و `json/review_bridge_manifest.json` و `artifacts/review_bridge_summary.md`.
+- Current active execution engine: Codex CLI.
+- Codex App, Browser Use, and Computer Use must not be relied on while Omar's Windows Codex App is unstable or blocked.
+- If browser proof is needed, prefer CLI-safe local Playwright or stable existing project tooling.
+- Do not install or enable broad MCP/plugin sets during sprint work.
+- Use configured tools read-only only when they directly support the task.
 
-### 1) تعريف المشروع (Monorepo)
-هذا الريبو يحتوي عادة على:
-- `CRM/backend` (FastAPI)
-- `CRM/frontend` (Vite/React)
-- `ALQASEER-PWA` (PWA مستقلة أو جزء من المنظومة)
-- أدوات/سكريبتات إضافية
+## Source-Access Gate Before Implementation
 
-### 2) المتطلبات الأساسية (DPM Pharma CRM)
-- UI عربي + Dark Mode افتراضي
-- واجهة مندوب (Medical Rep + Sales/Collections) + واجهة Admin
-- Visits هي أهم موديل:
-  - Start Visit / End Visit مع GPS + timestamp + accuracy
-  - تقارير + Exports (CSV/Excel ثم PDF)
-- PWA + Offline queue (للزيارات على الأقل)
-- خرائط Google Maps + (Geofence + Alerts) عند توفر بيانات المواقع
-- RBAC: Admin / Rep-Med / Rep-Sales / Supervisor (اختياري)
+Before implementation work that depends on project context, Codex must prove it can read:
 
-### 3) قواعد Git/PR
-- Branch naming:
-  - `codex/feature-<short>`
-  - `codex/fix-<short>`
-- Commit checkpoints صغيرة وواضحة.
-- PR لازم يذكر:
-  - ماذا تغير؟
-  - كيف نختبر؟
-  - ماذا بقي؟
+- `AGENTS.md`
+- `docs/project_context/PROJECT_CANON_CURRENT.md`
+- `docs/project_context/PROJECT_INSTRUCTIONS_CLEAN_CURRENT.md`
 
-### 4) أوامر التشغيل/الاختبار (المعيار)
-> نفّذ ما ينطبق حسب الجزء الذي عدّلته فقط.
+The proof must include exact paths, SHA256 hashes, first/last lines, and confirmation that hard rules and required routes are present.
 
-#### CRM Backend (FastAPI)
-- `cd CRM/backend`
-- `python -m pytest -q`
+## Review Priorities
 
-#### CRM Frontend (Vite/React)
-- `cd CRM/frontend`
-- `npm ci` (أو npm i إذا ما فيه lock)
-- `npm test`
-- `npm run build`
+Prioritize P0/P1 issues:
 
-#### ALQASEER-PWA
-- `cd ALQASEER-PWA`
-- `npm ci`
-- `npm test` (إذا موجود)
-- `npm run build`
+- secrets leakage
+- RBAC/auth regressions
+- backdoors/provisioning/bootstrap/auth bypass
+- visit lifecycle bugs
+- GPS start/end bugs
+- offline queue duplication/loss
+- PWA/service-worker/cache regressions
+- reports/exports regressions
+- public build accidentally using a local-only API host
+- fake field workflow
+- fake customer data
 
-### 5) Review guidelines (Codex Review)
-- صنّف المشاكل:
-  - P0: أمن/صلاحيات/تسريب بيانات/كسر وظيفي
-  - P1: Bugs محتملة/أداء سيء/تجربة مستخدم سيئة
-  - P2: تحسينات/تنسيق/اقتراحات
-- ركّز على:
-  - RBAC + حماية endpoints
-  - منطق الزيارة Start/End + GPS
-  - Offline sync وعدم تكرار البيانات
-  - التقارير والتصدير
-  - عدم وجود أسرار في الكود أو logs
+## Skills Guidance
 
----
-
-## English — Agent Operating Rules
-
-### Safety
-- No destructive commands. No mass deletion/cleanup.
-- Always work via branch + PR (no direct push to main).
-- Any “done” claim must include: files changed + tests run + quick verification.
-- Do not use chat attachments as the execution source. Use repo files, `docs/_runs/run_<YYYYMMDD_HHMMSS>/`, and generated bridge/handoff outputs as the source of truth.
-- Every meaningful DPM run must generate `CHATGPT_HANDOFF.md`, `json/chatgpt_handoff.json`, `json/review_bridge_manifest.json`, and `artifacts/review_bridge_summary.md`.
-
-### Project goals (DPM Pharma CRM)
-- Arabic UI + default Dark Mode
-- Rep app + Admin app
-- Critical: Visit lifecycle (Start/End with GPS + timestamp + accuracy)
-- Reports + exports (CSV/Excel then PDF)
-- PWA + offline queue (at least for visits)
-- Maps + optional geofencing/alerts
-- RBAC: Admin / Rep(Med) / Rep(Sales) / Supervisor(optional)
-
-### Standard commands
-Backend: `cd CRM/backend && python -m pytest -q`  
-Frontend: `cd CRM/frontend && npm ci && npm test && npm run build`  
-PWA: `cd ALQASEER-PWA && npm ci && npm run build`
-
-### Review guidelines
-Prioritize P0/P1 only in PR reviews, especially security/RBAC, visits+GPS, offline sync, reporting/exports.
+- Do not bloat `AGENTS.md` with long repeated workflows.
+- Reusable workflows should become repo skills under `.agents/skills/` when needed.
+- Suggested future skills:
+  - `dpm-run-bundle`
+  - `dpm-field-crm-audit`
+  - `dpm-pwa-gps-offline-audit`
+  - `dpm-cloudflare-deploy-audit`
+  - `dpm-no-fake-pass-review`
+  - `dpm-customer-data-safety`
+- Keep `AGENTS.md` small, stable, and focused on rules that must apply every time.
