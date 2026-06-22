@@ -49,19 +49,22 @@ def maybe_bootstrap_admin_on_startup(
     - Refuses Vercel Preview and Production even when the flag is set.
     - Disabled unless DPM_BOOTSTRAP_ADMIN_ONCE is truthy.
     - Runs only for first-admin bootstrap when there are no users.
-    - Never logs the password.
+    - Never logs bootstrap credential values.
     - Delegates idempotency + escalation refusal to ensure_bootstrap_admin_user().
     """
     app_env = (env.get(ENV_APP_ENV) or "").strip().lower()
     vercel_env = (env.get(ENV_VERCEL_ENV) or "").strip().lower()
+    logger.info("Startup admin bootstrap local guard evaluated.")
     if vercel_env in _BLOCKED_VERCEL_ENVS or app_env not in _LOCAL_BOOTSTRAP_APP_ENVS:
+        logger.info("Startup admin bootstrap skipped by safe guard.")
         return None
 
     if not _is_truthy(env.get(ENV_BOOTSTRAP_ONCE)):
+        logger.info("Startup admin bootstrap skipped by safe guard.")
         return None
 
     if db.query(User.id).first() is not None:
-        logger.warning("Startup admin bootstrap skipped: users already exist.")
+        logger.info("Startup admin bootstrap skipped by safe guard.")
         return None
 
     try:
@@ -69,16 +72,10 @@ def maybe_bootstrap_admin_on_startup(
         password = _require_env(env, ENV_BOOTSTRAP_PASSWORD)
         name = (env.get(ENV_BOOTSTRAP_NAME) or "").strip() or "Admin"
 
-        logger.info("Startup admin bootstrap enabled; attempting bootstrap for email=%s", email.strip().lower())
         result = ensure_bootstrap_admin_user(db, email=email, password=password, name=name)
-        logger.info(
-            "Startup admin bootstrap result: created=%s reason=%s email=%s",
-            result.created,
-            result.reason,
-            result.email,
-        )
+        logger.info("Startup admin bootstrap completed in allowed local environment.")
         return result
-    except (RuntimeError, ValueError) as exc:
-        # Do not block startup; refuse escalation / misconfiguration should be visible via logs.
-        logger.error("Startup admin bootstrap skipped: %s", exc)
+    except (RuntimeError, ValueError):
+        # Do not block startup; keep configuration details out of logs.
+        logger.info("Startup admin bootstrap skipped by safe guard.")
         return None
