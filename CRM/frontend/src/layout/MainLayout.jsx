@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { label: 'المسارات', path: '/routes' },
   { label: 'الأهداف', path: '/targets' },
   { label: 'التقارير', path: '/reports', roles: ['admin', 'sales_manager'] },
+  { label: 'بيانات العملاء', path: '/admin/customers', roles: ['admin'] },
   { label: 'الإعدادات', path: '/settings' },
   { label: 'الإدارة', path: '/settings/users', roles: ['admin', 'sales_manager'] },
 ];

@@ -11,6 +11,7 @@ from api.v1.utils_gps import GPSValidationError, validate_accuracy
 from core.db import get_db
 from core.security import get_current_user, require_roles
 from models.crm import Doctor, Pharmacy, Route, RouteAccount, User, Visit
+from services.customer_assignment import monthly_target_from_frequency
 
 router = APIRouter(
     prefix="/pwa",
@@ -58,21 +59,6 @@ def _display_customer_name(name: str | None) -> str:
     if not name:
         return ""
     return f"[DEMO] {name}" if _is_demo_customer(name) and not name.startswith("[DEMO]") else name
-
-
-def _monthly_target_from_frequency(value: str | None) -> int | None:
-    normalized = (value or "").strip().lower().replace("_", "-")
-    if not normalized:
-        return None
-    if normalized in {"weekly", "1/week", "every-week"}:
-        return 4
-    if normalized in {"bi-weekly", "biweekly", "every-2-weeks", "fortnightly"}:
-        return 2
-    if normalized in {"monthly", "1/month"}:
-        return 1
-    if normalized in {"quarterly"}:
-        return 0
-    return None
 
 
 def _format_address(*parts: Optional[str]) -> Optional[str]:
@@ -126,7 +112,7 @@ def list_customers(
                 "monthlyFrequencyTarget": None,
                 "frequencyPlanSource": "none",
             }
-        target = _monthly_target_from_frequency(account.visit_frequency or account.route.frequency)
+        target = monthly_target_from_frequency(account.visit_frequency or account.route.frequency)
         return {
             "assignedRepEmail": account.route.rep.email if account.route and account.route.rep else None,
             "visitFrequency": account.visit_frequency or account.route.frequency,

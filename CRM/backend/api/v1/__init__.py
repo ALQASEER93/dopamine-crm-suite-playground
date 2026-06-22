@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from api.v1 import (
     auth,
+    customer_admin,
     gps_policy,
     medical_affairs,
     hcps,
@@ -23,6 +24,7 @@ from core.config import settings
 router = APIRouter(prefix="/v1")
 
 router.include_router(auth.router)
+router.include_router(customer_admin.router)
 router.include_router(gps_policy.router)
 router.include_router(hcps.router)
 router.include_router(doctors.router)

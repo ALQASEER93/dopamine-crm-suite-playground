@@ -8,6 +8,9 @@ from models.ai import (  # noqa: F401
 )
 from models.crm import (  # noqa: F401
     Collection,
+    CustomerImportRun,
+    CustomerImportStagingItem,
+    CustomerRouteAssignmentRun,
     Doctor,
     Order,
     OrderLine,

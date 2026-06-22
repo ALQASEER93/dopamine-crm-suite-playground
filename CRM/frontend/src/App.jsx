@@ -13,6 +13,7 @@ import TargetsPage from './pages/TargetsPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
+import AdminCustomerDataPage from './pages/AdminCustomerDataPage.jsx';
 import RepsPage from './pages/RepsPage.jsx';
 import SamplesDistributePage from './pages/SamplesDistributePage.jsx';
 import SamplesHistoryPage from './pages/SamplesHistoryPage.jsx';
@@ -89,6 +90,14 @@ const AppRoutes = () => {
           }
         />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route
+          path="/admin/customers"
+          element={
+            <RequireRole roles={['admin']}>
+              <AdminCustomerDataPage />
+            </RequireRole>
+          }
+        />
         <Route
           path="/settings/users"
           element={

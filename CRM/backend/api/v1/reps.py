@@ -14,6 +14,7 @@ from schemas.common import PaginatedResponse
 from schemas.crm import RouteCreate, RouteOut, RouteStopOut
 from schemas.user import RepCreate, RepUpdate, UserOut
 from services.auth import hash_password
+from services.customer_assignment import monthly_target_from_frequency
 
 router = APIRouter(
     prefix="",
@@ -69,21 +70,6 @@ def _display_customer_name(name: str | None) -> str:
     if not name:
         return ""
     return f"[DEMO] {name}" if _is_demo_customer(name) and not name.startswith("[DEMO]") else name
-
-
-def _monthly_target_from_frequency(value: str | None) -> int | None:
-    normalized = (value or "").strip().lower().replace("_", "-")
-    if not normalized:
-        return None
-    if normalized in {"weekly", "1/week", "every-week"}:
-        return 4
-    if normalized in {"bi-weekly", "biweekly", "every-2-weeks", "fortnightly"}:
-        return 2
-    if normalized in {"monthly", "1/month"}:
-        return 1
-    if normalized == "quarterly":
-        return 0
-    return None
 
 
 @router.get("/reps", response_model=list[UserOut])
@@ -293,7 +279,7 @@ def get_today_route(
                 is_demo=_is_demo_customer(customer.name),
                 data_origin="DEMO_SEED" if _is_demo_customer(customer.name) else "UNVERIFIED_SOURCE",
                 visit_frequency=account.visit_frequency or route.frequency,
-                monthly_frequency_target=_monthly_target_from_frequency(account.visit_frequency or route.frequency),
+                monthly_frequency_target=monthly_target_from_frequency(account.visit_frequency or route.frequency),
             )
         )
 

@@ -4,9 +4,9 @@ const SettingsPage = () => {
   const { user } = useAuth();
   const roleLabel = user?.role?.slug === 'sales_rep' ? 'مندوب مبيعات' : 'مدير مبيعات';
 
-  const handlePlaceholderSubmit = event => {
+  const handlePasswordSubmit = event => {
     event.preventDefault();
-    window.alert('تغيير كلمة المرور غير متاح بعد.');
+    window.alert('تغيير كلمة المرور يحتاج تفعيل مسار الأمان من الخادم.');
   };
 
   return (
@@ -19,9 +19,8 @@ const SettingsPage = () => {
         <p>الدور: {roleLabel}</p>
       </section>
       <section className="page-card">
-        <h2>تغيير كلمة المرور <small>(توضيحي)</small></h2>
-        <p>هذا النموذج توضيحي فقط حتى يكتمل الربط الفعلي.</p>
-        <form className="settings-form" onSubmit={handlePlaceholderSubmit}>
+        <h2>تغيير كلمة المرور</h2>
+        <form className="settings-form" onSubmit={handlePasswordSubmit}>
           <label>
             كلمة المرور الحالية
             <input type="password" className="input" disabled placeholder="غير متاح" />
