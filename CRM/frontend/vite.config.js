@@ -63,10 +63,19 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react()],
+    server: {
+      proxy: {
+        '/api': {
+          target: env.CRM_API_ORIGIN || 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+      },
+    },
     test: {
       environment: 'jsdom',
       globals: true,
       setupFiles: './src/test/setup.js',
+      include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
     },
   };
 });

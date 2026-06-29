@@ -13,8 +13,8 @@ from core.db import get_db
 from core.security import get_current_user
 from models.crm import User
 from schemas.auth import AuthResponse, LoginRequest
-from schemas.user import UserOut
-from services.auth import authenticate, issue_token
+from schemas.user import CurrentUserPasswordChange, PasswordChangeOut, UserOut
+from services.auth import authenticate, hash_password, issue_token, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _RATE_WINDOW_SECONDS = 60
@@ -63,3 +63,27 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
 @router.get("/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.post("/me/password", response_model=PasswordChangeOut)
+def change_current_user_password(
+    payload: CurrentUserPasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PasswordChangeOut:
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password confirmation does not match.",
+        )
+
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+
+    current_user.password_hash = hash_password(payload.new_password)
+    db.add(current_user)
+    db.commit()
+    return PasswordChangeOut(message="Password changed.")

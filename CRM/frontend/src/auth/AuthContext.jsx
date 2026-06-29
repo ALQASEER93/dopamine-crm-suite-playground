@@ -3,6 +3,8 @@ import { apiFetch, setAuthToken, setUnauthorizedHandler } from '../api/client';
 import { queryClient } from '../api/queryClient';
 
 const storageKey = 'crm.activeSession';
+const sessionMessageKey = 'crm.sessionMessage';
+const sessionExpiredMessage = 'انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى';
 
 const defaultState = {
   user: null,
@@ -43,19 +45,41 @@ export const AuthProvider = ({ children }) => {
     setAuthToken(parsed.token ?? null);
     return parsed;
   });
+  const [sessionMessage, setSessionMessage] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    return window.sessionStorage.getItem(sessionMessageKey);
+  });
   const { user, token } = authState;
+
+  const clearAuthState = useCallback(({ message = null } = {}) => {
+    setAuthToken(null);
+    queryClient.clear();
+    setAuthState(defaultState);
+
+    try {
+      window.localStorage.removeItem(storageKey);
+      if (message) {
+        window.sessionStorage.setItem(sessionMessageKey, message);
+      } else {
+        window.sessionStorage.removeItem(sessionMessageKey);
+      }
+    } catch (error) {
+      console.warn('Unable to clear auth state', error);
+    }
+
+    setSessionMessage(message);
+  }, []);
 
   useEffect(() => {
     setAuthToken(token);
   }, [token]);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => () => {
-      setAuthToken(null);
-      setAuthState(defaultState);
+    setUnauthorizedHandler(() => {
+      clearAuthState({ message: sessionExpiredMessage });
     });
     return () => setUnauthorizedHandler(null);
-  }, []);
+  }, [clearAuthState]);
 
   useEffect(() => {
     if (!isMountedRef.current) {
@@ -98,6 +122,12 @@ export const AuthProvider = ({ children }) => {
     }
 
     setAuthToken(resolvedToken);
+    setSessionMessage(null);
+    try {
+      window.sessionStorage.removeItem(sessionMessageKey);
+    } catch (error) {
+      console.warn('Unable to clear session message', error);
+    }
     setAuthState({
       user: resolvedUser,
       token: resolvedToken,
@@ -109,18 +139,18 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
-    setAuthToken(null);
-    setAuthState(defaultState);
-  }, []);
+    clearAuthState();
+  }, [clearAuthState]);
 
   const value = useMemo(
     () => ({
       user,
       token,
+      sessionMessage,
       login,
       logout,
     }),
-    [user, token, login, logout],
+    [user, token, sessionMessage, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

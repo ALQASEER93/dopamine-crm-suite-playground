@@ -1,4 +1,4 @@
-const LOCAL_API_DEFAULT = import.meta.env.DEV ? 'http://127.0.0.1:8000/api/v1' : '';
+const LOCAL_API_DEFAULT = import.meta.env.DEV ? '/api/v1' : '';
 const SAME_ORIGIN_API_BASE = '/api/v1';
 
 const isBlockedProductionApiUrl = (value: string) => {
@@ -73,7 +73,12 @@ export class ApiError extends Error {
 }
 
 let authToken: string | null = null;
-let unauthorizedHandler: (() => void) | null = null;
+export interface UnauthorizedContext {
+  path: string;
+  status: number;
+}
+
+let unauthorizedHandler: ((context: UnauthorizedContext) => void) | null = null;
 
 const API_PREFIX = '/api/v1';
 
@@ -128,7 +133,7 @@ export const setAuthToken = (token: string | null) => {
   authToken = token ?? null;
 };
 
-export const setUnauthorizedHandler = (handler: (() => void) | null) => {
+export const setUnauthorizedHandler = (handler: ((context: UnauthorizedContext) => void) | null) => {
   unauthorizedHandler = typeof handler === 'function' ? handler : null;
 };
 
@@ -168,8 +173,8 @@ export async function apiFetch<T = unknown>(path: string, options: ApiRequestOpt
     data = await parseJsonSafely(response);
   }
 
-  if (response.status === 401 && unauthorizedHandler) {
-    unauthorizedHandler();
+  if (response.status === 401 && unauthorizedHandler && effectiveToken) {
+    unauthorizedHandler({ path, status: response.status });
   }
 
   if (!response.ok) {

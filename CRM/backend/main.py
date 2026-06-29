@@ -3,7 +3,9 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import ResponseValidationError
+from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError
@@ -88,6 +90,22 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, openapi_tags=tags_metadata, lifespan=lifespan)
+
+
+@app.exception_handler(ResponseValidationError)
+async def response_validation_exception_handler(
+    request: Request,
+    exc: ResponseValidationError,
+) -> JSONResponse:
+    logger.error(
+        "Response validation failed for path=%s error_count=%s.",
+        request.url.path,
+        len(exc.errors()),
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal response validation error."},
+    )
 
 # Single CORS middleware to allow the SPA to call all API routes, including preflight.
 app.add_middleware(

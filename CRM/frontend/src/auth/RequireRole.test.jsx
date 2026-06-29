@@ -45,4 +45,17 @@ describe('RequireRole', () => {
     expect(screen.getByText(/غير مصرح/i)).toBeInTheDocument();
     expect(screen.queryByText('Reports Area')).not.toBeInTheDocument();
   });
+
+  it('marks admin-only routes as expected forbidden for non-admin roles', () => {
+    renderWithAuth(
+      <RequireRole roles={['admin']}>
+        <div>Assignment Planner</div>
+      </RequireRole>,
+      { roleSlug: 'sales_manager' },
+    );
+
+    expect(screen.getByTestId('not-authorized')).toHaveAttribute('data-rbac-result', 'expected-forbidden');
+    expect(screen.getByText(/مدير النظام فقط/i)).toBeInTheDocument();
+    expect(screen.queryByText('Assignment Planner')).not.toBeInTheDocument();
+  });
 });
