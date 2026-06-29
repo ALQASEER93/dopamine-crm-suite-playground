@@ -26,7 +26,7 @@ export const listPharmacies = async (params: PharmacyListParams) => {
   if (params.segment) query.set('segment', params.segment);
 
   const qs = query.toString();
-  const path = qs ? `/pharmacies?${qs}` : '/pharmacies';
+  const path = qs ? `/pharmacies/?${qs}` : '/pharmacies/';
   const { data } = await apiClient.get<ApiListResponse<Pharmacy>>(path);
   return data;
 };

@@ -12,7 +12,7 @@
 .drawer__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.35);
+  background: rgba(2, 6, 23, 0.72);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -27,12 +27,14 @@
   right: 0;
   bottom: 0;
   width: min(400px, 100%);
-  background: #fff;
+  background: color-mix(in srgb, var(--color-surface) 92%, #020617 8%);
+  color: var(--color-text);
+  border-inline-start: 1px solid var(--color-border);
   transform: translateX(100%);
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
-  box-shadow: -5px 0 25px rgba(15, 23, 42, 0.2);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.42);
 }
 
 .drawer--open .drawer__panel {
@@ -53,14 +55,30 @@
 }
 
 .drawer__close {
-  background: none;
-  border: none;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   font-size: 1.25rem;
   cursor: pointer;
+  width: 2.25rem;
+  height: 2.25rem;
 }
 
 .drawer__body {
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
+}
+
+.drawer__body .fact,
+.drawer__body .page-card,
+.drawer__body .field-card {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+.drawer__body .field-muted,
+.drawer__body .fact span {
+  color: var(--color-text-muted);
 }

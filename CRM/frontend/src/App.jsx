@@ -3,6 +3,10 @@ import { AuthProvider, useAuth } from './auth/AuthContext.jsx';
 import LoginScreen from './auth/LoginScreen.jsx';
 import RequireRole from './auth/RequireRole.jsx';
 import MainLayout from './layout/MainLayout.jsx';
+import AccountPage from './pages/AccountPage.jsx';
+import CustomersPage from './pages/CustomersPage.jsx';
+import TodayRoutePage from './pages/TodayRoutePage.jsx';
+import LiveMapPage from './pages/LiveMapPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import VisitsPage from './pages/VisitsPage.jsx';
 import RoutesPage from './pages/RoutesPage.jsx';
@@ -14,6 +18,7 @@ import ReportsPage from './pages/ReportsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import AdminCustomerDataPage from './pages/AdminCustomerDataPage.jsx';
+import AdminAssignmentPlannerPage from './pages/AdminAssignmentPlannerPage.jsx';
 import RepsPage from './pages/RepsPage.jsx';
 import SamplesDistributePage from './pages/SamplesDistributePage.jsx';
 import SamplesHistoryPage from './pages/SamplesHistoryPage.jsx';
@@ -36,8 +41,14 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route element={<MainLayout />}>
+        <Route element={<MainLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/account" element={<AccountPage />} />
+        <Route path="/customers" element={<CustomersPage />} />
+        <Route path="/customers/:id" element={<CustomersPage />} />
+        <Route path="/customers/:customerType/:customerId" element={<CustomersPage />} />
+        <Route path="/today-route" element={<TodayRoutePage />} />
+        <Route path="/live-map" element={<LiveMapPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/visits" element={<VisitsPage />} />
         <Route path="/routes" element={<RoutesPage />} />
@@ -95,6 +106,14 @@ const AppRoutes = () => {
           element={
             <RequireRole roles={['admin']}>
               <AdminCustomerDataPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/assignment-planner"
+          element={
+            <RequireRole roles={['admin']}>
+              <AdminAssignmentPlannerPage />
             </RequireRole>
           }
         />

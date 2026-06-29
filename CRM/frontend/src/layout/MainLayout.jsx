@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { applyDocumentLanguage, resolveInitialLanguage } from '../i18n/language';
+import { normalizeRoleSlug, redactEmail, roleLabel as resolveRoleLabel } from '../pages/fieldRouteUtils';
 import './MainLayout.css';
 
 const NAV_ITEMS = [
+  { label: 'حسابي', path: '/account' },
+  { label: 'العملاء', path: '/customers' },
+  { label: 'خطة اليوم', path: '/today-route' },
+  { label: 'الخريطة الحية', path: '/live-map' },
   { label: 'لوحة التحكم', path: '/dashboard' },
   { label: 'الأطباء', path: '/doctors' },
   { label: 'الصيدليات', path: '/pharmacies' },
@@ -13,6 +19,7 @@ const NAV_ITEMS = [
   { label: 'الأهداف', path: '/targets' },
   { label: 'التقارير', path: '/reports', roles: ['admin', 'sales_manager'] },
   { label: 'بيانات العملاء', path: '/admin/customers', roles: ['admin'] },
+  { label: 'مخطط التكليف', path: '/admin/assignment-planner', roles: ['admin'] },
   { label: 'الإعدادات', path: '/settings' },
   { label: 'الإدارة', path: '/settings/users', roles: ['admin', 'sales_manager'] },
 ];
@@ -22,6 +29,7 @@ const CRM_BUILD_MARKER = import.meta.env.VITE_APP_VERSION || 'crm-1.0.0-phase-a'
 const MainLayout = () => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [language, setLanguage] = useState(resolveInitialLanguage);
   const [theme, setTheme] = useState(() => {
     if (typeof window === 'undefined') return 'dark';
     try {
@@ -45,16 +53,7 @@ const MainLayout = () => {
   });
   const navigate = useNavigate();
   const location = useLocation();
-  const roleSlug = useMemo(() => {
-    const rawRole = user?.role?.slug || user?.roleSlug || user?.role || '';
-    if (typeof rawRole === 'string') {
-      return rawRole.toLowerCase();
-    }
-    if (rawRole && typeof rawRole === 'object' && rawRole.slug) {
-      return String(rawRole.slug).toLowerCase();
-    }
-    return '';
-  }, [user]);
+  const roleSlug = useMemo(() => normalizeRoleSlug(user), [user]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -66,23 +65,26 @@ const MainLayout = () => {
   };
 
   const userInitial = (user?.name || user?.email || '?').charAt(0).toUpperCase();
-  const roleLabel =
-    roleSlug === 'sales_rep'
-      ? 'مندوب مبيعات'
-      : roleSlug === 'sales_manager'
-      ? 'مدير مبيعات'
-      : roleSlug === 'admin'
-      ? 'مدير النظام'
-      : roleSlug || 'عضو الفريق';
+  const roleLabel = resolveRoleLabel(roleSlug);
   const navItems = useMemo(
     () => NAV_ITEMS.filter(item => !item.roles || item.roles.includes(roleSlug)),
     [roleSlug],
   );
   const themeLabel = theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن';
+  const nextLanguageLabel = language === 'ar' ? 'English' : 'العربية';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    applyDocumentLanguage(language);
+    try {
+      window.localStorage?.setItem('dpm.language', language);
+    } catch (error) {
+      console.warn('Unable to persist language preference', error);
+    }
+  }, [language]);
 
   useEffect(() => {
     if (isUserOverride || typeof window === 'undefined' || !window.matchMedia) return undefined;
@@ -115,6 +117,10 @@ const MainLayout = () => {
         console.warn('Unable to persist theme preference', error);
       }
     }
+  };
+
+  const handleLanguageToggle = () => {
+    setLanguage(prev => (prev === 'ar' ? 'en' : 'ar'));
   };
 
   return (
@@ -155,10 +161,18 @@ const MainLayout = () => {
               <div className="layout__avatar">{userInitial}</div>
               <div className="layout__user-text">
                 <strong>{user?.name}</strong>
-                <span>{user?.email}</span>
+                <span>{redactEmail(user?.email)}</span>
               </div>
               <button type="button" className="btn btn-secondary layout__theme-toggle" onClick={handleThemeToggle}>
                 {themeLabel}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary layout__language-toggle"
+                onClick={handleLanguageToggle}
+                aria-label="تبديل اللغة"
+              >
+                {nextLanguageLabel}
               </button>
               <button type="button" className="btn btn-secondary layout__signout" onClick={handleSignOut}>
                 تسجيل الخروج

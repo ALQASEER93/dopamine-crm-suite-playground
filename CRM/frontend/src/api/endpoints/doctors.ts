@@ -26,7 +26,7 @@ export const listDoctors = async (params: DoctorListParams) => {
   if (params.classification) query.set('classification', params.classification);
 
   const qs = query.toString();
-  const path = qs ? `/doctors?${qs}` : '/doctors';
+  const path = qs ? `/doctors/?${qs}` : '/doctors/';
   const { data } = await apiClient.get<ApiListResponse<Doctor>>(path);
   return data;
 };

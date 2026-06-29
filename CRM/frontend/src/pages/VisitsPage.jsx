@@ -158,7 +158,7 @@ const VisitsPage = () => {
         date_to: normalizedFilters.to_date || undefined,
         page,
         page_size: pageSize,
-      }),
+      }, token),
     enabled: !!token,
     select: payload => {
       const rows = Array.isArray(payload?.data) ? payload.data : [];
