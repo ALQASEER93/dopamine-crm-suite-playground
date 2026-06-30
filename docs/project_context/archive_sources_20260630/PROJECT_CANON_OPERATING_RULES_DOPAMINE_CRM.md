@@ -1,7 +1,3 @@
-# Superseded Source Notice
-
-This file is historical after the 2026-06-30 source refresh if it conflicts with `docs/project_context/DPM_CODEX_OPERATING_RULES_20260630.md` or `docs/project_context/PROJECT_SOURCES_ACTIVE_INDEX.md`.
-
 # DOPAMINE CRM Operating Rules
 
 This file is stable operating guidance for local Codex runs. It must not hardcode a latest run folder; dynamic state comes from `docs/_runs/LATEST.txt`.

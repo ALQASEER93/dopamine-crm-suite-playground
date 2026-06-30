@@ -1,7 +1,3 @@
-# Superseded Source Notice
-
-This file is historical after the 2026-06-30 source refresh if it conflicts with `docs/project_context/DPM_CODEX_OPERATING_RULES_20260630.md`, `docs/project_context/DPM_PROJECT_CANON_CURRENT_20260630.md`, or `docs/project_context/PROJECT_SOURCES_ACTIVE_INDEX.md`.
-
 # DOPAMINE Project Instructions Clean Current
 
 This file is the concise execution instruction layer referenced by `AGENTS.md`. The current product source of truth remains `docs/project_context/PROJECT_CANON_CURRENT.md`.

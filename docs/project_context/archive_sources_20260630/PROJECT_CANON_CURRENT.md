@@ -1,7 +1,3 @@
-# Superseded Source Notice
-
-This file is historical after the 2026-06-30 source refresh. Current truth is `docs/project_context/DPM_PROJECT_CANON_CURRENT_20260630.md` plus `docs/project_context/PROJECT_SOURCES_ACTIVE_INDEX.md` and the latest run resolved through `docs/_runs/LATEST.txt`.
-
 # DOPAMINE CRM Current Project Canon
 
 Generated: 2026-06-22 06:11:22 Asia/Amman

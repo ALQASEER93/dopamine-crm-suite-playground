@@ -1,13 +1,35 @@
-# Codex Dynamic State Prefix
+# Codex Dynamic State Prefix — DOPAMINE CRM
 
-Before acting on DOPAMINE CRM work:
+Before executing any DOPAMINE CRM task:
 
-1. Read `docs/_runs/LATEST.txt`.
-2. Open the referenced latest run folder.
-3. Read `report.md`, `master_audit.md`, `CHATGPT_HANDOFF.md`, and `json/*.json` when present.
-4. Read `docs/_runs/CURRENT_STATE.json` if present.
-5. Read `docs/project_context/PROJECT_CANON_OPERATING_RULES_DOPAMINE_CRM.md` if present.
-6. Do not trust hardcoded latest-run names in old prompts or old sources.
-7. Do not assume ChatGPT Project Sources are available unless copied locally under `docs/project_context/sources/`.
-8. If the prompt conflicts with latest evidence, stop with `STATE_MISMATCH`.
-9. After each serious run, update `docs/_runs/LATEST.txt`, `docs/_runs/CURRENT_STATE.md`, `docs/_runs/CURRENT_STATE.json`, and `docs/_runs/RUN_INDEX.md`.
+1. Read:
+   - docs/project_context/DPM_CURRENT_STATE_DYNAMIC_POINTER.md
+   - docs/project_context/DPM_PROJECT_CANON_CURRENT_20260630.md
+   - docs/project_context/DPM_CODEX_OPERATING_RULES_20260630.md
+   - docs/project_context/PROJECT_SOURCES_ACTIVE_INDEX.md
+
+2. Resolve latest evidence dynamically from:
+
+```text
+docs/_runs/LATEST.txt
+```
+
+Then open the referenced latest run folder and read report/master_audit/CHATGPT_HANDOFF/json/*.json where present.
+
+3. Do not trust hardcoded latest-run names in old prompts or old sources.
+
+4. Use the strongest suitable tools for the task, including Codex CLI, Developer Mode, Computer Use, Browser/Chrome, Playwright, plugins, MCPs, Skills, and relevant service tools when useful.
+
+5. Block only catastrophic actions:
+   - secret leakage into repo/docs/_runs/logs/screenshots/ZIP/GitHub/PR/issues/external platforms
+   - runtime backdoors/auth bypasses
+   - fake data/fake GPS/fake PASS
+   - destructive external mutation outside an authorization envelope
+
+6. If the prompt conflicts with latest run evidence or active 2026-06-30 sources, stop with:
+
+```text
+STATE_MISMATCH
+```
+
+7. After every serious run, update LATEST.txt, CURRENT_STATE.md/json, and RUN_INDEX.md.

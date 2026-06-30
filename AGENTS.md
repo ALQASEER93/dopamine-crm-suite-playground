@@ -6,15 +6,20 @@ This root file is a routing and safety guardrail for Codex work in this reposito
 
 Before implementation, audit, or planning work that depends on project context, read:
 
+- `docs/project_context/DPM_CURRENT_STATE_DYNAMIC_POINTER.md`
+- `docs/project_context/DPM_PROJECT_CANON_CURRENT_20260630.md`
+- `docs/project_context/DPM_CODEX_OPERATING_RULES_20260630.md`
+- `docs/project_context/PROJECT_SOURCES_ACTIVE_INDEX.md`
 - `docs/project_context/PROJECT_CANON_CURRENT.md`
 - `docs/project_context/PROJECT_INSTRUCTIONS_CLEAN_CURRENT.md`
 - `docs/_runs/LATEST.txt` if present
 
 ## Source Of Truth
 
-- `docs/project_context/PROJECT_CANON_CURRENT.md` is the current project source of truth.
+- `docs/project_context/DPM_PROJECT_CANON_CURRENT_20260630.md` is the current project source of truth.
+- `docs/project_context/PROJECT_SOURCES_ACTIVE_INDEX.md` defines which source files are active versus superseded.
 - `AGENTS.md` is a root routing and guardrail file only.
-- If `AGENTS.md` conflicts with `PROJECT_CANON_CURRENT.md`, the canon wins.
+- If `AGENTS.md` conflicts with the active 2026-06-30 canon, the canon wins.
 - `README.md`, `MASTER_PACK.md`, old reports, old deployment notes, and chat attachments are references only, not current truth unless verified.
 
 ## Project Identity
@@ -190,20 +195,25 @@ npm run build
 ## Codex Tooling Stance
 
 - Current active execution engine: Codex CLI.
-- Codex App, Browser Use, and Computer Use must not be relied on while Omar's Windows Codex App is unstable or blocked.
-- If browser proof is needed, prefer CLI-safe local Playwright or stable existing project tooling.
-- Do not install or enable broad MCP/plugin sets during sprint work.
-- Use configured tools read-only only when they directly support the task.
+- Use the strongest suitable tools allowed by `docs/project_context/DPM_CODEX_OPERATING_RULES_20260630.md`.
+- Codex App, Browser/Chrome, Computer Use, Playwright, plugins, MCPs, Skills, and service tools are allowed when they improve execution or evidence.
+- Prefer CLI-safe local Playwright or stable existing project tooling when browser proof is needed and it is sufficient.
+- Mutating external services requires an explicit authorization envelope.
+- Do not install or enable broad tool/plugin sets unless they directly support the task.
 
 ## Source-Access Gate Before Implementation
 
 Before implementation work that depends on project context, Codex must prove it can read:
 
 - `AGENTS.md`
+- `docs/project_context/DPM_PROJECT_CANON_CURRENT_20260630.md`
+- `docs/project_context/DPM_CODEX_OPERATING_RULES_20260630.md`
+- `docs/project_context/DPM_CURRENT_STATE_DYNAMIC_POINTER.md`
+- `docs/project_context/PROJECT_SOURCES_ACTIVE_INDEX.md`
 - `docs/project_context/PROJECT_CANON_CURRENT.md`
 - `docs/project_context/PROJECT_INSTRUCTIONS_CLEAN_CURRENT.md`
 
-The proof must include exact paths, SHA256 hashes, first/last lines, and confirmation that hard rules and required routes are present.
+The proof must include exact paths, SHA256 hashes, first/last lines, and confirmation that hard rules and required routes are present. The 2026-06-30 active sources win over superseded compatibility files.
 
 ## Review Priorities
 
