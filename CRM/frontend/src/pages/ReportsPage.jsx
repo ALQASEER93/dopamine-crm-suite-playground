@@ -3,6 +3,7 @@ import ReportsOverview from '../reports/ReportsOverview';
 import RepPerformanceTable from '../reports/RepPerformanceTable';
 import ProductPerformanceTable from '../reports/ProductPerformanceTable';
 import TerritoryPerformanceTable from '../reports/TerritoryPerformanceTable';
+import './FieldRoutePages.css';
 
 const toDate = date => date.toISOString().slice(0, 10);
 
@@ -52,7 +53,7 @@ const ReportsPage = () => {
   };
 
   return (
-    <div className="page-stack">
+    <div className="page-stack" data-testid="reports-route" data-qa-route="reports">
       <div className="page-header">
         <div>
           <h1 className="page-heading">التقارير</h1>
@@ -106,6 +107,14 @@ const ReportsPage = () => {
           هذا الربع
         </button>
       </div>
+
+      <section className="page-card" data-testid="reports-support-boundary">
+        <h2>حدود بيانات التقارير</h2>
+        <p>
+          التقارير المحلية تعرض المخطط مقابل المكتمل، نشاط المندوبين، وتغطية الأقاليم من API التقارير الحالي.
+          المستحق/المتأخر، تحقيق التكرار الشهري، والتزام GPS تظهر كغير متاحة عندما لا يوفرها الـ API بدلاً من عرض أرقام غير مثبتة.
+        </p>
+      </section>
 
       <ReportsOverview from={appliedRange.from} to={appliedRange.to} />
 

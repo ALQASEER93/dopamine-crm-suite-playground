@@ -84,7 +84,7 @@ Forbidden:
 Preferred vault root:
 
 ```text
-D:\ALQASEER_DEV\_DPM_PRIVATE_VAULT\
+D:\ALQASEER_DEV\DPM_PRIVATE_VAULT\
 ```
 
 Example local private files outside GitHub:

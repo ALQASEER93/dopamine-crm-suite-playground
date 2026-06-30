@@ -92,6 +92,8 @@ const CustomersPage = () => {
       pharmacies: countByType(customers, 'pharmacy'),
       withAssignedRep: customers.filter(customer => resolveAssignedRepLabel(customer) !== 'لا توجد هوية مندوب مثبتة في البيانات الحالية').length,
       dueOrUnknown: customers.filter(customer => !customer.lastVisit || customer.dueStatus).length,
+      completed: customers.filter(customer => customer.dueStatus === 'completed').length,
+      overdue: customers.filter(customer => customer.dueStatus === 'overdue').length,
     }),
     [customers, filteredCustomers.length],
   );
@@ -103,7 +105,14 @@ const CustomersPage = () => {
     const badges = buildCustomerBadges(customer);
     const visitsThisMonth = customer.visitsThisMonth ?? visitCountForCustomer(customer);
     return (
-      <article className="customer-row" data-testid="customer-card" data-customer-type={customer.type} key={`${customer.type}-${customer.id}`}>
+      <article
+        className="customer-row"
+        data-testid="customer-card"
+        data-customer-id={customer.id}
+        data-customer-type={customer.type}
+        data-due-status={customer.dueStatus || 'unknown'}
+        key={`${customer.type}-${customer.id}`}
+      >
         <div className="customer-row__top">
           <div>
             <strong>{customer.name}</strong>
@@ -156,10 +165,21 @@ const CustomersPage = () => {
           </div>
         </div>
         <div className="field-actions">
-          <Link className="btn btn-secondary" data-testid="open-profile-action" to={customerProfilePath(customer)} onClick={() => setSelectedCustomer(customer)}>
+          <Link
+            className="btn btn-secondary"
+            data-testid="open-profile-action"
+            to={customerProfilePath(customer)}
+            onClick={() => setSelectedCustomer(customer)}
+            aria-label={`فتح الملف / Open Profile - ${customer.name}`}
+          >
             فتح الملف
           </Link>
-          <Link className="btn btn-primary" data-testid="start-visit-action" to={`/visits?customerType=${customer.type}&customerId=${customer.id}`}>
+          <Link
+            className="btn btn-primary"
+            data-testid="start-visit-action"
+            to={`/visits?customerType=${customer.type}&customerId=${customer.id}`}
+            aria-label={`بدء زيارة / Start Visit - ${customer.name}`}
+          >
             بدء زيارة
           </Link>
         </div>
@@ -175,8 +195,8 @@ const CustomersPage = () => {
           <p className="page-subtitle">أطباء وصيدليات مع فلاتر وحالة بيانات صريحة بدون بيانات مخترعة.</p>
         </div>
         <div className="field-header__meta">
-          <span className="field-badge">أطباء {customerSummary.doctors}</span>
-          <span className="field-badge">صيدليات {customerSummary.pharmacies}</span>
+          <span className="field-badge" data-testid="customer-doctor-count">أطباء {customerSummary.doctors}</span>
+          <span className="field-badge" data-testid="customer-pharmacy-count">صيدليات {customerSummary.pharmacies}</span>
         </div>
       </header>
 
@@ -197,22 +217,28 @@ const CustomersPage = () => {
           <span>مستحق أو غير محسوب</span>
           <strong>{customerSummary.dueOrUnknown}</strong>
         </div>
+        <div className="field-metric" data-testid="customer-frequency-status-summary">
+          <span>متأخر / مكتمل</span>
+          <strong>{customerSummary.overdue} / {customerSummary.completed}</strong>
+        </div>
       </section>
 
       <section className="field-toolbar" data-testid="customer-filters">
         <input
           className="input"
           type="search"
+          aria-label="بحث العملاء / Search customers"
+          data-testid="customer-search"
           placeholder="بحث بالاسم، التخصص، المنطقة، الهاتف"
           value={search}
           onChange={event => setSearch(event.target.value)}
         />
-        <select className="input" value={typeFilter} onChange={event => setTypeFilter(event.target.value)}>
+        <select className="input" value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="فلتر نوع العميل / Customer type filter" data-testid="customer-type-filter">
           <option value="">كل الأنواع</option>
           <option value="doctor">أطباء / HCP</option>
           <option value="pharmacy">صيدليات / HCO</option>
         </select>
-        <select className="input" value={areaFilter} onChange={event => setAreaFilter(event.target.value)}>
+        <select className="input" value={areaFilter} onChange={event => setAreaFilter(event.target.value)} aria-label="فلتر المنطقة / Area filter" data-testid="customer-area-filter">
           <option value="">كل المناطق</option>
           {distinctAreas.map(area => (
             <option value={area} key={area}>
@@ -237,7 +263,7 @@ const CustomersPage = () => {
         onClose={() => setSelectedCustomer(null)}
       >
         {activeCustomer && (
-          <div className="detail-section" data-testid="customer-detail-panel" data-customer-type={activeCustomer.type}>
+          <div className="detail-section" data-testid="customer-detail-panel" data-customer-id={activeCustomer.id} data-customer-type={activeCustomer.type}>
             <div className="field-badges">
               {buildCustomerBadges(activeCustomer).map(badge => (
                 <span className={badgeClass(badge)} key={badge}>
@@ -295,7 +321,7 @@ const CustomersPage = () => {
                 <strong>{hasTrustedCoordinates(activeCustomer) ? 'إحداثيات موثوقة متاحة' : 'missing_location / no_trusted_coordinates'}</strong>
               </div>
             </div>
-            <section>
+            <section data-testid="customer-notes-topics-products">
               <h3>الملاحظات / الموضوعات / المنتجات</h3>
               <p className="field-muted">لا توجد بيانات موثوقة معروضة من الـ API الحالي لهذا القسم.</p>
             </section>
@@ -304,22 +330,27 @@ const CustomersPage = () => {
               <p className="field-muted">زيارات هذا الشهر: {activeCustomer.visitsThisMonth ?? visitCountForCustomer(activeCustomer)}. لا توجد تفاصيل إضافية موثوقة معروضة من الـ API الحالي.</p>
             </section>
             <div className="field-actions">
-              <Link className="btn btn-primary" to={`/visits?customerType=${activeCustomer.type}&customerId=${activeCustomer.id}`}>
+              <Link
+                className="btn btn-primary"
+                to={`/visits?customerType=${activeCustomer.type}&customerId=${activeCustomer.id}`}
+                aria-label={`بدء زيارة / Start Visit - ${activeCustomer.name}`}
+                data-testid="detail-start-visit-action"
+              >
                 بدء زيارة
               </Link>
               {hasTrustedCoordinates(activeCustomer) ? (
-                <Link className="btn btn-secondary" to="/live-map">
+                <Link className="btn btn-secondary" to="/live-map" data-testid="detail-map-action" aria-label={`فتح الخريطة / Open map - ${activeCustomer.name}`}>
                   فتح الخريطة
                 </Link>
               ) : (
-                <button type="button" className="btn btn-secondary" disabled>
+                <button type="button" className="btn btn-secondary" disabled data-testid="detail-map-unavailable" aria-label="لا توجد إحداثيات موثوقة / No trusted coordinates">
                   لا توجد إحداثيات موثوقة
                 </button>
               )}
-              <button type="button" className="btn btn-secondary" disabled>
+              <button type="button" className="btn btn-secondary" disabled data-testid="detail-add-note-unavailable" aria-label="إضافة ملاحظة غير متاحة / Add note unavailable">
                 إضافة ملاحظة غير متاحة
               </button>
-              <button type="button" className="btn btn-secondary" disabled>
+              <button type="button" className="btn btn-secondary" disabled data-testid="detail-inquiry-complaint-unavailable" aria-label="استفسار أو شكوى غير متاح / Inquiry or complaint unavailable">
                 استفسار / شكوى غير متاح
               </button>
             </div>

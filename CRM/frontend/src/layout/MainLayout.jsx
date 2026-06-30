@@ -170,7 +170,10 @@ const MainLayout = () => {
                 type="button"
                 className="btn btn-secondary layout__language-toggle"
                 onClick={handleLanguageToggle}
-                aria-label="تبديل اللغة"
+                aria-label={`تبديل اللغة إلى ${nextLanguageLabel} / Switch language to ${nextLanguageLabel}`}
+                data-testid="language-toggle"
+                data-language-current={language}
+                data-language-next={language === 'ar' ? 'en' : 'ar'}
               >
                 {nextLanguageLabel}
               </button>

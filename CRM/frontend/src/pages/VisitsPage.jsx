@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { listReps, repKeys } from '../api/reps';
@@ -7,6 +8,7 @@ import { createVisit, deleteVisit, endVisit, listVisits, startVisit, updateVisit
 import DetailDrawer from '../components/DetailDrawer';
 import { buildGoogleMapsUrl, buildOpenStreetMapUrl, formatCoords } from '../utils/mapLinks';
 import './EntityListPage.css';
+import './FieldRoutePages.css';
 
 const PAGE_SIZE_OPTIONS = [25, 50];
 const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
@@ -26,6 +28,38 @@ const DEFAULT_VISIT_FORM = {
   notes: '',
   next_action: '',
   next_action_date: '',
+};
+
+const VISIT_LIFECYCLE_STEPS = [
+  { key: 'planned', ar: 'مخططة', en: 'Planned' },
+  { key: 'started', ar: 'بدأت', en: 'Started' },
+  { key: 'checked_in', ar: 'تم تسجيل الوصول', en: 'Checked-in' },
+  { key: 'in_visit', ar: 'داخل الزيارة', en: 'In Visit' },
+  { key: 'call_recorded', ar: 'تم تسجيل المكالمة', en: 'Call Recorded' },
+  { key: 'ended', ar: 'انتهت', en: 'Ended' },
+  { key: 'submitted', ar: 'مقدمة', en: 'Submitted' },
+  { key: 'synced', ar: 'متزامنة', en: 'Synced' },
+];
+
+const hasVisitTimestamp = (visit, camelKey, snakeKey) => Boolean(visit?.[camelKey] || visit?.[snakeKey]);
+
+const hasVisitLocation = location => Boolean(location && location.lat != null && location.lng != null);
+
+const lifecycleStateForVisit = visit => {
+  const status = String(visit?.status || '').toLowerCase();
+  const started = hasVisitTimestamp(visit, 'startedAt', 'started_at');
+  const ended = hasVisitTimestamp(visit, 'endedAt', 'ended_at') || ['completed', 'ended', 'submitted', 'synced'].includes(status);
+  const hasNotes = Boolean(visit?.notes || visit?.next_action);
+  return {
+    planned: Boolean(visit?.id),
+    started,
+    checked_in: hasVisitLocation(visit?.startLocation) || hasVisitLocation(visit?.start_location),
+    in_visit: started && !ended,
+    call_recorded: hasNotes,
+    ended,
+    submitted: Boolean(visit?.id) && ['completed', 'ended', 'submitted', 'synced'].includes(status),
+    synced: Boolean(visit?.id) && !visit?.offlinePending && !visit?.offline_pending,
+  };
 };
 
 const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps, doctors }) => {
@@ -116,6 +150,7 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
 
 const VisitsPage = () => {
   const { token, user } = useAuth();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
@@ -125,6 +160,8 @@ const VisitsPage = () => {
   const [formInitial, setFormInitial] = useState(DEFAULT_VISIT_FORM);
   const [formError, setFormError] = useState(null);
   const [actionError, setActionError] = useState(null);
+  const routeCustomerType = searchParams.get('customerType') || '';
+  const routeCustomerId = searchParams.get('customerId') || '';
 
   const repQuery = useQuery({
     queryKey: repKeys.all,
@@ -248,6 +285,8 @@ const VisitsPage = () => {
       ...DEFAULT_VISIT_FORM,
       rep_id: user?.id || '',
       visit_date: new Date().toISOString().slice(0, 10),
+      doctor_id: routeCustomerType === 'doctor' ? routeCustomerId : '',
+      pharmacy_id: routeCustomerType === 'pharmacy' ? routeCustomerId : '',
     });
     setFormError(null);
   };
@@ -306,6 +345,8 @@ const VisitsPage = () => {
   const visits = visitsQuery.data?.rows || [];
   const totalVisits = visitsQuery.data?.total || 0;
   const totalPages = visitsQuery.data?.totalPages || 1;
+  const routeVisitContext = routeCustomerType && routeCustomerId;
+  const selectedLifecycle = lifecycleStateForVisit(selected);
 
   const renderAccount = visit => {
     if (visit.doctor) return `الطبيب: ${visit.doctor.name}`;
@@ -430,6 +471,26 @@ const VisitsPage = () => {
         </button>
       </div>
 
+      {routeVisitContext && (
+        <section className="notice notice--success" data-testid="visit-route-context">
+          بدء زيارة لعميل محدد: النوع {routeCustomerType}، رقم العميل {routeCustomerId}. استخدم إضافة زيارة أو اختر زيارة موجودة لعرض الحالة.
+        </section>
+      )}
+
+      <section className="visit-lifecycle-panel" data-testid="visit-lifecycle-panel" aria-label="مسار حالة الزيارة / Visit lifecycle">
+        <div>
+          <h2>مسار حالة الزيارة</h2>
+          <p className="field-note">يعرض المسار الحالة المتاحة من سجل الزيارة الحالي ولا يضيف GPS أو مزامنة غير مثبتة.</p>
+        </div>
+        <div className="visit-lifecycle-steps">
+          {VISIT_LIFECYCLE_STEPS.map(step => (
+            <span className="field-badge" data-testid={`visit-lifecycle-step-${step.key}`} key={step.key}>
+              {step.ar} / {step.en}
+            </span>
+          ))}
+        </div>
+      </section>
+
       <section className="table-card entity-table">
         {visitsQuery.error && <div className="entity-empty">تعذر تحميل الزيارات: {visitsQuery.error.message}</div>}
         {!visitsQuery.error && visitsQuery.isLoading && <div className="entity-empty">جاري تحميل الزيارات...</div>}
@@ -445,30 +506,38 @@ const VisitsPage = () => {
                 <th>الحساب</th>
                 <th>الحالة</th>
                 <th>المدة</th>
+                <th>مسار الحالة</th>
                 <th>الملاحظات</th>
                 <th>الإجراء التالي</th>
               </tr>
             </thead>
             <tbody>
-              {visits.map(visit => (
-                <tr
-                  key={visit.id}
-                  onClick={() => {
-                    setActionError(null);
-                    setSelected(visit);
-                  }}
-                >
-                  <td>{visit.visitDate || visit.visit_date}</td>
-                  <td>{visit.rep?.name || visit.rep_id || '-'}</td>
-                  <td>{renderAccount(visit)}</td>
-                  <td>{formatStatus(visit.status)}</td>
-                  <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : '-'}</td>
-                  <td>{visit.notes || '-'}</td>
-                  <td>
-                    {visit.next_action || '-'} {visit.next_action_date ? `(${visit.next_action_date})` : ''}
-                  </td>
-                </tr>
-              ))}
+              {visits.map(visit => {
+                const lifecycle = lifecycleStateForVisit(visit);
+                return (
+                  <tr
+                    key={visit.id}
+                    data-testid="visit-row"
+                    onClick={() => {
+                      setActionError(null);
+                      setSelected(visit);
+                    }}
+                  >
+                    <td>{visit.visitDate || visit.visit_date}</td>
+                    <td>{visit.rep?.name || visit.rep_id || '-'}</td>
+                    <td>{renderAccount(visit)}</td>
+                    <td>{formatStatus(visit.status)}</td>
+                    <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : '-'}</td>
+                    <td data-testid="visit-row-status-path">
+                      {VISIT_LIFECYCLE_STEPS.filter(step => lifecycle[step.key]).map(step => step.en).join(' -> ') || 'Planned'}
+                    </td>
+                    <td>{visit.notes || '-'}</td>
+                    <td>
+                      {visit.next_action || '-'} {visit.next_action_date ? `(${visit.next_action_date})` : ''}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -521,7 +590,22 @@ const VisitsPage = () => {
         onClose={() => setSelected(null)}
       >
         {selected && (
-          <div className="detail-grid">
+          <div className="detail-grid" data-testid="visit-detail-panel">
+            <section className="visit-lifecycle-panel" data-testid="selected-visit-lifecycle">
+              <h3>حالة الزيارة الحالية</h3>
+              <div className="visit-lifecycle-steps">
+                {VISIT_LIFECYCLE_STEPS.map(step => (
+                  <span
+                    className={`field-badge${selectedLifecycle[step.key] ? '' : ' field-badge--muted'}`}
+                    data-testid={`selected-visit-step-${step.key}`}
+                    data-state={selectedLifecycle[step.key] ? 'done' : 'pending'}
+                    key={step.key}
+                  >
+                    {step.ar} / {step.en}
+                  </span>
+                ))}
+              </div>
+            </section>
             <p>
               <strong>المندوب:</strong> {selected.rep?.name || selected.rep_id}
             </p>
@@ -538,25 +622,37 @@ const VisitsPage = () => {
               <strong>المدة:</strong>{' '}
               {selected.durationMinutes != null ? `${selected.durationMinutes} دقيقة` : 'غير منتهية'}
             </p>
+            <p data-testid="visit-timer-ui">
+              <strong>المؤقت:</strong>{' '}
+              {selectedLifecycle.in_visit ? 'الزيارة جارية - المؤقت يعتمد على وقت البداية المسجل' : 'لا توجد زيارة جارية في هذا السجل'}
+            </p>
+            <p data-testid="visit-submitted-locked-status">
+              <strong>التقديم / القفل:</strong>{' '}
+              {selectedLifecycle.submitted ? 'تم تقديم السجل أو اكتماله ويعامل كمقفل للتعديل الميداني' : 'لم يثبت تقديم السجل بعد'}
+            </p>
+            <p data-testid="visit-sync-status">
+              <strong>المزامنة:</strong>{' '}
+              {selectedLifecycle.synced ? 'متزامنة مع الخادم المحلي' : 'غير مثبتة أو قيد الانتظار'}
+            </p>
             <p>
               <strong>بدأت:</strong> {formatTimestamp(selected.startedAt || selected.started_at)}
             </p>
             <div>
-              <strong>GPS البداية:</strong> {formatLocation(selected.startLocation)}
+              <strong>GPS البداية:</strong> {formatLocation(selected.startLocation || selected.start_location)}
               <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                 التوقيت: {formatTimestamp(selected.startedAt || selected.started_at)}
               </div>
-              {renderGpsLinks(selected.startLocation)}
+              {renderGpsLinks(selected.startLocation || selected.start_location)}
             </div>
             <p>
               <strong>انتهت:</strong> {formatTimestamp(selected.endedAt || selected.ended_at)}
             </p>
             <div>
-              <strong>GPS النهاية:</strong> {formatLocation(selected.endLocation)}
+              <strong>GPS النهاية:</strong> {formatLocation(selected.endLocation || selected.end_location)}
               <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                 التوقيت: {formatTimestamp(selected.endedAt || selected.ended_at)}
               </div>
-              {renderGpsLinks(selected.endLocation)}
+              {renderGpsLinks(selected.endLocation || selected.end_location)}
             </div>
             <p>
               <strong>الملاحظات:</strong> {selected.notes || '-'}

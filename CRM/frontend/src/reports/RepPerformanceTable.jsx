@@ -53,7 +53,7 @@ const RepPerformanceTable = ({ from, to }) => {
   };
 
   return (
-    <section className="page-card">
+    <section className="page-card" data-testid="reports-rep-activity">
       <div
         className="table-card__header"
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
@@ -62,10 +62,14 @@ const RepPerformanceTable = ({ from, to }) => {
           <h2>أداء المندوبين</h2>
           <p>الزيارات والجودة لكل مندوب.</p>
         </div>
-        {canExport && rows.length > 0 && (
-          <button type="button" className="btn btn-secondary" onClick={handleExport}>
+        {canExport && rows.length > 0 ? (
+          <button type="button" className="btn btn-secondary" onClick={handleExport} data-testid="reports-export-csv" aria-label="تصدير CSV حقيقي / Export genuine CSV">
             تصدير CSV
           </button>
+        ) : (
+          <span className="field-badge field-badge--warning" data-testid="reports-export-unavailable">
+            التصدير غير متاح بدون صفوف أو صلاحية مناسبة
+          </span>
         )}
       </div>
 

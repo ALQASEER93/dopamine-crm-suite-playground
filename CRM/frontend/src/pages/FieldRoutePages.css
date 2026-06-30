@@ -137,6 +137,12 @@
   border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
+.field-badge--muted {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
 .field-actions {
   display: flex;
   gap: 0.5rem;
@@ -186,8 +192,48 @@
   gap: 0.35rem;
 }
 
+.visit-lifecycle-panel {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--color-surface);
+}
+
+.visit-lifecycle-panel h2,
+.visit-lifecycle-panel h3,
+.visit-lifecycle-panel p {
+  margin: 0;
+}
+
+.visit-lifecycle-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
 @media (max-width: 720px) {
+  .field-header {
+    gap: 0.75rem;
+  }
+
+  .field-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .field-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-row,
+  .route-stop,
+  .visit-lifecycle-panel {
+    padding: 0.85rem;
+  }
+
+  .customer-row__facts,
+  .detail-facts {
     grid-template-columns: 1fr;
   }
 

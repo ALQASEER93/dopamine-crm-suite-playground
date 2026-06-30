@@ -16,7 +16,7 @@ const TodayRoutePage = () => {
   const stops = todayRouteQuery.data || [];
 
   return (
-    <div className="field-shell">
+    <div className="field-shell" data-testid="today-route-route" data-qa-route="today-route">
       <header className="field-header">
         <div>
           <h1 className="page-heading">خطة اليوم</h1>
@@ -33,9 +33,9 @@ const TodayRoutePage = () => {
         </div>
       )}
 
-      <section className="field-list">
+      <section className="field-list" data-testid="today-route-list">
         {stops.map((stop, index) => (
-          <article className="route-stop" key={stop.id || `${stop.customerType}-${stop.customerId}`}>
+          <article className="route-stop" data-testid="today-route-stop" key={stop.id || `${stop.customerType}-${stop.customerId}`}>
             <div className="route-stop__top">
               <div>
                 <strong>
@@ -66,10 +66,20 @@ const TodayRoutePage = () => {
               </div>
             </div>
             <div className="field-actions">
-              <Link className="btn btn-secondary" to={`/customers/${stop.customerType || stop.customer_type}/${stop.customerId || stop.customer_id}`}>
+              <Link
+                className="btn btn-secondary"
+                data-testid="today-route-open-profile-action"
+                aria-label={`فتح الملف / Open Profile - ${stop.customerName || stop.customer_name || 'عميل'}`}
+                to={`/customers/${stop.customerType || stop.customer_type}/${stop.customerId || stop.customer_id}`}
+              >
                 Open Profile
               </Link>
-              <Link className="btn btn-primary" to={`/visits?customerType=${stop.customerType || stop.customer_type}&customerId=${stop.customerId || stop.customer_id}`}>
+              <Link
+                className="btn btn-primary"
+                data-testid="today-route-start-visit-action"
+                aria-label={`بدء زيارة / Start Visit - ${stop.customerName || stop.customer_name || 'عميل'}`}
+                to={`/visits?customerType=${stop.customerType || stop.customer_type}&customerId=${stop.customerId || stop.customer_id}`}
+              >
                 Start Visit
               </Link>
               <Link className="btn btn-secondary" to="/live-map">

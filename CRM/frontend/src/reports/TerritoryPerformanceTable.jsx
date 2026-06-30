@@ -19,7 +19,7 @@ const TerritoryPerformanceTable = ({ from, to }) => {
   const rows = territoryQuery.data || [];
 
   return (
-    <section className="page-card">
+    <section className="page-card" data-testid="reports-territory-coverage">
       <h2>أداء الأقاليم</h2>
       <p>الزيارات والتغطية لكل إقليم.</p>
 
