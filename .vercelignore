@@ -3,6 +3,9 @@
 .tmp*
 AI-Orchestrator
 CRM
+!CRM/
+!CRM/frontend/
+!CRM/frontend/**
 docs
 node_modules
 **/node_modules
