@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from core.db import SessionLocal
+from models.crm import User
+
 
 def test_login_and_me(client):
     login_resp = client.post(
@@ -37,6 +40,32 @@ def test_login_wrong_password_returns_controlled_unauthorized(client):
 
     assert resp.status_code == 401
     assert resp.json()["detail"] == "Invalid email or password."
+
+
+def test_login_unsupported_password_hash_returns_controlled_unauthorized(client):
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == "admin@example.com").first()
+        assert user is not None
+        original_hash = user.password_hash
+        user.password_hash = "legacy-unsupported-password-hash"
+        db.add(user)
+        db.commit()
+
+    try:
+        resp = client.post(
+            "/api/v1/auth/login",
+            json={"email": "admin@example.com", "password": "Admin12345!"},
+        )
+
+        assert resp.status_code == 401
+        assert resp.json()["detail"] == "Invalid email or password."
+    finally:
+        with SessionLocal() as db:
+            user = db.query(User).filter(User.email == "admin@example.com").first()
+            assert user is not None
+            user.password_hash = original_hash
+            db.add(user)
+            db.commit()
 
 
 def test_login_default_seeded_users(client):
