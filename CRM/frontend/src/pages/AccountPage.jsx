@@ -51,6 +51,7 @@ const AccountPage = () => {
   const plannedStops = todayRouteQuery.data || [];
   const doctorCount = customers.filter(customer => customer.type === 'doctor').length;
   const pharmacyCount = customers.filter(customer => customer.type === 'pharmacy').length;
+  const territories = [...new Set(customers.map(customer => customer.territory || customer.area).filter(Boolean))];
 
   return (
     <div className="field-shell">
@@ -102,6 +103,22 @@ const AccountPage = () => {
 
       <section className="field-grid">
         <article className="field-card">
+          <h2>المناطق والتكليف</h2>
+          <div className="detail-facts">
+            <div className="fact">
+              <span>عدد المناطق الظاهرة</span>
+              <strong>{territories.length || 'غير متاح'}</strong>
+            </div>
+            <div className="fact">
+              <span>أولويات المتابعة</span>
+              <strong>{customers.filter(customer => customer.dueStatus === 'overdue').length} متأخر / {customers.filter(customer => customer.dueStatus === 'completed').length} مكتمل</strong>
+            </div>
+          </div>
+          <p className="field-muted">
+            {territories.length ? territories.slice(0, 4).join('، ') : 'لا توجد مناطق مثبتة في بيانات العملاء الحالية.'}
+          </p>
+        </article>
+        <article className="field-card">
           <h2>حالة GPS</h2>
           <p>{gpsState}</p>
         </article>
@@ -111,6 +128,24 @@ const AccountPage = () => {
           <p className="field-muted">
             {offlineStatus.supported ? 'فحص محلي للمتصفح فقط؛ لا يثبت نجاح service worker أو real-device offline.' : 'غير مدعوم في هذا السياق.'}
           </p>
+        </article>
+        <article className="field-card">
+          <h2>الدعم و QA</h2>
+          <div className="detail-facts">
+            <div className="fact">
+              <span>هوية المستخدم</span>
+              <strong>{user?.id ? `User ${user.id}` : 'غير متاح بدون أسرار'}</strong>
+            </div>
+            <div className="fact">
+              <span>البريد</span>
+              <strong>{user?.email ? 'مخفي في الواجهة' : 'غير متاح'}</strong>
+            </div>
+            <div className="fact">
+              <span>الإصدار</span>
+              <strong>Build {buildVersionMarker}</strong>
+            </div>
+          </div>
+          <p className="field-muted">لا تعرض هذه الصفحة كلمات مرور أو رموز جلسة أو متغيرات بيئة.</p>
         </article>
       </section>
 

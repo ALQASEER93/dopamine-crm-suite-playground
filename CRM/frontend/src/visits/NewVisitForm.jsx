@@ -3,12 +3,11 @@ import { useAuth } from '../auth/AuthContext';
 import { apiFetch } from '../api/client';
 
 const PURPOSE_OPTIONS = [
-  { value: 'promotion', label: 'Promotion' },
-  { value: 'order_followup', label: 'Order / Follow-up' },
-  { value: 'collection', label: 'Collection' },
-  { value: 'problem_solving', label: 'Problem solving' },
-  { value: 'training', label: 'Training' },
-  { value: 'other', label: 'Other' },
+  { value: 'promotion', label: 'ترويج طبي' },
+  { value: 'order_followup', label: 'متابعة ميدانية' },
+  { value: 'problem_solving', label: 'حل مشكلة' },
+  { value: 'training', label: 'تدريب' },
+  { value: 'other', label: 'أخرى' },
 ];
 
 const CHANNEL_OPTIONS = [
@@ -47,8 +46,10 @@ const modalBackdropStyle = {
 };
 
 const modalStyle = {
-  backgroundColor: '#ffffff',
-  borderRadius: '12px',
+  backgroundColor: 'var(--color-surface)',
+  color: 'var(--color-text)',
+  border: '1px solid var(--color-border)',
+  borderRadius: '8px',
   maxWidth: '960px',
   width: '100%',
   maxHeight: '90vh',
@@ -62,7 +63,8 @@ const modalStyle = {
 
 const sectionStyle = {
   borderRadius: '8px',
-  border: '1px solid #e5e7eb',
+  border: '1px solid var(--color-border)',
+  backgroundColor: 'var(--color-surface-2)',
   padding: '16px',
   marginBottom: '8px',
 };
@@ -76,7 +78,7 @@ const fieldGroupStyle = {
 const labelStyle = {
   fontSize: '13px',
   fontWeight: 600,
-  color: '#4b5563',
+  color: 'var(--color-text-muted)',
   display: 'block',
   marginBottom: '4px',
 };

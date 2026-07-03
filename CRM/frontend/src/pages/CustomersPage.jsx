@@ -35,6 +35,10 @@ const CustomersPage = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [areaFilter, setAreaFilter] = useState('');
+  const [territoryFilter, setTerritoryFilter] = useState('');
+  const [repFilter, setRepFilter] = useState('');
+  const [dueFilter, setDueFilter] = useState('');
+  const [profileFilter, setProfileFilter] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   const customersQuery = useQuery({
@@ -71,18 +75,47 @@ const CustomersPage = () => {
     () => [...new Set(customers.map(customer => customer.area).filter(Boolean))].sort(),
     [customers],
   );
+  const distinctTerritories = useMemo(
+    () => [...new Set(customers.map(customer => customer.territory || customer.area).filter(Boolean))].sort(),
+    [customers],
+  );
+  const distinctReps = useMemo(
+    () => [...new Set(customers.map(resolveAssignedRepLabel).filter(label => label !== 'لا توجد هوية مندوب مثبتة في البيانات الحالية'))].sort(),
+    [customers],
+  );
+  const distinctProfiles = useMemo(
+    () => [
+      ...new Set(
+        customers
+          .flatMap(customer => [customer.specialty, customer.classification, customer.segment, customer.priority])
+          .filter(Boolean),
+      ),
+    ].sort(),
+    [customers],
+  );
 
   const filteredCustomers = useMemo(() => {
     const term = search.trim().toLowerCase();
     return customers.filter(customer => {
       if (typeFilter && customer.type !== typeFilter) return false;
       if (areaFilter && customer.area !== areaFilter) return false;
+      if (territoryFilter && (customer.territory || customer.area) !== territoryFilter) return false;
+      if (repFilter && resolveAssignedRepLabel(customer) !== repFilter) return false;
+      if (dueFilter === 'completed' && customer.dueStatus !== 'completed') return false;
+      if (dueFilter === 'overdue' && customer.dueStatus !== 'overdue') return false;
+      if (dueFilter === 'due_or_unknown' && (customer.dueStatus === 'completed')) return false;
+      if (
+        profileFilter &&
+        ![customer.specialty, customer.classification, customer.segment, customer.priority].includes(profileFilter)
+      ) {
+        return false;
+      }
       if (!term) return true;
       return [customer.name, customer.specialty, customer.area, customer.address, customer.phone]
         .filter(Boolean)
         .some(value => String(value).toLowerCase().includes(term));
     });
-  }, [areaFilter, customers, search, typeFilter]);
+  }, [areaFilter, customers, dueFilter, profileFilter, repFilter, search, territoryFilter, typeFilter]);
 
   const customerSummary = useMemo(
     () => ({
@@ -195,6 +228,7 @@ const CustomersPage = () => {
           <p className="page-subtitle">أطباء وصيدليات مع فلاتر وحالة بيانات صريحة بدون بيانات مخترعة.</p>
         </div>
         <div className="field-header__meta">
+          <span className="field-badge">Build {import.meta.env.VITE_APP_VERSION || 'crm-phase-a-b-local'}</span>
           <span className="field-badge" data-testid="customer-doctor-count">أطباء {customerSummary.doctors}</span>
           <span className="field-badge" data-testid="customer-pharmacy-count">صيدليات {customerSummary.pharmacies}</span>
         </div>
@@ -243,6 +277,36 @@ const CustomersPage = () => {
           {distinctAreas.map(area => (
             <option value={area} key={area}>
               {area}
+            </option>
+          ))}
+        </select>
+        <select className="input" value={territoryFilter} onChange={event => setTerritoryFilter(event.target.value)} aria-label="فلتر الإقليم / Territory filter" data-testid="customer-territory-filter">
+          <option value="">كل الأقاليم</option>
+          {distinctTerritories.map(territory => (
+            <option value={territory} key={territory}>
+              {territory}
+            </option>
+          ))}
+        </select>
+        <select className="input" value={repFilter} onChange={event => setRepFilter(event.target.value)} aria-label="فلتر المندوب / Rep filter" data-testid="customer-rep-filter">
+          <option value="">كل المندوبين</option>
+          {distinctReps.map(rep => (
+            <option value={rep} key={rep}>
+              {rep}
+            </option>
+          ))}
+        </select>
+        <select className="input" value={dueFilter} onChange={event => setDueFilter(event.target.value)} aria-label="فلتر الاستحقاق / Due status filter" data-testid="customer-due-filter">
+          <option value="">كل الحالات</option>
+          <option value="due_or_unknown">مستحق أو غير محسوب</option>
+          <option value="overdue">متأخر</option>
+          <option value="completed">مكتمل</option>
+        </select>
+        <select className="input" value={profileFilter} onChange={event => setProfileFilter(event.target.value)} aria-label="فلتر التخصص أو الأولوية / Specialty priority filter" data-testid="customer-profile-filter">
+          <option value="">كل التخصصات والأولويات</option>
+          {distinctProfiles.map(profile => (
+            <option value={profile} key={profile}>
+              {profile}
             </option>
           ))}
         </select>
