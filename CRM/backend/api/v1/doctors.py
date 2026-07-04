@@ -18,6 +18,7 @@ router = APIRouter(
 )
 
 
+@router.get("", response_model=PaginatedResponse[DoctorOut], include_in_schema=False)
 @router.get("/", response_model=PaginatedResponse[DoctorOut])
 def list_doctors(
     page: int = Query(DEFAULT_PAGE, ge=1),
@@ -55,6 +56,13 @@ def list_doctors(
     )
 
 
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=DoctorOut,
+    dependencies=[Depends(require_roles("sales_manager", "admin", "medical_rep"))],
+    include_in_schema=False,
+)
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,

@@ -73,6 +73,7 @@ def _sanitize_excel_text(value: object | None) -> object | None:
     return value
 
 
+@router.get("", response_model=PaginatedResponse[VisitOut], include_in_schema=False)
 @router.get("/", response_model=PaginatedResponse[VisitOut])
 def list_visits(
     page: int = Query(DEFAULT_PAGE, ge=1),
@@ -350,6 +351,13 @@ def export_visits_excel(
     return StreamingResponse(buffer, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers=headers)
 
 
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=VisitOut,
+    dependencies=[Depends(require_roles("sales_manager", "medical_rep", "admin"))],
+    include_in_schema=False,
+)
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,

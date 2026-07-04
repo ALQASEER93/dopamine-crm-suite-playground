@@ -72,7 +72,7 @@ const buildQuery = filters => {
 
 export const listVisits = async (filters = {}, token = null) => {
   const qs = buildQuery(filters).toString();
-  const path = qs ? `/visits/?${qs}` : '/visits/';
+  const path = qs ? `/visits?${qs}` : '/visits';
   const { data } = await apiClient.get(path, { token });
   const normalized = Array.isArray(data?.data) ? data.data.map(normalizeVisit).filter(Boolean) : [];
   return {
