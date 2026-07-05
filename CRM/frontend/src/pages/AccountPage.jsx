@@ -54,13 +54,13 @@ const AccountPage = () => {
   const territories = [...new Set(customers.map(customer => customer.territory || customer.area).filter(Boolean))];
 
   return (
-    <div className="field-shell">
+    <div className="field-shell" data-testid="account-route" data-qa-route="account">
       <header className="field-header">
         <div>
           <h1 className="page-heading">حسابي الميداني</h1>
           <p className="page-subtitle">ملخص المستخدم الحالي، الخطة، وحالة الجهاز بدون عرض أسرار.</p>
         </div>
-        <span className="field-badge">Build {buildVersionMarker}</span>
+        <span className="field-badge" data-testid="account-build-marker">Build {buildVersionMarker}</span>
       </header>
 
       <section className="field-grid">

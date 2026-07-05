@@ -3,6 +3,7 @@ import ReportsOverview from '../reports/ReportsOverview';
 import RepPerformanceTable from '../reports/RepPerformanceTable';
 import ProductPerformanceTable from '../reports/ProductPerformanceTable';
 import TerritoryPerformanceTable from '../reports/TerritoryPerformanceTable';
+import { buildVersionMarker } from './fieldRouteUtils';
 import './FieldRoutePages.css';
 
 const toDate = date => date.toISOString().slice(0, 10);
@@ -59,6 +60,7 @@ const ReportsPage = () => {
           <h1 className="page-heading">التقارير</h1>
           <p className="page-subtitle">تحليلات الزيارات والمندوبين والمنتجات والأقاليم.</p>
         </div>
+        <span className="field-badge">Build {buildVersionMarker}</span>
         <form className="page-filters" onSubmit={handleApplyRange}>
           <label>
             <span>من</span>
@@ -114,6 +116,14 @@ const ReportsPage = () => {
           التقارير المحلية تعرض المخطط مقابل المكتمل، نشاط المندوبين، وتغطية الأقاليم من API التقارير الحالي.
           المستحق/المتأخر، تحقيق التكرار الشهري، والتزام GPS تظهر كغير متاحة عندما لا يوفرها الـ API بدلاً من عرض أرقام غير مثبتة.
         </p>
+        <div className="field-badges" data-testid="reports-contract-status">
+          <span className="field-badge">planned_vs_completed: API</span>
+          <span className="field-badge">rep_activity: API</span>
+          <span className="field-badge">manager_territory_summary: API</span>
+          <span className="field-badge field-badge--warning">due_overdue: حسب توفر API</span>
+          <span className="field-badge field-badge--warning">frequency_attainment: حسب توفر API</span>
+          <span className="field-badge field-badge--warning">gps_compliance: حسب توفر API</span>
+        </div>
       </section>
 
       <ReportsOverview from={appliedRange.from} to={appliedRange.to} />

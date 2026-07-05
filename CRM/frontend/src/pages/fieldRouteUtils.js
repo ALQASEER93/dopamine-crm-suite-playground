@@ -93,6 +93,28 @@ export const hasTrustedCoordinates = customer => {
   return Number.isFinite(Number(location?.lat)) && Number.isFinite(Number(location?.lng));
 };
 
+export const extractTrustedLocation = value => {
+  const location = value?.location || value?.coordinates || value?.startLocation || value?.start_location || null;
+  const lat = location?.lat ?? value?.latitude ?? value?.lat ?? value?.start_lat ?? null;
+  const lng = location?.lng ?? value?.longitude ?? value?.lng ?? value?.start_lng ?? null;
+  if (lat === '' || lng === '') return null;
+  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  return {
+    lat: Number(lat),
+    lng: Number(lng),
+    accuracy: location?.accuracy ?? value?.accuracy ?? value?.start_accuracy ?? null,
+  };
+};
+
+export const dueStatusLabel = value => {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized === 'overdue') return 'متأخر';
+  if (normalized === 'completed') return 'مكتمل';
+  if (normalized === 'due') return 'مستحق';
+  if (normalized === 'planned') return 'مخطط';
+  return formatDueStatus(value || 'due_status_unavailable');
+};
+
 export const buildCustomerBadges = customer => {
   const badges = [];
   if (!customer?.address && !customer?.area && !customer?.city) badges.push('missing_location');

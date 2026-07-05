@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
-import { CUSTOMER_TYPE_LABELS } from './fieldRouteUtils';
+import { CUSTOMER_TYPE_LABELS, buildVersionMarker, dueStatusLabel } from './fieldRouteUtils';
 import './FieldRoutePages.css';
 
 const TodayRoutePage = () => {
@@ -14,6 +14,8 @@ const TodayRoutePage = () => {
   });
 
   const stops = todayRouteQuery.data || [];
+  const overdueStops = stops.filter(stop => String(stop.dueStatus || stop.due_status || '').toLowerCase() === 'overdue').length;
+  const plannedStops = stops.filter(stop => ['planned', 'scheduled'].includes(String(stop.status || 'planned').toLowerCase())).length;
 
   return (
     <div className="field-shell" data-testid="today-route-route" data-qa-route="today-route">
@@ -22,7 +24,12 @@ const TodayRoutePage = () => {
           <h1 className="page-heading">خطة اليوم</h1>
           <p className="page-subtitle">محطات اليوم من المسار المربوط بالمستخدم الحالي.</p>
         </div>
-        <span className="field-badge">{stops.length} محطة</span>
+        <div className="field-header__meta">
+          <span className="field-badge">Build {buildVersionMarker}</span>
+          <span className="field-badge">{stops.length} محطة</span>
+          <span className="field-badge">مخطط {plannedStops}</span>
+          <span className={overdueStops ? 'field-badge field-badge--warning' : 'field-badge'}>متأخر {overdueStops}</span>
+        </div>
       </header>
 
       {todayRouteQuery.error && <div className="field-empty">تعذر تحميل خطة اليوم: {todayRouteQuery.error.message}</div>}
@@ -53,8 +60,16 @@ const TodayRoutePage = () => {
             </div>
             <div className="customer-row__facts">
               <div className="fact">
+                <span>ترتيب المسار</span>
+                <strong>{stop.routeOrder || stop.route_order || index + 1}</strong>
+              </div>
+              <div className="fact">
+                <span>الإقليم / المنطقة</span>
+                <strong>{stop.territory || stop.territoryName || stop.area || stop.areaTag || 'غير متاح'}</strong>
+              </div>
+              <div className="fact">
                 <span>العنوان / المنطقة</span>
-                <strong>{stop.address || 'غير متاح'}</strong>
+                <strong>{stop.address || stop.textAddress || stop.city || 'غير متاح'}</strong>
               </div>
               <div className="fact">
                 <span>التكرار</span>
@@ -62,7 +77,11 @@ const TodayRoutePage = () => {
               </div>
               <div className="fact">
                 <span>الأولوية / الاستحقاق</span>
-                <strong>{stop.monthlyFrequencyTarget ? 'ضمن خطة التكرار' : 'غير محسوب'}</strong>
+                <strong>{stop.priority || dueStatusLabel(stop.dueStatus || stop.due_status || (stop.monthlyFrequencyTarget ? 'planned' : ''))}</strong>
+              </div>
+              <div className="fact">
+                <span>المندوب</span>
+                <strong>{stop.repName || stop.rep_name || stop.assignedRepName || stop.assigned_rep_name || 'المستخدم الحالي أو غير متاح'}</strong>
               </div>
             </div>
             <div className="field-actions">

@@ -7,6 +7,7 @@ import { doctorKeys, listDoctors } from '../api/endpoints/doctors';
 import { createVisit, deleteVisit, endVisit, listVisits, startVisit, updateVisit, visitKeys } from '../api/visits';
 import DetailDrawer from '../components/DetailDrawer';
 import { buildGoogleMapsUrl, buildOpenStreetMapUrl, formatCoords } from '../utils/mapLinks';
+import { buildVersionMarker, formatMissing } from './fieldRouteUtils';
 import './EntityListPage.css';
 import './FieldRoutePages.css';
 
@@ -354,6 +355,26 @@ const VisitsPage = () => {
     return 'غير متاح';
   };
 
+  const resolveVisitCustomerType = visit => {
+    if (visit.doctor || visit.doctor_id) return 'HCP / طبيب';
+    if (visit.pharmacy || visit.pharmacy_id) return 'HCO / صيدلية';
+    return 'غير متاح';
+  };
+
+  const resolveVisitTerritory = visit => {
+    const customer = visit.doctor || visit.pharmacy || {};
+    return (
+      customer.territory ||
+      customer.territoryName ||
+      customer.territory_name ||
+      customer.area ||
+      customer.city ||
+      visit.territory ||
+      visit.territoryName ||
+      'غير متاح'
+    );
+  };
+
   const formatTimestamp = value => (value ? new Date(value).toLocaleString() : 'غير مسجل');
 
   const formatLocation = location => {
@@ -405,15 +426,18 @@ const VisitsPage = () => {
   };
 
   return (
-    <div className="entity-page">
+    <div className="entity-page" data-testid="visits-route" data-qa-route="visits">
       <div className="entity-toolbar">
         <div>
           <h1 className="page-heading">الزيارات</h1>
           <p className="page-subtitle">متابعة الزيارات الميدانية والمتابعات.</p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={openCreate}>
-          إضافة زيارة
-        </button>
+        <div className="field-actions">
+          <span className="field-badge">Build {buildVersionMarker}</span>
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            إضافة زيارة
+          </button>
+        </div>
       </div>
 
       <div className="entity-filters">
@@ -504,9 +528,12 @@ const VisitsPage = () => {
                 <th>التاريخ</th>
                 <th>المندوب</th>
                 <th>الحساب</th>
+                <th>النوع</th>
+                <th>الإقليم</th>
                 <th>الحالة</th>
                 <th>المدة</th>
                 <th>مسار الحالة</th>
+                <th>المزامنة / القفل</th>
                 <th>الملاحظات</th>
                 <th>الإجراء التالي</th>
               </tr>
@@ -526,10 +553,15 @@ const VisitsPage = () => {
                     <td>{visit.visitDate || visit.visit_date}</td>
                     <td>{visit.rep?.name || visit.rep_id || '-'}</td>
                     <td>{renderAccount(visit)}</td>
+                    <td>{resolveVisitCustomerType(visit)}</td>
+                    <td>{resolveVisitTerritory(visit)}</td>
                     <td>{formatStatus(visit.status)}</td>
                     <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : '-'}</td>
                     <td data-testid="visit-row-status-path">
                       {VISIT_LIFECYCLE_STEPS.filter(step => lifecycle[step.key]).map(step => step.en).join(' -> ') || 'Planned'}
+                    </td>
+                    <td data-testid="visit-row-sync-lock">
+                      {lifecycle.synced ? 'Synced' : 'Pending'} / {lifecycle.submitted ? 'Locked' : 'Open'}
                     </td>
                     <td>{visit.notes || '-'}</td>
                     <td>
@@ -608,6 +640,12 @@ const VisitsPage = () => {
             </section>
             <p>
               <strong>المندوب:</strong> {selected.rep?.name || selected.rep_id}
+            </p>
+            <p>
+              <strong>النوع:</strong> {resolveVisitCustomerType(selected)}
+            </p>
+            <p>
+              <strong>الإقليم:</strong> {formatMissing(resolveVisitTerritory(selected))}
             </p>
             <p>
               <strong>الطبيب:</strong> {selected.doctor?.name || '-'}

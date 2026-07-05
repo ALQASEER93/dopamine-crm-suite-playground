@@ -178,6 +178,38 @@
   gap: 0.5rem;
 }
 
+.map-panel--operational {
+  place-items: stretch;
+  text-align: start;
+}
+
+.map-panel--operational .map-panel__message {
+  max-width: none;
+  width: 100%;
+}
+
+.map-pin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.map-pin {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  padding: 0.75rem;
+}
+
+.map-pin span {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
 .detail-section {
   display: grid;
   gap: 0.75rem;

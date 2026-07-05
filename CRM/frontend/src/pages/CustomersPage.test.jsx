@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatCustomerBadge, formatDueStatus, normalizeCustomers, resolveAssignedRepLabel } from './fieldRouteUtils';
+import {
+  dueStatusLabel,
+  extractTrustedLocation,
+  formatCustomerBadge,
+  formatDueStatus,
+  normalizeCustomers,
+  resolveAssignedRepLabel,
+} from './fieldRouteUtils';
 
 describe('customer assigned rep display helpers', () => {
   it('shows assigned rep identity when name or id exists', () => {
@@ -47,5 +54,17 @@ describe('customer assigned rep display helpers', () => {
     expect(customer.priority).toBe('A');
     expect(customer.locationStatus).toBe('pending_review');
     expect(customer.monthlyFrequencyTarget).toBe(2);
+  });
+
+  it('extracts only numeric trusted locations and translates route due status labels', () => {
+    expect(extractTrustedLocation({ location: { lat: 31.95, lng: 35.93, accuracy: 12 } })).toMatchObject({
+      lat: 31.95,
+      lng: 35.93,
+      accuracy: 12,
+    });
+    expect(extractTrustedLocation({ location: { lat: '', lng: '' } })).toBeNull();
+    expect(dueStatusLabel('overdue')).toBe('متأخر');
+    expect(dueStatusLabel('completed')).toBe('مكتمل');
+    expect(dueStatusLabel('planned')).toBe('مخطط');
   });
 });

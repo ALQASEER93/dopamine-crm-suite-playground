@@ -1,6 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const FIELD_UI_FILES = [
   'src/App.jsx',
@@ -47,11 +45,12 @@ const FORBIDDEN_FIELD_UI_PATTERNS = [
 ];
 
 describe('field CRM scope guard', () => {
-  it('does not expose ERP-like routes or labels in field-facing CRM shell files', () => {
+  it('does not expose ERP-like routes or labels in field-facing CRM shell files', async () => {
+    const fs = await vi.importActual('node:fs');
     const offenders = [];
 
     for (const relativePath of FIELD_UI_FILES) {
-      const source = readFileSync(resolve(process.cwd(), relativePath), 'utf8');
+      const source = fs.readFileSync(`${process.cwd()}/${relativePath}`, 'utf8');
       for (const pattern of FORBIDDEN_FIELD_UI_PATTERNS) {
         if (pattern.test(source)) {
           offenders.push(`${relativePath}: ${pattern}`);
