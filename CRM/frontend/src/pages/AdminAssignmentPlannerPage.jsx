@@ -157,10 +157,10 @@ const AdminAssignmentPlannerPage = () => {
         customers: rows,
         auditLog: [
           buildAuditEntry({
-            customer: { planning_customer_id: 'PACK-LOAD', name: 'Scenario 5 customer planning CSV' },
-            changeType: 'loaded_customer_planning_csv',
+            customer: { planning_customer_id: 'PACK-LOAD', name: 'ملف تخطيط العملاء Scenario 5' },
+            changeType: 'تحميل ملف تخطيط العملاء',
             nextBucket: 'Rep 1-Rep 5',
-            reason: `Loaded ${rows.length} customer planning rows from local CSV.`,
+            reason: `تم تحميل ${rows.length} صف تخطيط عميل من CSV محلي دون إرسال إلى الخادم.`,
           }),
           ...prev.auditLog,
         ],

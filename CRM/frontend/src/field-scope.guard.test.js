@@ -9,6 +9,7 @@ const FIELD_UI_FILES = [
   'src/reports/TerritoryPerformanceTable.jsx',
   'src/pages/MedicalEventsPage.jsx',
   'src/pages/MedicalAffairsReportsPage.jsx',
+  'src/pages/VisitsPage.jsx',
 ];
 
 const FORBIDDEN_FIELD_UI_PATTERNS = [
@@ -42,6 +43,9 @@ const FORBIDDEN_FIELD_UI_PATTERNS = [
   /الإيراد/,
   /الإيرادي/,
   /عائد/,
+  /\bJOD\b/i,
+  /\border requests?\b/i,
+  /طلبات مالية/,
 ];
 
 describe('field CRM scope guard', () => {

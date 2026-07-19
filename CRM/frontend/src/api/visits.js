@@ -28,6 +28,7 @@ export const normalizeVisit = visit => {
 
   return {
     id: visit.id ?? visit.visitId,
+    serverPersisted: Number.isFinite(Number(visit.id ?? visit.visitId)),
     visitDate: visit.visit_date || visit.visitDate || visit.date || null,
     startedAt: visit.started_at || visit.startedAt || null,
     endedAt: visit.ended_at || visit.endedAt || null,
@@ -39,6 +40,13 @@ export const normalizeVisit = visit => {
     pharmacy_id: visit.pharmacy_id ?? visit.pharmacyId ?? visit.pharmacy?.id ?? null,
     pharmacy: visit.pharmacy || null,
     notes: visit.notes ?? null,
+    checkedInAt: visit.checked_in_at ?? visit.checkedInAt ?? null,
+    callRecordedAt: visit.call_recorded_at ?? visit.callRecordedAt ?? null,
+    submittedAt: visit.submitted_at ?? visit.submittedAt ?? null,
+    syncStatus: visit.sync_status ?? visit.syncStatus ?? null,
+    syncError: visit.sync_error ?? visit.syncError ?? null,
+    offlinePending: visit.offline_pending ?? visit.offlinePending ?? false,
+    clientRequestId: visit.client_request_id ?? visit.clientRequestId ?? null,
     samples_given: visit.samples_given ?? visit.samplesGiven ?? null,
     next_action: visit.next_action ?? visit.nextAction ?? null,
     next_action_date: visit.next_action_date ?? visit.nextActionDate ?? null,

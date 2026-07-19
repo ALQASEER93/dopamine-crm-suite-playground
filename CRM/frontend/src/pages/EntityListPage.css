@@ -23,7 +23,15 @@
 }
 
 .entity-table tbody tr:hover {
-  background-color: #f8fafc;
+  background-color: var(--color-surface-2);
+}
+
+.entity-table {
+  overflow-x: auto;
+}
+
+.entity-table table {
+  min-width: 980px;
 }
 
 .entity-pagination {
@@ -50,6 +58,19 @@
 .detail-grid {
   display: grid;
   gap: 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .entity-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .entity-pagination > div {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+  }
 }
 
 .summary-grid {

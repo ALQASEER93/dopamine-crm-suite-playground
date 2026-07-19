@@ -6,22 +6,22 @@ import { normalizeRoleSlug, redactEmail, roleLabel as resolveRoleLabel } from '.
 import './MainLayout.css';
 
 const NAV_ITEMS = [
-  { label: 'حسابي', path: '/account' },
-  { label: 'العملاء', path: '/customers' },
-  { label: 'خطة اليوم', path: '/today-route' },
-  { label: 'الخريطة الحية', path: '/live-map' },
-  { label: 'لوحة التحكم', path: '/dashboard' },
-  { label: 'الأطباء', path: '/doctors' },
-  { label: 'الصيدليات', path: '/pharmacies' },
-  { label: 'المنتجات', path: '/products' },
-  { label: 'الزيارات', path: '/visits' },
-  { label: 'المسارات', path: '/routes' },
-  { label: 'الأهداف', path: '/targets' },
-  { label: 'التقارير', path: '/reports', roles: ['admin', 'sales_manager'] },
-  { label: 'بيانات العملاء', path: '/admin/customers', roles: ['admin'] },
-  { label: 'مخطط التكليف', path: '/admin/assignment-planner', roles: ['admin'] },
-  { label: 'الإعدادات', path: '/settings' },
-  { label: 'الإدارة', path: '/settings/users', roles: ['admin', 'sales_manager'] },
+  { ar: 'حسابي', en: 'My account', path: '/account' },
+  { ar: 'العملاء', en: 'Customers', path: '/customers' },
+  { ar: 'خطة اليوم', en: 'Today route', path: '/today-route' },
+  { ar: 'الخريطة الحية', en: 'Live map', path: '/live-map' },
+  { ar: 'لوحة التحكم', en: 'Dashboard', path: '/dashboard' },
+  { ar: 'الأطباء', en: 'Doctors', path: '/doctors' },
+  { ar: 'الصيدليات', en: 'Pharmacies', path: '/pharmacies' },
+  { ar: 'المنتجات', en: 'Products', path: '/products' },
+  { ar: 'الزيارات', en: 'Visits', path: '/visits' },
+  { ar: 'المسارات', en: 'Routes', path: '/routes' },
+  { ar: 'الأهداف', en: 'Targets', path: '/targets' },
+  { ar: 'التقارير', en: 'Reports', path: '/reports', roles: ['admin', 'sales_manager'] },
+  { ar: 'بيانات العملاء', en: 'Customer data', path: '/admin/customers', roles: ['admin'] },
+  { ar: 'مخطط التكليف', en: 'Assignment planner', path: '/admin/assignment-planner', roles: ['admin'] },
+  { ar: 'الإعدادات', en: 'Settings', path: '/settings' },
+  { ar: 'الإدارة', en: 'User management', path: '/settings/users', roles: ['admin', 'sales_manager'] },
 ];
 
 const CRM_BUILD_MARKER = import.meta.env.VITE_APP_VERSION || 'crm-1.0.0-phase-a';
@@ -70,7 +70,15 @@ const MainLayout = () => {
     () => NAV_ITEMS.filter(item => !item.roles || item.roles.includes(roleSlug)),
     [roleSlug],
   );
-  const themeLabel = theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن';
+  const isArabic = language === 'ar';
+  const themeLabel =
+    theme === 'dark'
+      ? isArabic
+        ? 'الوضع الفاتح'
+        : 'Light mode'
+      : isArabic
+        ? 'الوضع الداكن'
+        : 'Dark mode';
   const nextLanguageLabel = language === 'ar' ? 'English' : 'العربية';
 
   useEffect(() => {
@@ -136,7 +144,7 @@ const MainLayout = () => {
               to={item.path}
               className={({ isActive }) => `layout__nav-link${isActive ? ' is-active' : ''}`}
             >
-              {item.label}
+              {isArabic ? item.ar : item.en}
             </NavLink>
           ))}
         </nav>
@@ -147,9 +155,9 @@ const MainLayout = () => {
             type="button"
             className="layout__menu-button"
             onClick={() => setSidebarOpen(prev => !prev)}
-            aria-label="تبديل القائمة"
+            aria-label={isArabic ? 'تبديل القائمة' : 'Toggle menu'}
           >
-            القائمة
+            {isArabic ? 'القائمة' : 'Menu'}
           </button>
           <div className="layout__header-info">
             <div>
@@ -178,7 +186,7 @@ const MainLayout = () => {
                 {nextLanguageLabel}
               </button>
               <button type="button" className="btn btn-secondary layout__signout" onClick={handleSignOut}>
-                تسجيل الخروج
+                {isArabic ? 'تسجيل الخروج' : 'Sign out'}
               </button>
             </div>
           </div>
