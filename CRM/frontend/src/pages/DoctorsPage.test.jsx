@@ -23,12 +23,12 @@ vi.mock('../api/endpoints/doctors', () => {
 });
 
 describe('DoctorsPage', () => {
-  const renderPage = () => {
+  const renderPage = (role = 'admin') => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     return render(
-      <AuthContext.Provider value={{ user: { role: { slug: 'admin' } }, token: 'test', login: vi.fn(), logout: vi.fn() }}>
+      <AuthContext.Provider value={{ user: { role: { slug: role } }, token: 'test', login: vi.fn(), logout: vi.fn() }}>
         <QueryClientProvider client={queryClient}>
           <MemoryRouter>
             <DoctorsPage />
@@ -48,5 +48,13 @@ describe('DoctorsPage', () => {
 
     expect(screen.getByText(/Cardiology/i)).toBeInTheDocument();
     expect(screen.getByText(/Pediatrics/i)).toBeInTheDocument();
+  });
+
+  it('keeps customer mutation controls hidden for medical representatives', async () => {
+    renderPage('medical_rep');
+
+    await waitFor(() => expect(screen.getByText('Dr. Ali')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'إضافة طبيب' })).not.toBeInTheDocument();
+    expect(screen.getByText('استعراض مقدمي الرعاية المعيّنين لك.')).toBeInTheDocument();
   });
 });

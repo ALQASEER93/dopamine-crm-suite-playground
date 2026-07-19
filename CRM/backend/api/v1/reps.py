@@ -8,12 +8,13 @@ from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
-from core.security import get_current_user, require_roles
+from core.security import get_current_user, has_any_role, require_roles
 from models.crm import Role, Route, RouteAccount, User
 from schemas.common import PaginatedResponse
 from schemas.crm import RouteCreate, RouteOut, RouteStopOut
 from schemas.user import RepCreate, RepUpdate, UserOut
 from services.auth import hash_password
+from services.customer_assignment import monthly_target_from_frequency
 
 router = APIRouter(
     prefix="",
@@ -51,15 +52,28 @@ def _format_address(*parts: Optional[str]) -> Optional[str]:
     return ", ".join(cleaned) if cleaned else None
 
 
+def _is_demo_customer(name: str | None) -> bool:
+    return bool(name and name.strip().upper().startswith(("QA ", "[QA] ")))
+
+
+def _display_customer_name(name: str | None) -> str:
+    if not name:
+        return ""
+    return name
+
+
 @router.get("/reps", response_model=list[UserOut])
 def list_reps(
     name: Optional[str] = None,
     email: Optional[str] = None,
     route_id: Optional[int] = None,
     include_inactive: bool = False,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[User]:
     query = _rep_query(db)
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(User.id == current_user.id)
     if not include_inactive:
         query = query.filter(User.is_active.is_(True))
     if name:
@@ -76,16 +90,25 @@ def list_reps(
 @router.get("/sales-reps", response_model=list[UserOut])
 def list_sales_reps(
     include_inactive: bool = False,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[User]:
     query = _rep_query(db)
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(User.id == current_user.id)
     if not include_inactive:
         query = query.filter(User.is_active.is_(True))
     return query.order_by(User.name.asc()).all()
 
 
 @router.get("/reps/{rep_id}", response_model=UserOut)
-def get_rep(rep_id: int, db: Session = Depends(get_db)) -> User:
+def get_rep(
+    rep_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    if has_any_role(current_user, ["medical_rep"]) and rep_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
     return _get_rep_or_404(db, rep_id)
 
 
@@ -167,10 +190,13 @@ def list_routes(
     page: int = Query(DEFAULT_PAGE, ge=1),
     page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500),
     rep_id: int | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[RouteOut]:
     query = db.query(Route)
-    if rep_id:
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(Route.rep_id == current_user.id)
+    elif rep_id:
         query = query.filter(Route.rep_id == rep_id)
 
     page_size = clamp_page_size(page_size)
@@ -212,7 +238,11 @@ def create_route(payload: RouteCreate, db: Session = Depends(get_db)) -> Route:
     return route
 
 
-@router.get("/routes/today", response_model=list[RouteStopOut])
+@router.get(
+    "/routes/today",
+    response_model=list[RouteStopOut],
+    dependencies=[Depends(require_roles("admin", "sales_manager", "manager", "medical_rep"))],
+)
 def get_today_route(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -245,12 +275,16 @@ def get_today_route(
             RouteStopOut(
                 id=account.id,
                 customer_id=customer.id,
-                customer_name=customer.name,
+                customer_name=_display_customer_name(customer.name),
                 customer_type=account.account_type,
                 address=address,
                 status="planned",
                 scheduled_for=None,
                 location=None,
+                is_demo=_is_demo_customer(customer.name),
+                data_origin="QA_TEST_ONLY" if _is_demo_customer(customer.name) else "UNVERIFIED_SOURCE",
+                visit_frequency=account.visit_frequency or route.frequency,
+                monthly_frequency_target=monthly_target_from_frequency(account.visit_frequency or route.frequency),
             )
         )
 
@@ -258,8 +292,14 @@ def get_today_route(
 
 
 @router.get("/routes/{route_id}", response_model=RouteOut)
-def get_route(route_id: int, db: Session = Depends(get_db)) -> Route:
+def get_route(
+    route_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Route:
     route = db.get(Route, route_id)
     if not route:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
+    if has_any_role(current_user, ["medical_rep"]) and route.rep_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
     return route

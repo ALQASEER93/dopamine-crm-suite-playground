@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { User } from "../api/types";
 import React, { ReactNode, useEffect } from "react";
 
@@ -24,9 +24,9 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "dpm-auth",
-      partialize: (state) => ({ user: state.user }),
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ token: state.token, user: state.user }),
       onRehydrateStorage: () => (state) => {
-        state?.clearSession();
         state?.markHydrated();
       },
     },
@@ -37,7 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hydrated = useAuthStore((s) => s.hydrated);
 
   useEffect(() => {
-    // Ensure rehydration kicks in during tests and first paint.
     useAuthStore.persist.rehydrate();
   }, []);
 

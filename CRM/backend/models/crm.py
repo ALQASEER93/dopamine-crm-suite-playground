@@ -18,6 +18,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -197,6 +198,105 @@ class RouteAccount(Base):
     pharmacy = relationship(Pharmacy)
 
 
+class CustomerImportRun(Base):
+    __tablename__ = "customer_import_runs"
+
+    id = Column(Integer, primary_key=True)
+    actor_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    dry_run = Column(Boolean, nullable=False, default=False, server_default=false())
+    original_filename = Column(String(255), nullable=False)
+    content_hash = Column(String(64), nullable=False, index=True)
+    file_size = Column(Integer, nullable=False)
+    source_sheet = Column(String(100), nullable=False)
+    total_parsed_rows = Column(Integer, nullable=False, default=0, server_default="0")
+    doctors_count = Column(Integer, nullable=False, default=0, server_default="0")
+    pharmacies_count = Column(Integer, nullable=False, default=0, server_default="0")
+    created_count = Column(Integer, nullable=False, default=0, server_default="0")
+    updated_count = Column(Integer, nullable=False, default=0, server_default="0")
+    unchanged_count = Column(Integer, nullable=False, default=0, server_default="0")
+    skipped_missing_name_count = Column(Integer, nullable=False, default=0, server_default="0")
+    skipped_missing_type_count = Column(Integer, nullable=False, default=0, server_default="0")
+    skipped_unsupported_type_count = Column(Integer, nullable=False, default=0, server_default="0")
+    review_needed_count = Column(Integer, nullable=False, default=0, server_default="0")
+    duplicate_review_count = Column(Integer, nullable=False, default=0, server_default="0")
+    with_trusted_coordinates_count = Column(Integer, nullable=False, default=0, server_default="0")
+    route_assignment_pending_count = Column(Integer, nullable=False, default=0, server_default="0")
+    status = Column(String(20), nullable=False, default="planned", server_default="planned")
+    skipped_counts_json = Column(Text, nullable=True)
+    error_summary = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    actor = relationship(User)
+    staging_items = relationship(
+        "CustomerImportStagingItem",
+        back_populates="import_run",
+        cascade="all, delete-orphan",
+    )
+
+
+class CustomerImportStagingItem(Base):
+    __tablename__ = "customer_import_staging_items"
+
+    id = Column(Integer, primary_key=True)
+    import_run_id = Column(Integer, ForeignKey("customer_import_runs.id"), nullable=False, index=True)
+    row_number = Column(Integer, nullable=False)
+    row_hash = Column(String(64), nullable=False, index=True)
+    customer_type = Column(String(20), nullable=False)
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True)
+    pharmacy_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=True)
+    import_action = Column(String(20), nullable=False)
+    monthly_frequency_target = Column(Integer, nullable=True)
+    requires_review = Column(Boolean, nullable=False, default=False, server_default=false())
+    review_reason = Column(Text, nullable=True)
+    location_status = Column(String(50), nullable=True)
+    assigned_rep_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    route_id = Column(Integer, ForeignKey("routes.id"), nullable=True)
+    route_account_id = Column(Integer, ForeignKey("route_accounts.id"), nullable=True)
+    assignment_status = Column(String(50), nullable=False)
+    assignment_blocker = Column(Text, nullable=True)
+    reviewed_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "(customer_type = 'doctor' AND pharmacy_id IS NULL) OR "
+            "(customer_type = 'pharmacy' AND doctor_id IS NULL)",
+            name="ck_customer_import_staging_customer_link",
+        ),
+        Index("idx_customer_import_staging_customer", "customer_type", "doctor_id", "pharmacy_id"),
+    )
+
+    import_run = relationship("CustomerImportRun", back_populates="staging_items")
+    doctor = relationship(Doctor)
+    pharmacy = relationship(Pharmacy)
+    assigned_rep = relationship(User, foreign_keys=[assigned_rep_user_id])
+    route = relationship(Route, foreign_keys=[route_id])
+    route_account = relationship(RouteAccount)
+    reviewed_by = relationship(User, foreign_keys=[reviewed_by_user_id])
+
+
+class CustomerRouteAssignmentRun(Base):
+    __tablename__ = "customer_route_assignment_runs"
+
+    id = Column(Integer, primary_key=True)
+    actor_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    dry_run = Column(Boolean, nullable=False, default=False, server_default=false())
+    status = Column(String(30), nullable=False, default="planned", server_default="planned")
+    total_rows = Column(Integer, nullable=False, default=0, server_default="0")
+    created_count = Column(Integer, nullable=False, default=0, server_default="0")
+    updated_count = Column(Integer, nullable=False, default=0, server_default="0")
+    unchanged_count = Column(Integer, nullable=False, default=0, server_default="0")
+    skipped_count = Column(Integer, nullable=False, default=0, server_default="0")
+    blocked_count = Column(Integer, nullable=False, default=0, server_default="0")
+    route_accounts_created_count = Column(Integer, nullable=False, default=0, server_default="0")
+    route_accounts_updated_count = Column(Integer, nullable=False, default=0, server_default="0")
+    blocked_counts_json = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    actor = relationship(User)
+
+
 class Visit(Base):
     __tablename__ = "visits"
 
@@ -224,6 +324,7 @@ class Visit(Base):
     end_lng = Column(Float, nullable=True)
     end_accuracy = Column(Float, nullable=True)
     duration_seconds = Column(Integer, nullable=True)
+    client_request_id = Column(String(200), nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
@@ -241,6 +342,7 @@ class Visit(Base):
         Index("idx_visit_doctor_id", "doctor_id"),
         Index("idx_visit_status", "status"),
         Index("idx_visit_is_deleted", "is_deleted"),
+        Index("uq_visit_rep_client_request", "rep_id", "client_request_id", unique=True),
     )
 
     rep = relationship(User)

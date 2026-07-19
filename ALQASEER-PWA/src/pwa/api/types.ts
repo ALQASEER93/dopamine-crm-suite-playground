@@ -19,6 +19,10 @@ export type RouteStop = {
     lat: number;
     lng: number;
   };
+  isDemo?: boolean;
+  dataOrigin?: string;
+  visitFrequency?: string;
+  monthlyFrequencyTarget?: number | null;
 };
 
 export type Customer = {
@@ -26,10 +30,24 @@ export type Customer = {
   name: string;
   type: "doctor" | "pharmacy";
   area?: string;
+  territory?: string;
   specialty?: string;
+  category?: string;
+  priority?: "A" | "B" | "C";
+  monthlyFrequencyTarget?: number;
+  visitsThisMonth?: number;
+  assignedRepEmail?: string;
+  productFocus?: string;
+  notes?: string;
   phone?: string;
   address?: string;
   lastVisit?: string;
+  rawName?: string;
+  isDemo?: boolean;
+  dataOrigin?: string;
+  visitFrequency?: string;
+  frequencyPlanSource?: "route" | "none" | string;
+  isAssignedToCurrentRep?: boolean;
   location?: {
     lat: number;
     lng: number;
@@ -41,7 +59,7 @@ export type VisitPayload = {
   customerName: string;
   customerType: "doctor" | "pharmacy";
   visitType: "follow-up" | "new" | "reminder";
-  status: "success" | "refused" | "no-show";
+  status?: "scheduled" | "success" | "refused" | "no-show" | "reminder";
   notes?: string;
   coordinates?: {
     lat: number;
@@ -55,25 +73,36 @@ export type Visit = VisitPayload & {
   repId?: string;
   startedAt?: string;
   endedAt?: string;
+  durationSeconds?: number;
+  callDurationSeconds?: number;
+  startAccuracy?: number | null;
+  endAccuracy?: number | null;
+  endCoordinates?: {
+    lat: number;
+    lng: number;
+  } | null;
   serverStatus?: string;
 };
 
-export type Product = {
-  id: string;
-  name: string;
-  sku?: string;
-  price?: number;
-};
-
-export type OrderItem = {
-  productId: string;
-  quantity: number;
-};
-
-export type OrderPayload = {
-  customerId: string;
-  items: OrderItem[];
-  notes?: string;
+export type CoverageSummary = {
+  totalAssignedCustomers: number;
+  visitedToday: number;
+  remainingToday: number;
+  completedVisitsThisMonth: number;
+  monthlyFrequencyTarget: number;
+  frequencyAchievedPct: number;
+  dueCustomers: number;
+  overdueCustomers: number;
+  coveredCustomers: number;
+  noPlanCustomers: number;
+  unassignedCustomers: number;
+  plannedCustomers: number;
+  frequencyStatusNote: string;
+  avgVisitDurationMinutes: number;
+  avgCallDurationMinutes: number;
+  visitsByArea: Array<{ area: string; visits: number }>;
+  visitsByCustomerType: Array<{ type: "doctor" | "pharmacy"; visits: number }>;
+  gpsMissingOrLowAccuracy: number;
 };
 
 export type LoginResponse = {

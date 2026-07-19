@@ -2,6 +2,7 @@ import React, { FormEvent, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { API_BASE_URL, login } from "../../api/client";
 import { useAuthStore } from "../../state/auth";
+import { APP_VERSION, BUILD_MARKER } from "../../buildInfo";
 
 type HealthStatus = "Idle" | "Checking" | "OK" | "Unreachable" | "CORS" | "401";
 
@@ -11,7 +12,8 @@ function isDebugUiEnabled() {
 
 async function checkHealth(opts: { timeoutMs: number }): Promise<{ status: HealthStatus; detail: string; url: string }> {
   const base = new URL(API_BASE_URL, window.location.origin);
-  const candidates = ["/health", "/api/health"].map((p) => `${base.origin}${p}`);
+  const apiBase = `${base.origin}${base.pathname.replace(/\/$/, "")}`;
+  const candidates = [`${apiBase}/health`];
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), opts.timeoutMs);
 
@@ -179,8 +181,12 @@ export default function LoginPage() {
         <ul style={{ margin: 0, paddingInlineStart: 20, color: "var(--muted)", lineHeight: 1.6 }}>
           <li>يجب منح إذن تحديد الموقع عند فتح التطبيق.</li>
           <li>يتم تخزين آخر بيانات مسار اليوم والعملاء للعمل في وضع عدم الاتصال.</li>
-          <li>عند عودة الاتصال يتم إرسال الزيارات والطلبات المعلقة تلقائياً.</li>
+          <li>عند عودة الاتصال يتم إرسال الزيارات والإجراءات الميدانية المعلقة تلقائياً.</li>
         </ul>
+      </div>
+      <div className="build-strip" aria-label="public-build-version">
+        <span>الإصدار {APP_VERSION}</span>
+        <span className="mono-value">{BUILD_MARKER}</span>
       </div>
     </div>
   );

@@ -1,8 +1,47 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 import api.v1.visits as visits_api
+
+
+def _create_basic_visit(client, auth_headers) -> int:
+    doctors = client.get("/api/v1/doctors", headers=auth_headers).json()["data"]
+    doctor_id = doctors[0]["id"]
+    rep_id = client.get("/api/v1/reps", headers=auth_headers).json()[0]["id"]
+    response = client.post(
+        "/api/v1/visits",
+        headers=auth_headers,
+        json={"visit_date": date.today().isoformat(), "rep_id": rep_id, "doctor_id": doctor_id},
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["id"]
+
+
+def test_lifecycle_rejects_future_client_timestamps(client, auth_headers):
+    visit_id = _create_basic_visit(client, auth_headers)
+    future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+
+    future_start = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"lat": 31.95, "lng": 35.91, "accuracy": 10.0, "started_at": future_time},
+    )
+    assert future_start.status_code == 400, future_start.text
+
+    valid_start = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"lat": 31.95, "lng": 35.91, "accuracy": 10.0},
+    )
+    assert valid_start.status_code == 200, valid_start.text
+
+    future_end = client.post(
+        f"/api/v1/visits/{visit_id}/end",
+        headers=auth_headers,
+        json={"lat": 31.9501, "lng": 35.9101, "accuracy": 10.0, "ended_at": future_time},
+    )
+    assert future_end.status_code == 400, future_end.text
 
 
 def test_create_visit(client, auth_headers):
@@ -84,6 +123,33 @@ def test_start_and_end_visit(client, auth_headers):
     assert ended["status"] == "completed"
     assert ended["end_lat"] == 31.9504
     assert ended["duration_seconds"] is not None and ended["duration_seconds"] >= 0
+
+
+def test_visit_start_and_end_require_real_coordinates(client, auth_headers):
+    doctor_id = client.get("/api/v1/doctors", headers=auth_headers).json()["data"][0]["id"]
+    rep_id = client.get("/api/v1/reps", headers=auth_headers).json()[0]["id"]
+    created = client.post(
+        "/api/v1/visits",
+        headers=auth_headers,
+        json={"visit_date": date.today().isoformat(), "rep_id": rep_id, "doctor_id": doctor_id},
+    )
+    assert created.status_code == 201, created.text
+    visit_id = created.json()["id"]
+
+    missing_start = client.post(
+        f"/api/v1/visits/{visit_id}/start",
+        headers=auth_headers,
+        json={"accuracy": 10},
+    )
+    assert missing_start.status_code == 422, missing_start.text
+
+    end_before_start = client.post(
+        f"/api/v1/visits/{visit_id}/end",
+        headers=auth_headers,
+        json={"lat": 31.95, "lng": 35.91, "accuracy": 10},
+    )
+    assert end_before_start.status_code == 400, end_before_start.text
+    assert "active visit" in end_before_start.json()["detail"].lower()
 
 
 def test_start_visit_is_idempotent(client, auth_headers):
@@ -228,7 +294,7 @@ def test_start_visit_retry_skips_gps_revalidation(client, auth_headers, monkeypa
     second = client.post(
         f"/api/v1/visits/{visit_id}/start",
         headers=auth_headers,
-        json={"lat": 99.99, "lng": 99.99, "accuracy": 9999},
+        json={"lat": 32.0, "lng": 36.0, "accuracy": 9999},
     )
     assert second.status_code == 200, second.text
     second_data = second.json()

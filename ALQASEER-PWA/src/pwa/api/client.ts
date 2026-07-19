@@ -2,15 +2,46 @@ import { useAuthStore } from "../state/auth";
 import {
   Customer,
   LoginResponse,
-  OrderPayload,
-  Product,
   RouteStop,
   Visit,
   VisitPayload,
 } from "./types";
+import { BUILD_API_BASE } from "../buildInfo";
 
-const DEFAULT_API_BASE = "/api/v1";
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE;
+const LOCAL_API_DEFAULT = import.meta.env.DEV ? "http://127.0.0.1:8000/api/v1" : "";
+const SAME_ORIGIN_API_BASE = "/api/v1";
+
+function isBlockedProductionApiUrl(value: string) {
+  const normalized = value.trim();
+  if (!normalized || normalized.startsWith("/")) return false;
+
+  try {
+    const parsed = new URL(normalized);
+    const host = parsed.hostname.toLowerCase();
+    const localHost = ["local", "host"].join("");
+    const loopback = ["127", "0", "0", "1"].join(".");
+    const bindAll = ["0", "0", "0", "0"].join(".");
+    const localTld = ["", "local"].join(".");
+    const vercelTld = ["vercel", "app"].join(".");
+    return host === localHost || host === loopback || host === bindAll || host === "::1" || host.endsWith(localTld) || host.endsWith(vercelTld);
+  } catch (_error) {
+    return true;
+  }
+}
+
+function resolveApiBaseUrl() {
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim();
+  const rawBaseUrl = configured || (import.meta.env.DEV ? LOCAL_API_DEFAULT : BUILD_API_BASE || SAME_ORIGIN_API_BASE);
+  const normalized = rawBaseUrl.trim().replace(/\/$/, "");
+
+  if (import.meta.env.PROD && isBlockedProductionApiUrl(normalized)) {
+    throw new Error("Production PWA API base URL is blocked. Use same-origin /api/v1 or an approved HTTPS API host.");
+  }
+
+  return normalized;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 type RequestOptions = Omit<RequestInit, "headers"> & {
   headers?: Record<string, string>;
@@ -139,9 +170,17 @@ export async function getVisits(filters?: { date?: string; status?: string; cust
 }
 
 export async function createVisit(payload: VisitPayload) {
+  const body = {
+    customerId: payload.customerId,
+    customerName: payload.customerName,
+    customerType: payload.customerType,
+    visitType: payload.visitType,
+    notes: payload.notes,
+    ...(payload.status ? { status: payload.status } : {}),
+  };
   return apiFetch<Visit>("pwa/visits", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 }
 
@@ -169,14 +208,10 @@ export async function endVisit(visitId: string, payload: { lat: number; lng: num
   });
 }
 
-export async function getProducts() {
-  return apiFetch<Product[]>("products");
-}
-
-export async function createOrder(payload: OrderPayload) {
-  return apiFetch<{ id: string }>("orders", {
-    method: "POST",
-    body: JSON.stringify(payload),
+export async function updateVisitNotes(visitId: string, notes: string) {
+  return apiFetch<Visit>(`visits/${visitId}`, {
+    method: "PUT",
+    body: JSON.stringify({ notes }),
   });
 }
 

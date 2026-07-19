@@ -35,10 +35,70 @@ def _ensure_visits_is_deleted(engine: Engine) -> None:
         )
 
 
+def _ensure_optional_column(
+    engine: Engine,
+    *,
+    table_name: str,
+    column_name: str,
+    sqlite_type: str,
+) -> None:
+    """Add an optional SQLite column when missing."""
+    if engine.url.get_backend_name() != "sqlite":
+        return
+
+    with engine.begin() as conn:
+        columns = _get_sqlite_columns(conn, table_name)
+        if not columns:
+            logger.info("%s table not found; skipping %s migration.", table_name, column_name)
+            return
+
+        if column_name in columns:
+            return
+
+        logger.info("Adding %s.%s column (%s).", table_name, column_name, sqlite_type)
+        conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {sqlite_type}"))
+
+
+def _ensure_sqlite_index(engine: Engine, *, index_name: str, ddl: str) -> None:
+    if engine.url.get_backend_name() != "sqlite":
+        return
+    with engine.begin() as conn:
+        indexes = {row[1] for row in conn.execute(text("PRAGMA index_list('visits')"))}
+        if index_name not in indexes:
+            conn.execute(text(ddl))
+
+
 def run_sqlite_migrations(engine: Engine) -> None:
     """
     Run lightweight SQLite migrations to keep schema aligned with models.
     Safe to execute on every startup.
     """
     _ensure_visits_is_deleted(engine)
-
+    # Keep geo columns aligned with ORM models for older SQLite databases.
+    for table_name, column_name, sqlite_type in (
+        ("doctors", "latitude", "REAL"),
+        ("doctors", "longitude", "REAL"),
+        ("pharmacies", "latitude", "REAL"),
+        ("pharmacies", "longitude", "REAL"),
+        ("visits", "start_lat", "REAL"),
+        ("visits", "start_lng", "REAL"),
+        ("visits", "end_lat", "REAL"),
+        ("visits", "end_lng", "REAL"),
+        ("visits", "client_request_id", "VARCHAR(200)"),
+        ("orders", "rep_id", "INTEGER"),
+        ("collections", "rep_id", "INTEGER"),
+    ):
+        _ensure_optional_column(
+            engine,
+            table_name=table_name,
+            column_name=column_name,
+            sqlite_type=sqlite_type,
+        )
+    _ensure_sqlite_index(
+        engine,
+        index_name="uq_visit_rep_client_request",
+        ddl=(
+            "CREATE UNIQUE INDEX uq_visit_rep_client_request "
+            "ON visits (rep_id, client_request_id)"
+        ),
+    )

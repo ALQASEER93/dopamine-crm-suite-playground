@@ -19,9 +19,9 @@ const TerritoryPerformanceTable = ({ from, to }) => {
   const rows = territoryQuery.data || [];
 
   return (
-    <section className="page-card">
+    <section className="page-card" data-testid="reports-territory-coverage">
       <h2>أداء الأقاليم</h2>
-      <p>الزيارات والتغطية والقيمة التجارية لكل إقليم.</p>
+      <p>الزيارات والتغطية لكل إقليم.</p>
 
       {territoryQuery.error && (
         <div className="table-card__empty">تعذر تحميل أداء الأقاليم: {territoryQuery.error.message}</div>
@@ -43,8 +43,6 @@ const TerritoryPerformanceTable = ({ from, to }) => {
                 <th>إجمالي الزيارات</th>
                 <th>المكتملة</th>
                 <th>الحسابات الفريدة</th>
-                <th>إجمالي الطلبات (JOD)</th>
-                <th>متوسط الطلب (JOD)</th>
                 <th>متوسط التقييم</th>
               </tr>
             </thead>
@@ -55,9 +53,7 @@ const TerritoryPerformanceTable = ({ from, to }) => {
                   <td>{row.totalVisits}</td>
                   <td>{row.completedVisits}</td>
                   <td>{row.uniqueAccounts}</td>
-                  <td>{row.totalOrderValueJOD}</td>
-                  <td>{row.avgOrderValueJOD}</td>
-                  <td>{row.avgRating}</td>
+                  <td>{row.avgRating ?? 'غير متاح'}</td>
                 </tr>
               ))}
             </tbody>

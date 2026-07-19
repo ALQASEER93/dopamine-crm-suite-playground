@@ -6,12 +6,11 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from core.db import get_db
 from core.security import get_current_user, require_roles
-from models.crm import Order, OrderLine, Product, RepProfile, Territory, User, Visit
+from models.crm import Product, RepProfile, Territory, User, Visit
 
 router = APIRouter(
     prefix="/reports",
@@ -51,20 +50,12 @@ def reports_overview(
     total_visits = visit_query.count()
     successful_visits = visit_query.filter(Visit.status == "completed").count()
 
-    orders_query = db.query(Order)
-    if date_from:
-        orders_query = orders_query.filter(Order.order_date >= date_from)
-    if date_to:
-        orders_query = orders_query.filter(Order.order_date <= date_to)
-    orders_count = orders_query.count()
-    orders_total = orders_query.with_entities(func.sum(Order.total_amount)).scalar() or 0
-
     return {
         "data": {
             "totalVisits": total_visits,
             "successfulVisits": successful_visits,
-            "ordersCount": orders_count,
-            "ordersTotal": float(orders_total),
+            "scheduledVisits": visit_query.filter(Visit.status == "scheduled").count(),
+            "cancelledVisits": visit_query.filter(Visit.status == "cancelled").count(),
         }
     }
 
@@ -97,6 +88,8 @@ def rep_performance(
                 "scheduledVisits": 0,
                 "cancelledVisits": 0,
                 "uniqueAccounts": set(),
+                "hcpVisits": 0,
+                "pharmacyVisits": 0,
             }
         entry = metrics[rep_id]
         entry["totalVisits"] += 1
@@ -108,8 +101,10 @@ def rep_performance(
             entry["cancelledVisits"] += 1
         if visit.doctor_id:
             entry["uniqueAccounts"].add(f"doctor:{visit.doctor_id}")
+            entry["hcpVisits"] += 1
         if visit.pharmacy_id:
             entry["uniqueAccounts"].add(f"pharmacy:{visit.pharmacy_id}")
+            entry["pharmacyVisits"] += 1
 
     results = []
     for rep_id, entry in metrics.items():
@@ -131,11 +126,9 @@ def rep_performance(
                 "scheduledVisits": entry["scheduledVisits"],
                 "cancelledVisits": entry["cancelledVisits"],
                 "uniqueAccounts": len(entry["uniqueAccounts"]),
-                "hcpVisits": 0,
-                "pharmacyVisits": 0,
-                "totalOrderValueJOD": 0,
-                "avgOrderValueJOD": 0,
-                "avgRating": 0,
+                "hcpVisits": entry["hcpVisits"],
+                "pharmacyVisits": entry["pharmacyVisits"],
+                "avgRating": None,
             }
         )
 
@@ -157,18 +150,16 @@ def rep_performance_export(
     writer = csv.DictWriter(
         buffer,
         fieldnames=[
-            "repId",
-            "repName",
-            "repEmail",
-            "territoryNames",
-            "totalVisits",
-            "completedVisits",
-            "scheduledVisits",
-            "cancelledVisits",
-            "uniqueAccounts",
-            "totalOrderValueJOD",
-            "avgOrderValueJOD",
-            "avgRating",
+            "معرف المندوب / repId",
+            "اسم المندوب / repName",
+            "البريد / repEmail",
+            "الأقاليم / territoryNames",
+            "إجمالي الزيارات / totalVisits",
+            "الزيارات المكتملة / completedVisits",
+            "الزيارات المجدولة / scheduledVisits",
+            "الزيارات الملغاة / cancelledVisits",
+            "العملاء الفريدون / uniqueAccounts",
+            "متوسط التقييم / avgRating",
         ],
         extrasaction="ignore",
     )
@@ -176,11 +167,19 @@ def rep_performance_export(
     for row in rows:
         writer.writerow(
             {
-                **row,
-                "territoryNames": ", ".join(row.get("territoryNames") or []),
+                "معرف المندوب / repId": row.get("repId"),
+                "اسم المندوب / repName": row.get("repName"),
+                "البريد / repEmail": row.get("repEmail"),
+                "الأقاليم / territoryNames": ", ".join(row.get("territoryNames") or []),
+                "إجمالي الزيارات / totalVisits": row.get("totalVisits"),
+                "الزيارات المكتملة / completedVisits": row.get("completedVisits"),
+                "الزيارات المجدولة / scheduledVisits": row.get("scheduledVisits"),
+                "الزيارات الملغاة / cancelledVisits": row.get("cancelledVisits"),
+                "العملاء الفريدون / uniqueAccounts": row.get("uniqueAccounts"),
+                "متوسط التقييم / avgRating": row.get("avgRating"),
             }
         )
-    csv_data = buffer.getvalue()
+    csv_data = "\ufeff" + buffer.getvalue()
     headers = {"Content-Disposition": 'attachment; filename="rep-performance.csv"'}
     return Response(content=csv_data, media_type="text/csv", headers=headers)
 
@@ -194,36 +193,14 @@ def product_performance(
     date_from = _parse_date(from_date)
     date_to = _parse_date(to_date)
 
-    query = (
-        db.query(
-            Product.id,
-            Product.name,
-            func.sum(OrderLine.quantity),
-            func.count(func.distinct(OrderLine.order_id)),
-            func.sum(OrderLine.quantity * OrderLine.price),
-        )
-        .join(OrderLine.product)
-        .join(OrderLine.order)
-    )
-    if date_from:
-        query = query.filter(Order.order_date >= date_from)
-    if date_to:
-        query = query.filter(Order.order_date <= date_to)
-
-    query = query.group_by(Product.id, Product.name).order_by(Product.name.asc())
-
     results = []
-    for product_id, name, total_qty, order_count, order_sum in query.all():
-        visits_count = int(order_count or 0)
-        total_qty = int(total_qty or 0)
-        avg_qty = round(total_qty / visits_count, 2) if visits_count else 0
+    for product in db.query(Product).order_by(Product.name.asc()).all():
         results.append(
             {
-                "productName": name,
-                "visitsCount": visits_count,
-                "totalQuantity": total_qty,
-                "avgQuantityPerVisit": avg_qty,
-                "totalOrderValueJOD": float(order_sum or 0),
+                "productName": product.name,
+                "productLine": product.line,
+                "visitsCount": None,
+                "sampleRequestCount": None,
             }
         )
 
@@ -278,9 +255,7 @@ def territory_performance(
                 "totalVisits": entry["totalVisits"],
                 "completedVisits": entry["completedVisits"],
                 "uniqueAccounts": len(entry["uniqueAccounts"]),
-                "totalOrderValueJOD": 0,
-                "avgOrderValueJOD": 0,
-                "avgRating": 0,
+                "avgRating": None,
             }
         )
     return results

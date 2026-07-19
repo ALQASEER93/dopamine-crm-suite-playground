@@ -88,10 +88,16 @@ async def get_current_user(
             detail="Invalid authentication token.",
         )
 
+    user_lookup_id: int | str
+    try:
+        user_lookup_id = int(user_id)
+    except (TypeError, ValueError):
+        user_lookup_id = str(user_id)
+
     user = (
         db.query(User)
         .options(joinedload(User.role))
-        .filter(User.id == int(user_id), User.is_active.is_(True))
+        .filter(User.id == user_lookup_id, User.is_active.is_(True))
         .first()
     )
     if not user:

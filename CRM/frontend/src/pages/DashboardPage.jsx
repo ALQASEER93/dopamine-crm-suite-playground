@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import VisitsSummaryCards from '../visits/VisitsSummaryCards';
+import VisitsSummaryCards from '../components/VisitsSummaryCards';
 import { apiClient } from '../api/client';
 import { normalizeVisit } from '../api/visits';
 import './DashboardPage.css';

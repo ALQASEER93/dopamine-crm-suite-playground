@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { createPharmacy, listPharmacies, pharmacyKeys, updatePharmacy } from '../api/endpoints/pharmacies';
 import DetailDrawer from '../components/DetailDrawer';
+import { normalizeRoleSlug } from './fieldRouteUtils';
 import './EntityListPage.css';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
@@ -104,7 +105,8 @@ const PharmacyForm = ({ initialValues, onSubmit, onCancel, submitting, error }) 
 };
 
 const PharmaciesPage = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const canManageCustomers = ['admin', 'sales_manager'].includes(normalizeRoleSlug(user));
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('');
@@ -120,7 +122,7 @@ const PharmaciesPage = () => {
   const queryParams = useMemo(
     () => ({
       page,
-      pageSize,
+      page_size: pageSize,
       search,
       city: cityFilter,
       area: areaFilter,
@@ -243,9 +245,11 @@ const PharmaciesPage = () => {
             }}
           />
         </div>
-        <button type="button" className="btn btn-primary" onClick={openCreate}>
-          إضافة صيدلية
-        </button>
+        {canManageCustomers && (
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            إضافة صيدلية
+          </button>
+        )}
       </div>
 
       <div className="entity-filters">
@@ -377,9 +381,11 @@ const PharmaciesPage = () => {
               </p>
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
-                تعديل
-              </button>
+              {canManageCustomers && (
+                <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
+                  تعديل
+                </button>
+              )}
               <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
                 إغلاق
               </button>
@@ -390,7 +396,7 @@ const PharmaciesPage = () => {
 
       <DetailDrawer
         title={formMode === 'edit' ? 'تعديل الصيدلية' : 'إضافة صيدلية'}
-        isOpen={Boolean(formMode)}
+        isOpen={canManageCustomers && Boolean(formMode)}
         onClose={closeForm}
       >
         {formMode && (

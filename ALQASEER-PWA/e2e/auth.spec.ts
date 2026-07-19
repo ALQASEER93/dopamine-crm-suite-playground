@@ -30,31 +30,12 @@ test("PWA login persists after refresh", async ({ page }) => {
   await page.reload({ waitUntil: "networkidle" });
   await page.getByLabel("login-page").waitFor({ state: "visible" });
 
-  const bootstrapCode = process.env.E2E_BOOTSTRAP_CODE;
-  const adminEmail = process.env.E2E_ADMIN_EMAIL || "admin@example.com";
-  const adminPassword = process.env.E2E_ADMIN_PASSWORD || "Admin12345!";
-  const adminName = process.env.E2E_ADMIN_NAME || "Admin User";
+  const adminEmail = process.env.E2E_ADMIN_EMAIL;
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD;
+  test.skip(!adminEmail || !adminPassword, "Authenticated e2e requires vault-backed QA credentials.");
 
-  if (bootstrapCode) {
-    await page.evaluate(
-      async ({ code, email, password, name }) => {
-        await fetch("/api/v1/auth/bootstrap", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, email, password, name }),
-        });
-      },
-      {
-        code: bootstrapCode,
-        email: adminEmail,
-        password: adminPassword,
-        name: adminName,
-      },
-    );
-  }
-
-  await page.locator("input#email").fill(adminEmail);
-  await page.locator("input#password").fill(adminPassword);
+  await page.locator("input#email").fill(adminEmail || "");
+  await page.locator("input#password").fill(adminPassword || "");
   await page.locator("button[type=\"submit\"]").click();
 
   await expect(page).toHaveURL(/\/today-route$/);

@@ -36,11 +36,21 @@ class UserUpdate(BaseModel):
 class UserOut(BaseModel):
     id: int
     name: str
-    email: EmailStr
+    email: str
     is_active: bool
     role: RoleOut
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CurrentUserPasswordChange(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=128)
+    confirm_password: str = Field(..., min_length=8, max_length=128)
+
+
+class PasswordChangeOut(BaseModel):
+    message: str
 
 
 class RepCreate(BaseModel):
@@ -87,7 +97,7 @@ class AdminUserUpdate(BaseModel):
 class AdminUserOut(BaseModel):
     id: int
     name: str
-    email: EmailStr
+    email: str
     isActive: bool
     role: RoleOut
     salesRep: Optional[SalesRepInfo] = None

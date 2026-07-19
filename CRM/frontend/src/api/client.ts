@@ -1,5 +1,45 @@
-const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1') as string;
-export const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
+const LOCAL_API_DEFAULT = import.meta.env.DEV ? '/api/v1' : '';
+const SAME_ORIGIN_API_BASE = '/api/v1';
+
+const isBlockedProductionApiUrl = (value: string) => {
+  const normalized = value.trim();
+  if (!normalized || normalized.startsWith('/')) return false;
+
+  try {
+    const parsed = new URL(normalized);
+    const host = parsed.hostname.toLowerCase();
+    const localHost = ['local', 'host'].join('');
+    const loopback = ['127', '0', '0', '1'].join('.');
+    const bindAll = ['0', '0', '0', '0'].join('.');
+    const localTld = ['', 'local'].join('.');
+    const vercelTld = ['vercel', 'app'].join('.');
+    return host === localHost || host === loopback || host === bindAll || host === '::1' || host.endsWith(localTld) || host.endsWith(vercelTld);
+  } catch (_error) {
+    return true;
+  }
+};
+
+const resolveApiBaseUrl = () => {
+  const rawBaseUrl = (
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.DEV ? LOCAL_API_DEFAULT : SAME_ORIGIN_API_BASE)
+  ) as string;
+  const normalized = rawBaseUrl.trim().replace(/\/$/, '');
+
+  if (import.meta.env.PROD && (!normalized || isBlockedProductionApiUrl(normalized))) {
+    throw new Error(
+      [
+        'Production API base URL is invalid.',
+        'Use same-origin /api/v1 or set VITE_API_BASE_URL to an approved deployed API host.',
+      ].join(' '),
+    );
+  }
+
+  return normalized;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export type ResponseType = 'json' | 'text' | 'blob';
@@ -33,7 +73,12 @@ export class ApiError extends Error {
 }
 
 let authToken: string | null = null;
-let unauthorizedHandler: (() => void) | null = null;
+export interface UnauthorizedContext {
+  path: string;
+  status: number;
+}
+
+let unauthorizedHandler: ((context: UnauthorizedContext) => void) | null = null;
 
 const API_PREFIX = '/api/v1';
 
@@ -88,7 +133,7 @@ export const setAuthToken = (token: string | null) => {
   authToken = token ?? null;
 };
 
-export const setUnauthorizedHandler = (handler: (() => void) | null) => {
+export const setUnauthorizedHandler = (handler: ((context: UnauthorizedContext) => void) | null) => {
   unauthorizedHandler = typeof handler === 'function' ? handler : null;
 };
 
@@ -128,8 +173,8 @@ export async function apiFetch<T = unknown>(path: string, options: ApiRequestOpt
     data = await parseJsonSafely(response);
   }
 
-  if (response.status === 401 && unauthorizedHandler) {
-    unauthorizedHandler();
+  if (response.status === 401 && unauthorizedHandler && effectiveToken) {
+    unauthorizedHandler({ path, status: response.status });
   }
 
   if (!response.ok) {

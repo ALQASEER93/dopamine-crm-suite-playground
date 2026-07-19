@@ -12,9 +12,9 @@ from core.config import settings
 from core.db import get_db
 from core.security import get_current_user
 from models.crm import User
-from schemas.auth import AuthResponse, BootstrapRequest, LoginRequest
-from schemas.user import UserOut
-from services.auth import authenticate, bootstrap_admin, has_admin_user, issue_token
+from schemas.auth import AuthResponse, LoginRequest
+from schemas.user import CurrentUserPasswordChange, PasswordChangeOut, UserOut
+from services.auth import authenticate, hash_password, issue_token, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _RATE_WINDOW_SECONDS = 60
@@ -60,29 +60,30 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
     return AuthResponse(token=token, user=user)  # type: ignore[arg-type]
 
 
-@router.post("/bootstrap", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def bootstrap(payload: BootstrapRequest, db: Session = Depends(get_db)) -> AuthResponse:
-    if not settings.bootstrap_code:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bootstrap disabled.")
-    if payload.code != settings.bootstrap_code:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid bootstrap code.")
-    if has_admin_user(db):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Admin already exists.")
-
-    try:
-        user = bootstrap_admin(
-            db,
-            email=payload.email,
-            name=payload.name,
-            password=payload.password,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-
-    token = issue_token(user, settings.jwt_expires_minutes)
-    return AuthResponse(token=token, user=user)  # type: ignore[arg-type]
-
-
 @router.get("/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.post("/me/password", response_model=PasswordChangeOut)
+def change_current_user_password(
+    payload: CurrentUserPasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PasswordChangeOut:
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password confirmation does not match.",
+        )
+
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+
+    current_user.password_hash = hash_password(payload.new_password)
+    db.add(current_user)
+    db.commit()
+    return PasswordChangeOut(message="Password changed.")

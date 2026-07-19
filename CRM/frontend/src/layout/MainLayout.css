@@ -52,6 +52,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .layout__header {
@@ -81,6 +82,7 @@
   gap: 1.5rem;
   width: 100%;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .layout__header-app {
@@ -97,10 +99,21 @@
   text-transform: capitalize;
 }
 
+.layout__header-build {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
 .layout__header-user {
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .layout__avatar {
@@ -130,9 +143,16 @@
   margin-inline-start: 1rem;
 }
 
+.layout__language-toggle,
+.layout__theme-toggle,
+.layout__signout {
+  white-space: nowrap;
+}
+
 .layout__main {
   padding: 2rem;
   flex: 1;
+  min-width: 0;
 }
 
 [dir="rtl"] .layout {

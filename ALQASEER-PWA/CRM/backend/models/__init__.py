@@ -19,7 +19,9 @@ from models.crm import (  # noqa: F401
     StockLocation,
     StockMovement,
     Target,
+    Territory,
     User,
+    RepProfile,
     Visit,
 )
 from models.hcp import HCP  # noqa: F401

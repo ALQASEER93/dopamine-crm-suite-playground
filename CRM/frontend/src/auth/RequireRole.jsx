@@ -27,7 +27,7 @@ const RequireRole = ({ roles = [], children }) => {
   const allowed = roles.some(role => normalizeRole(role) === activeRole);
 
   if (!allowed) {
-    return <NotAuthorized />;
+    return <NotAuthorized requiredRoles={roles.map(normalizeRole)} />;
   }
 
   return children;

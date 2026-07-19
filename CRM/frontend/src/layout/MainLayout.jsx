@@ -1,29 +1,37 @@
 import { useState, useEffect, useMemo } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { applyDocumentLanguage, resolveInitialLanguage } from '../i18n/language';
+import { normalizeRoleSlug, redactEmail, roleLabel as resolveRoleLabel } from '../pages/fieldRouteUtils';
 import './MainLayout.css';
 
 const NAV_ITEMS = [
-  { label: 'لوحة التحكم', path: '/dashboard' },
-  { label: 'الأطباء', path: '/doctors' },
-  { label: 'الصيدليات', path: '/pharmacies' },
-  { label: 'المنتجات', path: '/products' },
-  { label: 'الطلبات', path: '/orders' },
-  { label: 'الزيارات', path: '/visits' },
-  { label: 'المسارات', path: '/routes' },
-  { label: 'المخزون', path: '/stock' },
-  { label: 'الأهداف', path: '/targets' },
-  { label: 'التحصيلات', path: '/collections' },
-  { label: 'التقارير', path: '/reports', roles: ['admin', 'sales_manager'] },
-  { label: 'الإعدادات', path: '/settings' },
-  { label: 'الإدارة', path: '/settings/users', roles: ['admin', 'sales_manager'] },
+  { ar: 'حسابي', en: 'My account', path: '/account' },
+  { ar: 'العملاء', en: 'Customers', path: '/customers' },
+  { ar: 'خطة اليوم', en: 'Today route', path: '/today-route' },
+  { ar: 'الخريطة الحية', en: 'Live map', path: '/live-map' },
+  { ar: 'لوحة التحكم', en: 'Dashboard', path: '/dashboard' },
+  { ar: 'الأطباء', en: 'Doctors', path: '/doctors' },
+  { ar: 'الصيدليات', en: 'Pharmacies', path: '/pharmacies' },
+  { ar: 'المنتجات', en: 'Products', path: '/products' },
+  { ar: 'الزيارات', en: 'Visits', path: '/visits' },
+  { ar: 'المسارات', en: 'Routes', path: '/routes' },
+  { ar: 'الأهداف', en: 'Targets', path: '/targets' },
+  { ar: 'التقارير', en: 'Reports', path: '/reports', roles: ['admin', 'sales_manager'] },
+  { ar: 'بيانات العملاء', en: 'Customer data', path: '/admin/customers', roles: ['admin'] },
+  { ar: 'مخطط التكليف', en: 'Assignment planner', path: '/admin/assignment-planner', roles: ['admin'] },
+  { ar: 'الإعدادات', en: 'Settings', path: '/settings' },
+  { ar: 'الإدارة', en: 'User management', path: '/settings/users', roles: ['admin', 'sales_manager'] },
 ];
+
+const CRM_BUILD_MARKER = import.meta.env.VITE_APP_VERSION || 'crm-1.0.0-phase-a';
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [language, setLanguage] = useState(resolveInitialLanguage);
   const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'light';
+    if (typeof window === 'undefined') return 'dark';
     try {
       const stored = window.localStorage?.getItem('theme');
       if (stored === 'light' || stored === 'dark') {
@@ -32,29 +40,20 @@ const MainLayout = () => {
     } catch (error) {
       console.warn('Theme storage unavailable', error);
     }
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
   });
   const [isUserOverride, setIsUserOverride] = useState(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') return true;
     try {
       const stored = window.localStorage?.getItem('theme');
-      return stored === 'light' || stored === 'dark';
+      return stored === 'light' || stored === 'dark' || !stored;
     } catch (error) {
-      return false;
+      return true;
     }
   });
   const navigate = useNavigate();
   const location = useLocation();
-  const roleSlug = useMemo(() => {
-    const rawRole = user?.role?.slug || user?.roleSlug || user?.role || '';
-    if (typeof rawRole === 'string') {
-      return rawRole.toLowerCase();
-    }
-    if (rawRole && typeof rawRole === 'object' && rawRole.slug) {
-      return String(rawRole.slug).toLowerCase();
-    }
-    return '';
-  }, [user]);
+  const roleSlug = useMemo(() => normalizeRoleSlug(user), [user]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -66,23 +65,34 @@ const MainLayout = () => {
   };
 
   const userInitial = (user?.name || user?.email || '?').charAt(0).toUpperCase();
-  const roleLabel =
-    roleSlug === 'sales_rep'
-      ? 'مندوب مبيعات'
-      : roleSlug === 'sales_manager'
-      ? 'مدير مبيعات'
-      : roleSlug === 'admin'
-      ? 'مدير النظام'
-      : roleSlug || 'عضو الفريق';
+  const roleLabel = resolveRoleLabel(roleSlug);
   const navItems = useMemo(
     () => NAV_ITEMS.filter(item => !item.roles || item.roles.includes(roleSlug)),
     [roleSlug],
   );
-  const themeLabel = theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن';
+  const isArabic = language === 'ar';
+  const themeLabel =
+    theme === 'dark'
+      ? isArabic
+        ? 'الوضع الفاتح'
+        : 'Light mode'
+      : isArabic
+        ? 'الوضع الداكن'
+        : 'Dark mode';
+  const nextLanguageLabel = language === 'ar' ? 'English' : 'العربية';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    applyDocumentLanguage(language);
+    try {
+      window.localStorage?.setItem('dpm.language', language);
+    } catch (error) {
+      console.warn('Unable to persist language preference', error);
+    }
+  }, [language]);
 
   useEffect(() => {
     if (isUserOverride || typeof window === 'undefined' || !window.matchMedia) return undefined;
@@ -117,6 +127,10 @@ const MainLayout = () => {
     }
   };
 
+  const handleLanguageToggle = () => {
+    setLanguage(prev => (prev === 'ar' ? 'en' : 'ar'));
+  };
+
   return (
     <div className="layout">
       <aside className={`layout__sidebar ${sidebarOpen ? 'layout__sidebar--open' : ''}`}>
@@ -130,7 +144,7 @@ const MainLayout = () => {
               to={item.path}
               className={({ isActive }) => `layout__nav-link${isActive ? ' is-active' : ''}`}
             >
-              {item.label}
+              {isArabic ? item.ar : item.en}
             </NavLink>
           ))}
         </nav>
@@ -141,26 +155,38 @@ const MainLayout = () => {
             type="button"
             className="layout__menu-button"
             onClick={() => setSidebarOpen(prev => !prev)}
-            aria-label="تبديل القائمة"
+            aria-label={isArabic ? 'تبديل القائمة' : 'Toggle menu'}
           >
-            القائمة
+            {isArabic ? 'القائمة' : 'Menu'}
           </button>
           <div className="layout__header-info">
             <div>
               <span className="layout__header-app">DOPAMINE CRM</span>
               <span className="layout__header-role">{roleLabel}</span>
+              <span className="layout__header-build">Build {CRM_BUILD_MARKER}</span>
             </div>
             <div className="layout__header-user">
               <div className="layout__avatar">{userInitial}</div>
               <div className="layout__user-text">
                 <strong>{user?.name}</strong>
-                <span>{user?.email}</span>
+                <span>{redactEmail(user?.email)}</span>
               </div>
               <button type="button" className="btn btn-secondary layout__theme-toggle" onClick={handleThemeToggle}>
                 {themeLabel}
               </button>
+              <button
+                type="button"
+                className="btn btn-secondary layout__language-toggle"
+                onClick={handleLanguageToggle}
+                aria-label={`تبديل اللغة إلى ${nextLanguageLabel} / Switch language to ${nextLanguageLabel}`}
+                data-testid="language-toggle"
+                data-language-current={language}
+                data-language-next={language === 'ar' ? 'en' : 'ar'}
+              >
+                {nextLanguageLabel}
+              </button>
               <button type="button" className="btn btn-secondary layout__signout" onClick={handleSignOut}>
-                تسجيل الخروج
+                {isArabic ? 'تسجيل الخروج' : 'Sign out'}
               </button>
             </div>
           </div>

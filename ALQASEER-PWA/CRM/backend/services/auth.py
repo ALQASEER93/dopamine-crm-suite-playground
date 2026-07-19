@@ -84,18 +84,32 @@ DEFAULT_USERS = [
         ["admin@dopaminepharma.com", "admin@dpm.test"],
     ),
     (
-        "manager@example.com",
+        "sales_manager@example.com",
         "Sales Manager",
         "sales_manager",
-        "password",
-        ["manager@dopaminepharma.com"],
+        "Sales12345!",
+        ["manager@example.com", "manager@dopaminepharma.com"],
     ),
     (
-        "rep@example.com",
-        "Medical Rep",
+        "rep1@example.com",
+        "Medical Rep 1",
         "medical_rep",
         "Rep12345!",
-        ["rep@dopaminepharma.com", "rep@dpm.test"],
+        ["rep@example.com", "rep@dopaminepharma.com", "rep@dpm.test"],
+    ),
+    (
+        "rep2@example.com",
+        "Medical Rep 2",
+        "medical_rep",
+        "Rep12345!",
+        [],
+    ),
+    (
+        "rep3@example.com",
+        "Medical Rep 3",
+        "medical_rep",
+        "Rep12345!",
+        [],
     ),
 ]
 
@@ -181,3 +195,64 @@ def bootstrap_admin(
     db.commit()
     db.refresh(user)
     return user
+
+
+class BootstrapAdminResult:
+    def __init__(self, *, email: str, created: bool, reason: str):
+        self.email = email
+        self.created = created
+        self.reason = reason
+
+
+def ensure_bootstrap_admin_user(
+    db: Session,
+    *,
+    email: str,
+    name: str,
+    password: str,
+) -> BootstrapAdminResult:
+    """
+    Idempotently ensure there is a usable admin for initial deployments.
+
+    Safe defaults:
+    - If any active admin exists already, do NOT create another one.
+    - If the provided email already exists as an active admin, do nothing.
+    - If the provided email exists with a non-admin role, refuse to escalate.
+    """
+    normalized_email = email.strip().lower()
+    roles = seed_default_roles(db)
+    admin_role = roles["admin"]
+
+    existing_admin = (
+        db.query(User)
+        .join(Role, User.role_id == Role.id)
+        .filter(Role.slug == "admin", User.is_active.is_(True))
+        .first()
+    )
+    if existing_admin:
+        if existing_admin.email == normalized_email:
+            return BootstrapAdminResult(email=normalized_email, created=False, reason="admin already exists")
+        return BootstrapAdminResult(email=normalized_email, created=False, reason="another active admin exists")
+
+    user = db.query(User).filter(User.email == normalized_email).first()
+    if user and user.role_id != admin_role.id:
+        raise ValueError("User exists but is not admin; refusing to change role.")
+
+    if user:
+        # Reactivate existing admin record and set password from env (no logging of password).
+        user.is_active = True
+        user.name = name
+        user.password_hash = hash_password(password)
+        db.commit()
+        return BootstrapAdminResult(email=normalized_email, created=False, reason="reactivated existing admin")
+
+    user = User(
+        email=normalized_email,
+        name=name,
+        role_id=admin_role.id,
+        is_active=True,
+        password_hash=hash_password(password),
+    )
+    db.add(user)
+    db.commit()
+    return BootstrapAdminResult(email=normalized_email, created=True, reason="created")

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { createDoctor, doctorKeys, listDoctors, updateDoctor } from '../api/endpoints/doctors';
 import DetailDrawer from '../components/DetailDrawer';
+import { normalizeRoleSlug } from './fieldRouteUtils';
 import './EntityListPage.css';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
@@ -107,7 +108,8 @@ const DoctorForm = ({ initialValues, onSubmit, onCancel, submitting, error }) =>
 };
 
 const DoctorsPage = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const canManageCustomers = ['admin', 'sales_manager'].includes(normalizeRoleSlug(user));
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('');
@@ -233,7 +235,9 @@ const DoctorsPage = () => {
       <div className="entity-toolbar">
         <div>
           <h1 className="page-heading">الأطباء</h1>
-          <p className="page-subtitle">استعراض وإضافة وتحديث مقدمي الرعاية.</p>
+          <p className="page-subtitle">
+            {canManageCustomers ? 'استعراض وإضافة وتحديث مقدمي الرعاية.' : 'استعراض مقدمي الرعاية المعيّنين لك.'}
+          </p>
         </div>
         <div className="entity-search">
           <input
@@ -247,9 +251,11 @@ const DoctorsPage = () => {
             }}
           />
         </div>
-        <button type="button" className="btn btn-primary" onClick={openCreate}>
-          إضافة طبيب
-        </button>
+        {canManageCustomers && (
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            إضافة طبيب
+          </button>
+        )}
       </div>
 
       <div className="entity-filters">
@@ -391,9 +397,11 @@ const DoctorsPage = () => {
               </p>
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
-                تعديل
-              </button>
+              {canManageCustomers && (
+                <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
+                  تعديل
+                </button>
+              )}
               <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
                 إغلاق
               </button>
@@ -404,7 +412,7 @@ const DoctorsPage = () => {
 
       <DetailDrawer
         title={formMode === 'edit' ? 'تعديل الطبيب' : 'إضافة طبيب'}
-        isOpen={Boolean(formMode)}
+        isOpen={canManageCustomers && Boolean(formMode)}
         onClose={closeForm}
       >
         {formMode && (

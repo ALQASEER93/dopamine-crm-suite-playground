@@ -10,6 +10,6 @@ describe('App', () => {
     // نستخدم createElement بدل JSX لتفادي jsxDEV
     render(React.createElement(App));
 
-    expect(screen.getByText(/CRM Sign in/i)).toBeInTheDocument();
+    expect(screen.getByText(/تسجيل الدخول إلى DOPAMINE CRM/i)).toBeInTheDocument();
   });
 });

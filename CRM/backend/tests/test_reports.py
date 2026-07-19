@@ -11,8 +11,10 @@ def test_reports_overview(client: TestClient, auth_headers: dict[str, str]) -> N
     data = payload.get("data", payload)
     assert "totalVisits" in data
     assert "successfulVisits" in data
-    assert "ordersCount" in data
-    assert "ordersTotal" in data
+    assert "scheduledVisits" in data
+    assert "cancelledVisits" in data
+    assert "ordersCount" not in data
+    assert "ordersTotal" not in data
 
 
 def test_reports_rep_performance(client: TestClient, auth_headers: dict[str, str]) -> None:
@@ -26,18 +28,21 @@ def test_reports_rep_performance_export(client: TestClient, auth_headers: dict[s
     assert resp.status_code == 200, resp.text
     assert "text/csv" in resp.headers.get("content-type", "")
     assert "rep-performance.csv" in resp.headers.get("content-disposition", "")
+    assert "اسم المندوب / repName" in resp.text
 
 
 def test_reports_product_performance(client: TestClient, auth_headers: dict[str, str]) -> None:
     resp = client.get("/api/v1/reports/product-performance", headers=auth_headers)
     assert resp.status_code == 200, resp.text
     assert isinstance(resp.json(), list)
+    assert all("totalOrderValueJOD" not in row for row in resp.json())
 
 
 def test_reports_territory_performance(client: TestClient, auth_headers: dict[str, str]) -> None:
     resp = client.get("/api/v1/reports/territory-performance", headers=auth_headers)
     assert resp.status_code == 200, resp.text
     assert isinstance(resp.json(), list)
+    assert all("totalOrderValueJOD" not in row for row in resp.json())
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { listReps, repKeys } from '../api/reps';
@@ -6,7 +7,9 @@ import { doctorKeys, listDoctors } from '../api/endpoints/doctors';
 import { createVisit, deleteVisit, endVisit, listVisits, startVisit, updateVisit, visitKeys } from '../api/visits';
 import DetailDrawer from '../components/DetailDrawer';
 import { buildGoogleMapsUrl, buildOpenStreetMapUrl, formatCoords } from '../utils/mapLinks';
+import { buildVersionMarker, formatMissing } from './fieldRouteUtils';
 import './EntityListPage.css';
+import './FieldRoutePages.css';
 
 const PAGE_SIZE_OPTIONS = [25, 50];
 const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
@@ -26,6 +29,65 @@ const DEFAULT_VISIT_FORM = {
   notes: '',
   next_action: '',
   next_action_date: '',
+};
+
+const VISIT_LIFECYCLE_STEPS = [
+  { key: 'planned', ar: 'مخططة', en: 'Planned' },
+  { key: 'started', ar: 'بدأت', en: 'Started' },
+  { key: 'checked_in', ar: 'تم تسجيل الوصول', en: 'Checked-in' },
+  { key: 'in_visit', ar: 'داخل الزيارة', en: 'In Visit' },
+  { key: 'call_recorded', ar: 'تم تسجيل المكالمة', en: 'Call Recorded' },
+  { key: 'ended', ar: 'انتهت', en: 'Ended' },
+  { key: 'submitted', ar: 'مقدمة', en: 'Submitted' },
+  { key: 'synced', ar: 'متزامنة', en: 'Synced' },
+];
+
+const hasVisitTimestamp = (visit, camelKey, snakeKey) => Boolean(visit?.[camelKey] || visit?.[snakeKey]);
+
+export const hasVisitLocation = location =>
+  Boolean(
+    location &&
+      location.lat != null &&
+      location.lng != null &&
+      location.lat !== '' &&
+      location.lng !== '' &&
+      Number.isFinite(Number(location.lat)) &&
+      Number.isFinite(Number(location.lng)),
+  );
+
+export const visitSyncState = visit => {
+  if (visit?.syncError || visit?.sync_error) return 'failed';
+  if (visit?.offlinePending || visit?.offline_pending) return 'pending';
+  if (String(visit?.syncStatus || visit?.sync_status || '').toLowerCase() === 'synced') return 'synced';
+  if (visit?.serverPersisted === true) return 'synced';
+  return 'unavailable';
+};
+
+export const lifecycleStateForVisit = visit => {
+  const status = String(visit?.status || '').toLowerCase();
+  const started = hasVisitTimestamp(visit, 'startedAt', 'started_at');
+  const ended = hasVisitTimestamp(visit, 'endedAt', 'ended_at');
+  const submitted = Boolean(
+    visit?.submittedAt || visit?.submitted_at || visit?.submitted === true || status === 'completed',
+  );
+  const syncState = visitSyncState(visit);
+  return {
+    planned: Boolean(visit?.visitDate || visit?.visit_date || status === 'scheduled'),
+    started,
+    checked_in:
+      hasVisitTimestamp(visit, 'checkedInAt', 'checked_in_at') ||
+      hasVisitLocation(visit?.startLocation) ||
+      hasVisitLocation(visit?.start_location),
+    in_visit: status === 'in_progress' && started && !ended,
+    call_recorded: Boolean(
+      visit?.callRecordedAt || visit?.call_recorded_at || visit?.callRecorded === true,
+    ),
+    ended,
+    submitted,
+    synced: submitted && syncState === 'synced',
+    syncState,
+    locked: submitted,
+  };
 };
 
 const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps, doctors }) => {
@@ -116,6 +178,7 @@ const VisitForm = ({ initialValues, onSubmit, onCancel, submitting, error, reps,
 
 const VisitsPage = () => {
   const { token, user } = useAuth();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
@@ -125,6 +188,8 @@ const VisitsPage = () => {
   const [formInitial, setFormInitial] = useState(DEFAULT_VISIT_FORM);
   const [formError, setFormError] = useState(null);
   const [actionError, setActionError] = useState(null);
+  const routeCustomerType = searchParams.get('customerType') || '';
+  const routeCustomerId = searchParams.get('customerId') || '';
 
   const repQuery = useQuery({
     queryKey: repKeys.all,
@@ -158,7 +223,7 @@ const VisitsPage = () => {
         date_to: normalizedFilters.to_date || undefined,
         page,
         page_size: pageSize,
-      }),
+      }, token),
     enabled: !!token,
     select: payload => {
       const rows = Array.isArray(payload?.data) ? payload.data : [];
@@ -248,6 +313,8 @@ const VisitsPage = () => {
       ...DEFAULT_VISIT_FORM,
       rep_id: user?.id || '',
       visit_date: new Date().toISOString().slice(0, 10),
+      doctor_id: routeCustomerType === 'doctor' ? routeCustomerId : '',
+      pharmacy_id: routeCustomerType === 'pharmacy' ? routeCustomerId : '',
     });
     setFormError(null);
   };
@@ -306,6 +373,8 @@ const VisitsPage = () => {
   const visits = visitsQuery.data?.rows || [];
   const totalVisits = visitsQuery.data?.total || 0;
   const totalPages = visitsQuery.data?.totalPages || 1;
+  const routeVisitContext = routeCustomerType && routeCustomerId;
+  const selectedLifecycle = lifecycleStateForVisit(selected);
 
   const renderAccount = visit => {
     if (visit.doctor) return `الطبيب: ${visit.doctor.name}`;
@@ -313,10 +382,32 @@ const VisitsPage = () => {
     return 'غير متاح';
   };
 
-  const formatTimestamp = value => (value ? new Date(value).toLocaleString() : 'غير مسجل');
+  const resolveVisitCustomerType = visit => {
+    if (visit.doctor || visit.doctor_id) return 'HCP / طبيب';
+    if (visit.pharmacy || visit.pharmacy_id) return 'HCO / صيدلية';
+    return 'غير متاح';
+  };
+
+  const resolveVisitTerritory = visit => {
+    const customer = visit.doctor || visit.pharmacy || {};
+    return (
+      customer.territory ||
+      customer.territoryName ||
+      customer.territory_name ||
+      visit.territory ||
+      visit.territoryName ||
+      'غير متاح'
+    );
+  };
+
+  const formatTimestamp = value => {
+    if (!value) return 'غير متاح';
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? 'غير متاح' : parsed.toLocaleString('ar-JO');
+  };
 
   const formatLocation = location => {
-    if (!location || location.lat == null || location.lng == null) return 'غير مسجل';
+    if (!hasVisitLocation(location)) return 'غير متاح';
     const accuracyText =
       location.accuracy != null && Number.isFinite(Number(location.accuracy))
         ? ` (+/-${Number(location.accuracy).toFixed(1)}م)`
@@ -325,7 +416,7 @@ const VisitsPage = () => {
   };
 
   const formatStatus = status => {
-    if (!status) return '-';
+    if (!status) return 'غير متاح';
     const normalized = String(status).toLowerCase();
     const labels = {
       scheduled: 'مجدولة',
@@ -340,7 +431,7 @@ const VisitsPage = () => {
   };
 
   const renderGpsLinks = location => {
-    if (!location || location.lat == null || location.lng == null) return null;
+    if (!hasVisitLocation(location)) return null;
     const lat = Number(location.lat);
     const lng = Number(location.lng);
     return (
@@ -364,15 +455,24 @@ const VisitsPage = () => {
   };
 
   return (
-    <div className="entity-page">
+    <div
+      className="entity-page"
+      dir="rtl"
+      data-testid="visits-route"
+      data-qa-route="visits"
+      data-theme-surface="dark-tokens"
+    >
       <div className="entity-toolbar">
         <div>
           <h1 className="page-heading">الزيارات</h1>
           <p className="page-subtitle">متابعة الزيارات الميدانية والمتابعات.</p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={openCreate}>
-          إضافة زيارة
-        </button>
+        <div className="field-actions">
+          <span className="field-badge">Build {buildVersionMarker}</span>
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            إضافة زيارة
+          </button>
+        </div>
       </div>
 
       <div className="entity-filters">
@@ -430,6 +530,26 @@ const VisitsPage = () => {
         </button>
       </div>
 
+      {routeVisitContext && (
+        <section className="notice notice--success" data-testid="visit-route-context">
+          بدء زيارة لعميل محدد: النوع {routeCustomerType}، رقم العميل {routeCustomerId}. استخدم إضافة زيارة أو اختر زيارة موجودة لعرض الحالة.
+        </section>
+      )}
+
+      <section className="visit-lifecycle-panel" data-testid="visit-lifecycle-panel" aria-label="مسار حالة الزيارة / Visit lifecycle">
+        <div>
+          <h2>مسار حالة الزيارة</h2>
+          <p className="field-note">يعرض المسار الحالة المتاحة من سجل الزيارة الحالي ولا يضيف GPS أو مزامنة غير مثبتة.</p>
+        </div>
+        <div className="visit-lifecycle-steps">
+          {VISIT_LIFECYCLE_STEPS.map(step => (
+            <span className="field-badge" data-testid={`visit-lifecycle-step-${step.key}`} key={step.key}>
+              {step.ar} / {step.en}
+            </span>
+          ))}
+        </div>
+      </section>
+
       <section className="table-card entity-table">
         {visitsQuery.error && <div className="entity-empty">تعذر تحميل الزيارات: {visitsQuery.error.message}</div>}
         {!visitsQuery.error && visitsQuery.isLoading && <div className="entity-empty">جاري تحميل الزيارات...</div>}
@@ -440,35 +560,71 @@ const VisitsPage = () => {
           <table>
             <thead>
               <tr>
-                <th>التاريخ</th>
+                <th>الوقت المخطط</th>
                 <th>المندوب</th>
                 <th>الحساب</th>
+                <th>النوع</th>
+                <th>الإقليم</th>
                 <th>الحالة</th>
+                <th>وقت البدء</th>
+                <th>GPS البداية</th>
+                <th>وقت النهاية</th>
+                <th>GPS النهاية</th>
                 <th>المدة</th>
+                <th>مسار الحالة</th>
+                <th>المزامنة / القفل</th>
                 <th>الملاحظات</th>
                 <th>الإجراء التالي</th>
               </tr>
             </thead>
             <tbody>
-              {visits.map(visit => (
-                <tr
-                  key={visit.id}
-                  onClick={() => {
-                    setActionError(null);
-                    setSelected(visit);
-                  }}
-                >
-                  <td>{visit.visitDate || visit.visit_date}</td>
-                  <td>{visit.rep?.name || visit.rep_id || '-'}</td>
-                  <td>{renderAccount(visit)}</td>
-                  <td>{formatStatus(visit.status)}</td>
-                  <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : '-'}</td>
-                  <td>{visit.notes || '-'}</td>
-                  <td>
-                    {visit.next_action || '-'} {visit.next_action_date ? `(${visit.next_action_date})` : ''}
-                  </td>
-                </tr>
-              ))}
+              {visits.map(visit => {
+                const lifecycle = lifecycleStateForVisit(visit);
+                return (
+                  <tr
+                    key={visit.id}
+                    data-testid="visit-row"
+                    onClick={() => {
+                      setActionError(null);
+                      setSelected(visit);
+                    }}
+                  >
+                    <td>{visit.visitDate || visit.visit_date || 'غير متاح'}</td>
+                    <td>{visit.rep?.name || visit.rep_id || 'غير متاح'}</td>
+                    <td>{renderAccount(visit)}</td>
+                    <td>{resolveVisitCustomerType(visit)}</td>
+                    <td>{resolveVisitTerritory(visit)}</td>
+                    <td>{formatStatus(visit.status)}</td>
+                    <td>{formatTimestamp(visit.startedAt || visit.started_at)}</td>
+                    <td data-testid="visit-row-gps-start">
+                      {formatLocation(visit.startLocation || visit.start_location)}
+                    </td>
+                    <td>{formatTimestamp(visit.endedAt || visit.ended_at)}</td>
+                    <td data-testid="visit-row-gps-end">
+                      {formatLocation(visit.endLocation || visit.end_location)}
+                    </td>
+                    <td>{visit.durationMinutes != null ? `${visit.durationMinutes} دقيقة` : 'غير متاح'}</td>
+                    <td data-testid="visit-row-status-path">
+                      {VISIT_LIFECYCLE_STEPS.filter(step => lifecycle[step.key]).map(step => step.ar).join(' ← ') || 'غير متاح'}
+                    </td>
+                    <td data-testid="visit-row-sync-lock">
+                      {lifecycle.syncState === 'failed'
+                        ? 'فشل التزامن'
+                        : lifecycle.syncState === 'pending'
+                          ? 'بانتظار التزامن'
+                          : lifecycle.syncState === 'synced'
+                            ? 'متزامنة'
+                            : 'غير متاح'}
+                      {' / '}
+                      {lifecycle.locked ? 'مقفلة' : 'مفتوحة'}
+                    </td>
+                    <td>{visit.notes || 'غير متاح'}</td>
+                    <td>
+                      {visit.next_action || 'غير متاح'} {visit.next_action_date ? `(${visit.next_action_date})` : ''}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -521,9 +677,30 @@ const VisitsPage = () => {
         onClose={() => setSelected(null)}
       >
         {selected && (
-          <div className="detail-grid">
+          <div className="detail-grid" data-testid="visit-detail-panel">
+            <section className="visit-lifecycle-panel" data-testid="selected-visit-lifecycle">
+              <h3>حالة الزيارة الحالية</h3>
+              <div className="visit-lifecycle-steps">
+                {VISIT_LIFECYCLE_STEPS.map(step => (
+                  <span
+                    className={`field-badge${selectedLifecycle[step.key] ? '' : ' field-badge--muted'}`}
+                    data-testid={`selected-visit-step-${step.key}`}
+                    data-state={selectedLifecycle[step.key] ? 'done' : 'pending'}
+                    key={step.key}
+                  >
+                    {step.ar} / {step.en}
+                  </span>
+                ))}
+              </div>
+            </section>
             <p>
               <strong>المندوب:</strong> {selected.rep?.name || selected.rep_id}
+            </p>
+            <p>
+              <strong>النوع:</strong> {resolveVisitCustomerType(selected)}
+            </p>
+            <p>
+              <strong>الإقليم:</strong> {formatMissing(resolveVisitTerritory(selected))}
             </p>
             <p>
               <strong>الطبيب:</strong> {selected.doctor?.name || '-'}
@@ -538,31 +715,49 @@ const VisitsPage = () => {
               <strong>المدة:</strong>{' '}
               {selected.durationMinutes != null ? `${selected.durationMinutes} دقيقة` : 'غير منتهية'}
             </p>
+            <p data-testid="visit-timer-ui">
+              <strong>المؤقت:</strong>{' '}
+              {selectedLifecycle.in_visit ? 'الزيارة جارية - المؤقت يعتمد على وقت البداية المسجل' : 'لا توجد زيارة جارية في هذا السجل'}
+            </p>
+            <p data-testid="visit-submitted-locked-status">
+              <strong>التقديم / القفل:</strong>{' '}
+              {selectedLifecycle.submitted ? 'حالة completed في API تثبت التقديم والقفل' : 'لم يثبت تقديم السجل بعد'}
+            </p>
+            <p data-testid="visit-sync-status">
+              <strong>المزامنة:</strong>{' '}
+              {selectedLifecycle.syncState === 'failed'
+                ? 'فشل التزامن مسجل'
+                : selectedLifecycle.syncState === 'pending'
+                  ? 'قيد الانتظار في الطابور'
+                  : selectedLifecycle.syncState === 'synced'
+                    ? 'سجل خادمي متزامن'
+                    : 'غير متاح'}
+            </p>
             <p>
               <strong>بدأت:</strong> {formatTimestamp(selected.startedAt || selected.started_at)}
             </p>
             <div>
-              <strong>GPS البداية:</strong> {formatLocation(selected.startLocation)}
+              <strong>GPS البداية:</strong> {formatLocation(selected.startLocation || selected.start_location)}
               <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                 التوقيت: {formatTimestamp(selected.startedAt || selected.started_at)}
               </div>
-              {renderGpsLinks(selected.startLocation)}
+              {renderGpsLinks(selected.startLocation || selected.start_location)}
             </div>
             <p>
               <strong>انتهت:</strong> {formatTimestamp(selected.endedAt || selected.ended_at)}
             </p>
             <div>
-              <strong>GPS النهاية:</strong> {formatLocation(selected.endLocation)}
+              <strong>GPS النهاية:</strong> {formatLocation(selected.endLocation || selected.end_location)}
               <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                 التوقيت: {formatTimestamp(selected.endedAt || selected.ended_at)}
               </div>
-              {renderGpsLinks(selected.endLocation)}
+              {renderGpsLinks(selected.endLocation || selected.end_location)}
             </div>
             <p>
-              <strong>الملاحظات:</strong> {selected.notes || '-'}
+              <strong>الملاحظات:</strong> {selected.notes || 'غير متاح'}
             </p>
             <p>
-              <strong>الإجراء التالي:</strong> {selected.next_action || '-'} {selected.next_action_date || ''}
+              <strong>الإجراء التالي:</strong> {selected.next_action || 'غير متاح'} {selected.next_action_date || ''}
             </p>
             {actionError && (
               <div className="alert alert-danger" style={{ gridColumn: '1 / -1' }}>
@@ -570,14 +765,19 @@ const VisitsPage = () => {
               </div>
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-              <button type="button" className="btn btn-primary" onClick={() => openEdit(selected)}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => openEdit(selected)}
+                disabled={selectedLifecycle.locked}
+              >
                 تعديل
               </button>
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => deleteMutation.mutate(selected.id)}
-                disabled={deleteMutation.isPending}
+                disabled={deleteMutation.isPending || selectedLifecycle.locked}
               >
                 حذف
               </button>
@@ -587,7 +787,7 @@ const VisitsPage = () => {
                 onClick={handleStartWithGps}
                 disabled={
                   startMutation.isPending ||
-                  !!selected.startedAt ||
+                  !!(selected.startedAt || selected.started_at) ||
                   selected.status === 'completed' ||
                   selected.status === 'cancelled'
                 }
@@ -598,7 +798,12 @@ const VisitsPage = () => {
                 type="button"
                 className="btn btn-secondary"
                 onClick={handleEndWithGps}
-                disabled={endMutation.isPending || selected.status === 'completed' || selected.status === 'cancelled'}
+                disabled={
+                  endMutation.isPending ||
+                  !(selected.startedAt || selected.started_at) ||
+                  selected.status === 'completed' ||
+                  selected.status === 'cancelled'
+                }
               >
                 {endMutation.isPending ? 'جارٍ الإنهاء...' : 'إنهاء الزيارة'}
               </button>

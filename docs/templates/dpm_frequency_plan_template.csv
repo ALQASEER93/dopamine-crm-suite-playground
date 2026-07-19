@@ -1,0 +1,3 @@
+customer_type,customer_name,territory,assigned_rep,month,monthly_frequency_target,priority,notes_optional
+doctor,,,,,,,
+pharmacy,,,,,,,

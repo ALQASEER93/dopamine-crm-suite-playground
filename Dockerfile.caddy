@@ -3,7 +3,8 @@ WORKDIR /app
 COPY CRM/frontend/package*.json ./
 RUN npm ci
 COPY CRM/frontend .
-ENV VITE_API_BASE_URL=/api/v1
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
 FROM node:20-alpine AS pwa-build
@@ -11,7 +12,8 @@ WORKDIR /app
 COPY ALQASEER-PWA/package*.json ./
 RUN npm ci
 COPY ALQASEER-PWA .
-ENV VITE_API_BASE_URL=/api/v1
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
 FROM caddy:2-alpine

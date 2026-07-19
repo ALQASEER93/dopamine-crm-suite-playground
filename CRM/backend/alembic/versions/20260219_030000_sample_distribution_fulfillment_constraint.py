@@ -7,7 +7,7 @@ Create Date: 2026-02-19 03:00:00
 
 from __future__ import annotations
 
-from alembic import op
+from alembic import context, op
 import sqlalchemy as sa
 
 
@@ -34,19 +34,48 @@ OLD_CONSTRAINT = (
 )
 
 
-def upgrade() -> None:
-    with op.batch_alter_table("sample_distributions", recreate="always") as batch_op:
-        batch_op.drop_constraint("ck_sample_distribution_customer_link", type_="check")
-        batch_op.create_check_constraint(
+def _replace_customer_link_constraint(condition: str) -> None:
+    """Replace the check without recreating PostgreSQL tables referenced by FKs."""
+    if context.is_offline_mode():
+        with op.batch_alter_table("sample_distributions", recreate="always") as batch_op:
+            batch_op.drop_constraint("ck_sample_distribution_customer_link", type_="check")
+            batch_op.create_check_constraint(
+                "ck_sample_distribution_customer_link",
+                condition,
+            )
+        return
+
+    bind = op.get_bind()
+    if bind.dialect.name == "sqlite":
+        with op.batch_alter_table("sample_distributions", recreate="always") as batch_op:
+            batch_op.drop_constraint("ck_sample_distribution_customer_link", type_="check")
+            batch_op.create_check_constraint(
+                "ck_sample_distribution_customer_link",
+                condition,
+            )
+        return
+
+    inspector = sa.inspect(bind)
+    existing_constraints = {
+        constraint["name"]
+        for constraint in inspector.get_check_constraints("sample_distributions")
+    }
+    if "ck_sample_distribution_customer_link" in existing_constraints:
+        op.drop_constraint(
             "ck_sample_distribution_customer_link",
-            NEW_CONSTRAINT,
+            "sample_distributions",
+            type_="check",
         )
+    op.create_check_constraint(
+        "ck_sample_distribution_customer_link",
+        "sample_distributions",
+        condition,
+    )
+
+
+def upgrade() -> None:
+    _replace_customer_link_constraint(NEW_CONSTRAINT)
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("sample_distributions", recreate="always") as batch_op:
-        batch_op.drop_constraint("ck_sample_distribution_customer_link", type_="check")
-        batch_op.create_check_constraint(
-            "ck_sample_distribution_customer_link",
-            OLD_CONSTRAINT,
-        )
+    _replace_customer_link_constraint(OLD_CONSTRAINT)

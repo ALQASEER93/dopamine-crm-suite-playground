@@ -4,6 +4,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
@@ -20,6 +21,13 @@ router = APIRouter(
     tags=["reps"],
     dependencies=[Depends(get_current_user)],
 )
+
+
+def _is_missing_route_schema(exc: ProgrammingError) -> bool:
+    message = str(getattr(exc, "orig", exc)).lower()
+    return ("routes" in message or "route_accounts" in message) and (
+        "does not exist" in message or "undefined" in message
+    )
 
 
 def _rep_query(db: Session):
@@ -51,6 +59,41 @@ def _format_address(*parts: Optional[str]) -> Optional[str]:
     return ", ".join(cleaned) if cleaned else None
 
 
+_DEMO_CUSTOMER_NAMES = {
+    "Dr. Lina Haddad",
+    "Dr. Omar Saleh",
+    "Dr. Rana Qasem",
+    "WellCare Pharmacy",
+    "CityCare Pharmacy",
+    "Hope Pharmacy",
+}
+
+
+def _is_demo_customer(name: str | None) -> bool:
+    return bool(name and name.strip() in _DEMO_CUSTOMER_NAMES)
+
+
+def _display_customer_name(name: str | None) -> str:
+    if not name:
+        return ""
+    return f"[DEMO] {name}" if _is_demo_customer(name) and not name.startswith("[DEMO]") else name
+
+
+def _monthly_target_from_frequency(value: str | None) -> int | None:
+    normalized = (value or "").strip().lower().replace("_", "-")
+    if not normalized:
+        return None
+    if normalized in {"weekly", "1/week", "every-week"}:
+        return 4
+    if normalized in {"bi-weekly", "biweekly", "every-2-weeks", "fortnightly"}:
+        return 2
+    if normalized in {"monthly", "1/month"}:
+        return 1
+    if normalized == "quarterly":
+        return 0
+    return None
+
+
 @router.get("/reps", response_model=list[UserOut])
 def list_reps(
     name: Optional[str] = None,
@@ -70,6 +113,17 @@ def list_reps(
         query = query.filter(func.lower(User.email).like(lowered))
     if route_id:
         query = query.join(Route, Route.rep_id == User.id).filter(Route.id == route_id)
+    return query.order_by(User.name.asc()).all()
+
+
+@router.get("/sales-reps", response_model=list[UserOut])
+def list_sales_reps(
+    include_inactive: bool = False,
+    db: Session = Depends(get_db),
+) -> list[User]:
+    query = _rep_query(db)
+    if not include_inactive:
+        query = query.filter(User.is_active.is_(True))
     return query.order_by(User.name.asc()).all()
 
 
@@ -201,7 +255,11 @@ def create_route(payload: RouteCreate, db: Session = Depends(get_db)) -> Route:
     return route
 
 
-@router.get("/routes/today", response_model=list[RouteStopOut])
+@router.get(
+    "/routes/today",
+    response_model=list[RouteStopOut],
+    dependencies=[Depends(require_roles("admin", "sales_manager", "manager", "medical_rep"))],
+)
 def get_today_route(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -215,7 +273,13 @@ def get_today_route(
         .filter(Route.rep_id == current_user.id)
         .order_by(Route.id.asc())
     )
-    route = query.first()
+    try:
+        route = query.first()
+    except ProgrammingError as exc:
+        if not _is_missing_route_schema(exc):
+            raise
+        db.rollback()
+        return []
     if not route:
         return []
 
@@ -234,12 +298,16 @@ def get_today_route(
             RouteStopOut(
                 id=account.id,
                 customer_id=customer.id,
-                customer_name=customer.name,
+                customer_name=_display_customer_name(customer.name),
                 customer_type=account.account_type,
                 address=address,
                 status="planned",
                 scheduled_for=None,
                 location=None,
+                is_demo=_is_demo_customer(customer.name),
+                data_origin="DEMO_SEED" if _is_demo_customer(customer.name) else "UNVERIFIED_SOURCE",
+                visit_frequency=account.visit_frequency or route.frequency,
+                monthly_frequency_target=_monthly_target_from_frequency(account.visit_frequency or route.frequency),
             )
         )
 

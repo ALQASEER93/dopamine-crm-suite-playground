@@ -3,7 +3,9 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import ResponseValidationError
+from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError
@@ -11,6 +13,7 @@ from sqlalchemy.exc import OperationalError
 from api import api_router
 from core.config import settings
 from core.db import Base, SessionLocal, build_fallback_engine, engine, swap_engine
+from scripts.migrate_sqlite import run_sqlite_migrations
 from services.startup_bootstrap_admin import maybe_bootstrap_admin_on_startup
 from services.seed_data import seed_reference_data
 
@@ -20,19 +23,25 @@ tags_metadata = [
     {"name": "default", "description": "Health and default info endpoints."},
     {"name": "health", "description": "Service health and readiness."},
     {"name": "hcps", "description": "Healthcare providers CRUD."},
-    {"name": "dpm_ledger", "description": "DPM Ledger summaries and statements."},
-    {"name": "admin_ai", "description": "AI insights, tasks, drafts, and collection plans."},
     {"name": "auth", "description": "Authentication and current user endpoints."},
     {"name": "doctors", "description": "Doctor master data management."},
     {"name": "pharmacies", "description": "Pharmacy master data management."},
-    {"name": "products", "description": "Product catalog and pricing."},
+    {"name": "products", "description": "Field-safe product catalog."},
     {"name": "reps", "description": "Sales reps and routes."},
     {"name": "visits", "description": "Field visit capture and reporting."},
-    {"name": "orders", "description": "Order capture and line items."},
-    {"name": "stock", "description": "Stock locations and movements."},
     {"name": "targets", "description": "Sales targets tracking."},
-    {"name": "collections", "description": "Collections and receipts."},
 ]
+
+
+def _env_flag_enabled(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def should_skip_startup_db_init() -> bool:
+    """Avoid serverless cold-start failures; migrations/seeding are explicit outside Vercel."""
+    if _env_flag_enabled(os.getenv("DPM_SKIP_STARTUP_DB_INIT")):
+        return True
+    return _env_flag_enabled(os.getenv("VERCEL"))
 
 
 def init_database() -> None:
@@ -42,8 +51,7 @@ def init_database() -> None:
     """
     import models  # noqa: F401
 
-    db_url = str(engine.url)
-    logger.info("Initializing database at %s", db_url)
+    logger.info("Initializing database from configured source %s.", settings.database_url_source)
     try:
         Base.metadata.create_all(bind=engine)
     except OperationalError as exc:
@@ -52,14 +60,15 @@ def init_database() -> None:
             swap_engine(fallback_engine)
             Base.metadata.create_all(bind=fallback_engine)
             logger.warning(
-                "Database I/O error on primary path (%s); using fallback %s. "
-                "Consider moving DB to a writable drive.",
-                db_url,
-                fallback_engine.url,
+                "Database I/O error on the configured local source; using a local writable fallback. "
+                "Consider moving the database to a writable drive."
             )
         else:
             raise
     with SessionLocal() as session:
+        bind = session.get_bind()
+        migration_engine = getattr(bind, "engine", bind)
+        run_sqlite_migrations(migration_engine)
         seed_reference_data(session)
     logger.info("Database schema ensured and seeded.")
 
@@ -67,14 +76,33 @@ def init_database() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Initialize database and seed reference data once on startup."""
-    init_database()
-    with SessionLocal() as session:
-        # Opt-in bootstrap for first-admin creation (safe-by-default; disabled unless env flag is set).
-        maybe_bootstrap_admin_on_startup(session)
+    if should_skip_startup_db_init():
+        logger.info("Skipping startup database initialization for serverless runtime.")
+    else:
+        init_database()
+        with SessionLocal() as session:
+            # Opt-in bootstrap for first-admin creation (safe-by-default; disabled unless env flag is set).
+            maybe_bootstrap_admin_on_startup(session)
     yield
 
 
 app = FastAPI(title=settings.app_name, openapi_tags=tags_metadata, lifespan=lifespan)
+
+
+@app.exception_handler(ResponseValidationError)
+async def response_validation_exception_handler(
+    request: Request,
+    exc: ResponseValidationError,
+) -> JSONResponse:
+    logger.error(
+        "Response validation failed for path=%s error_count=%s.",
+        request.url.path,
+        len(exc.errors()),
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal response validation error."},
+    )
 
 # Single CORS middleware to allow the SPA to call all API routes, including preflight.
 app.add_middleware(

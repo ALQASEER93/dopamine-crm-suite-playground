@@ -1,11 +1,15 @@
-const NotAuthorized = () => (
-  <div className="page">
-    <div className="card">
-      <h1 className="page-heading">غير مصرح</h1>
-      <p>ليس لديك صلاحية للوصول إلى هذه الصفحة.</p>
-      <p>يرجى التواصل مع مدير النظام إذا كان هذا خطأ.</p>
+const NotAuthorized = ({ requiredRoles = [] }) => {
+  const isAdminOnly = requiredRoles.length === 1 && requiredRoles[0] === 'admin';
+
+  return (
+    <div className="page" data-testid="not-authorized" data-rbac-result="expected-forbidden">
+      <div className="card" data-rbac-policy={isAdminOnly ? 'ADMIN_ONLY' : 'ROLE_RESTRICTED'}>
+        <h1 className="page-heading">غير مصرح</h1>
+        <p>{isAdminOnly ? 'هذه الصفحة مخصصة لمدير النظام فقط.' : 'ليس لديك صلاحية للوصول إلى هذه الصفحة.'}</p>
+        <p>يرجى التواصل مع مدير النظام إذا كان هذا خطأ.</p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default NotAuthorized;

@@ -8,13 +8,24 @@ vi.mock("@/components/map/GoogleMap", () => ({
 }));
 
 const todayRouteMock = vi.fn();
+const customersMock = vi.fn();
+const visitsMock = vi.fn();
+const createVisitMock = vi.fn();
 
 vi.mock("@/api/client", () => ({
   getTodayRoute: (...args: any[]) => todayRouteMock(...args),
+  getCustomers: (...args: any[]) => customersMock(...args),
+  getVisits: (...args: any[]) => visitsMock(...args),
+  createVisit: (...args: any[]) => createVisitMock(...args),
 }));
 
 describe("TodayRoutePage", () => {
   it("renders stops from the API", async () => {
+    customersMock.mockResolvedValueOnce([
+      { id: "c1", name: "صيدلية الروضة", type: "pharmacy", area: "الرابية" },
+      { id: "c2", name: "د. لينا", type: "doctor", specialty: "قلب" },
+    ]);
+    visitsMock.mockResolvedValueOnce([]);
     todayRouteMock.mockResolvedValueOnce([
       {
         id: "1",

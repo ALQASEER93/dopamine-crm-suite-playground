@@ -6,7 +6,7 @@ import App from './App.jsx';
 import './styles/global.css';
 
 const resolveInitialTheme = () => {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   try {
     const storedTheme = window.localStorage?.getItem('theme');
     if (storedTheme === 'light' || storedTheme === 'dark') {
@@ -15,7 +15,7 @@ const resolveInitialTheme = () => {
   } catch (error) {
     console.warn('Theme storage unavailable', error);
   }
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'dark';
 };
 
 if (typeof document !== 'undefined') {

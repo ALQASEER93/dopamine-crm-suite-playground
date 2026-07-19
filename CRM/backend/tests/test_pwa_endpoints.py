@@ -59,6 +59,26 @@ def test_pwa_visits_create(client: TestClient, auth_headers: dict[str, str]) -> 
     assert body["customerId"] == str(doctor_id)
 
 
+def test_pwa_visit_create_is_idempotent_per_user(client: TestClient, auth_headers: dict[str, str]) -> None:
+    doctors = client.get("/api/v1/doctors", headers=auth_headers).json().get("data", [])
+    if not doctors:
+        return
+    payload = {
+        "customerId": str(doctors[0]["id"]),
+        "customerName": doctors[0]["name"],
+        "customerType": "doctor",
+        "visitType": "follow-up",
+    }
+    headers = {**auth_headers, "X-Idempotency-Key": f"dpm:visit:test-{uuid.uuid4().hex}"}
+
+    first = client.post("/api/v1/pwa/visits", json=payload, headers=headers)
+    second = client.post("/api/v1/pwa/visits", json=payload, headers=headers)
+
+    assert first.status_code == 201, first.text
+    assert second.status_code == 201, second.text
+    assert second.json()["id"] == first.json()["id"]
+
+
 def test_pwa_visits_create_cannot_force_lifecycle(client: TestClient, auth_headers: dict[str, str]) -> None:
     doctors_resp = client.get("/api/v1/doctors", headers=auth_headers)
     assert doctors_resp.status_code == 200, doctors_resp.text

@@ -22,7 +22,6 @@ const MedicalEventsPage = () => {
     ends_at: '',
     location: '',
     organizer: '',
-    budget: '',
   });
   const [attendeeForm, setAttendeeForm] = useState({
     event_id: '',
@@ -62,9 +61,6 @@ const MedicalEventsPage = () => {
           ends_at: new Date(eventForm.ends_at).toISOString(),
           location: eventForm.location || null,
           organizer: eventForm.organizer || null,
-          budget: eventForm.budget ? String(Number(eventForm.budget).toFixed(2)) : null,
-          actual_cost: '0.00',
-          revenue_impact: '0.00',
         },
       });
       setNotice({ type: 'success', text: 'تم إنشاء الفعالية.' });
@@ -75,7 +71,6 @@ const MedicalEventsPage = () => {
         ends_at: '',
         location: '',
         organizer: '',
-        budget: '',
       });
       await eventsQuery.refetch();
     } catch (error) {
@@ -175,17 +170,6 @@ const MedicalEventsPage = () => {
                 className="input"
                 value={eventForm.organizer}
                 onChange={event => setEventForm(prev => ({ ...prev, organizer: event.target.value }))}
-              />
-            </label>
-            <label>
-              <span>الميزانية</span>
-              <input
-                className="input"
-                type="number"
-                min="0"
-                step="0.01"
-                value={eventForm.budget}
-                onChange={event => setEventForm(prev => ({ ...prev, budget: event.target.value }))}
               />
             </label>
             <div style={{ alignSelf: 'end' }}>

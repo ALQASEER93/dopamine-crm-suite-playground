@@ -31,7 +31,7 @@ def validate_accuracy(accuracy: Optional[float]) -> None:
     if accuracy is None or threshold is None or threshold <= 0:
         return
     if accuracy > threshold:
-        logger.warning("GPS accuracy too low (accuracy=%s threshold=%s).", accuracy, threshold)
+        logger.warning("GPS accuracy validation failed: reported accuracy exceeded policy threshold.")
         raise GPSValidationError(
             f"GPS accuracy is too low (>{threshold}m). Please ensure GPS signal is strong."
         )
@@ -50,7 +50,7 @@ def validate_max_distance(
         return
     distance = haversine_distance_m(start_lat, start_lng, end_lat, end_lng)
     if distance > limit:
-        logger.warning("Visit GPS distance exceeded (distance=%s limit=%s).", distance, limit)
+        logger.warning("Visit GPS distance validation failed: movement exceeded policy limit.")
         raise GPSValidationError(
             f"Visit GPS distance exceeded ({distance:.1f}m > {limit}m)."
         )
@@ -121,7 +121,7 @@ def validate_geofence_enhanced(
 
     distance = haversine_distance_m(user_lat, user_lng, target_lat, target_lng)
     if distance > limit:
-        logger.warning("Geofence validation failed (distance=%s limit=%s).", distance, limit)
+        logger.warning("Geofence validation failed: distance exceeded policy limit.")
         raise GPSValidationError(
             f"You are {distance:.0f}m away from the location (limit: {limit}m). "
             "Please get closer to start the visit."

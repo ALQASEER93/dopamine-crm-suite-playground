@@ -40,6 +40,22 @@ describe("offline queue", () => {
     expect(queue).toHaveLength(1);
   });
 
+  it("announces queue counts for visible offline and sync state", async () => {
+    const events: number[] = [];
+    window.addEventListener("dpm-offline-queue-changed", (event) => {
+      events.push((event as CustomEvent<{ count: number }>).detail.count);
+    }, { once: true });
+    const { enqueueMutation } = await import("../../src/pwa/offline/queue");
+    await enqueueMutation({
+      endpoint: "pwa/visits",
+      method: "POST",
+      payload: { customerId: "qa-hcp" },
+      type: "visit",
+      localVisitId: "offline-visit-visible-count",
+    });
+    expect(events).toEqual([1]);
+  });
+
   it("replays successful mutations and clears queue", async () => {
     const { enqueueMutation, replayQueuedMutations, getQueuedMutations } = await import(
       "../../src/pwa/offline/queue"
@@ -100,12 +116,12 @@ describe("offline queue", () => {
         method: "POST",
         payload: { sample_product_id: 1, quantity_requested: 1 },
         createdAt: new Date().toISOString(),
-        idempotencyKey: "POST:samples/request:{\"sample_product_id\":1,\"quantity_requested\":1}",
+        idempotencyKey: "POST:samples/request:visit:::{\"sample_product_id\":1,\"quantity_requested\":1}",
         retryCount: 1,
         nextRetryAt: future,
       },
     ];
-    localStorage.setItem("dpm-offline-queue", JSON.stringify(seeded));
+    localStorage.setItem("dpm-offline-queue-v2", JSON.stringify(seeded));
 
     Object.defineProperty(globalThis, "navigator", {
       value: { onLine: true },
@@ -139,5 +155,48 @@ describe("offline queue", () => {
     expect(result.pending).toBe(0);
     expect(apiFetchMock).toHaveBeenCalledTimes(1);
     expect(apiFetchMock.mock.calls[0]?.[0]).toBe("pwa/tracking/pings");
+  });
+
+  it("replays visit lifecycle actions after an offline-created visit is assigned a server id", async () => {
+    const { enqueueMutation, replayQueuedMutations } = await import("../../src/pwa/offline/queue");
+
+    await enqueueMutation({
+      endpoint: "pwa/visits",
+      method: "POST",
+      payload: { customerId: "5", customerName: "صيدلية الحياة", customerType: "pharmacy", visitType: "follow-up" },
+      type: "visit",
+      localVisitId: "offline-visit-1",
+    });
+    await enqueueMutation({
+      endpoint: "visits/offline-visit-1/start",
+      method: "POST",
+      payload: { lat: 31.95, lng: 35.91, startedAt: "2026-03-10T08:00:00.000Z" },
+      type: "visit-start",
+      localVisitId: "offline-visit-1",
+    });
+    await enqueueMutation({
+      endpoint: "visits/offline-visit-1/end",
+      method: "POST",
+      payload: { lat: 31.95, lng: 35.91, endedAt: "2026-03-10T08:15:00.000Z" },
+      type: "visit-end",
+      localVisitId: "offline-visit-1",
+    });
+
+    Object.defineProperty(globalThis, "navigator", {
+      value: { onLine: true },
+      configurable: true,
+    });
+    apiFetchMock.mockResolvedValueOnce({ id: "901" }).mockResolvedValueOnce({ id: "901" }).mockResolvedValueOnce({ id: "901" });
+
+    const result = await replayQueuedMutations();
+    expect(result.attempted).toBe(3);
+    expect(result.pending).toBe(0);
+    expect(apiFetchMock.mock.calls[1]?.[0]).toBe("visits/901/start");
+    expect(apiFetchMock.mock.calls[2]?.[0]).toBe("visits/901/end");
+    const replayHeaders = apiFetchMock.mock.calls.map((call) => call[1]?.headers?.["X-Idempotency-Key"]);
+    expect(new Set(replayHeaders).size).toBe(3);
+    expect(replayHeaders.every((value) => /^dpm:[a-z-]+:offline-visit-1$/.test(String(value)))).toBe(true);
+    expect(replayHeaders.join(" ")).not.toContain("صيدلية الحياة");
+    expect(replayHeaders.join(" ")).not.toContain("31.95");
   });
 });

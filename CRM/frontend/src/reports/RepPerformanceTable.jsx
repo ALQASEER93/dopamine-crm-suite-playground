@@ -20,7 +20,7 @@ const RepPerformanceTable = ({ from, to }) => {
   });
 
   const rows = repQuery.data || [];
-  const canExport = useMemo(() => userRole === 'sales_manager', [userRole]);
+  const canExport = useMemo(() => ['sales_manager', 'admin'].includes(userRole), [userRole]);
 
   const handleExport = async () => {
     if (!token || !canExport) return;
@@ -53,19 +53,23 @@ const RepPerformanceTable = ({ from, to }) => {
   };
 
   return (
-    <section className="page-card">
+    <section className="page-card" data-testid="reports-rep-activity">
       <div
         className="table-card__header"
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
       >
         <div>
           <h2>أداء المندوبين</h2>
-          <p>الزيارات وقيمة الطلبات والجودة لكل مندوب.</p>
+          <p>الزيارات والجودة لكل مندوب.</p>
         </div>
-        {canExport && rows.length > 0 && (
-          <button type="button" className="btn btn-secondary" onClick={handleExport}>
+        {canExport && rows.length > 0 ? (
+          <button type="button" className="btn btn-secondary" onClick={handleExport} data-testid="reports-export-csv" aria-label="تصدير CSV حقيقي / Export genuine CSV">
             تصدير CSV
           </button>
+        ) : (
+          <span className="field-badge field-badge--warning" data-testid="reports-export-unavailable">
+            التصدير غير متاح بدون صفوف أو صلاحية مناسبة
+          </span>
         )}
       </div>
 
@@ -103,8 +107,6 @@ const RepPerformanceTable = ({ from, to }) => {
                 <th>المجدولة</th>
                 <th>الملغاة</th>
                 <th>الحسابات الفريدة</th>
-                <th>إجمالي الطلبات (JOD)</th>
-                <th>متوسط الطلب (JOD)</th>
                 <th>متوسط التقييم</th>
               </tr>
             </thead>
@@ -121,9 +123,7 @@ const RepPerformanceTable = ({ from, to }) => {
                   <td>{row.scheduledVisits}</td>
                   <td>{row.cancelledVisits}</td>
                   <td>{row.uniqueAccounts}</td>
-                  <td>{row.totalOrderValueJOD}</td>
-                  <td>{row.avgOrderValueJOD}</td>
-                  <td>{row.avgRating}</td>
+                  <td>{row.avgRating ?? 'غير متاح'}</td>
                 </tr>
               ))}
             </tbody>

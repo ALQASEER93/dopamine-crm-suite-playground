@@ -3,15 +3,32 @@ import { Navigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { apiClient } from '../api/client';
+import { redactEmail } from './fieldRouteUtils';
+import './AdminUsersPage.css';
 
 const USER_TYPES = [
   { value: 'admin', label: 'مدير النظام' },
-  { value: 'manager', label: 'مدير' },
+  { value: 'manager', label: 'مدير مبيعات' },
   { value: 'medical_rep', label: 'مندوب طبي' },
-  { value: 'sales_rep', label: 'مندوب مبيعات' },
+  { value: 'sales_rep', label: 'مندوب طبي' },
 ];
 
 const statusLabel = isActive => (isActive ? 'نشط' : 'غير نشط');
+
+export const normalizeAdminUsersResponse = data => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.rows)) return data.rows;
+  if (Array.isArray(data?.users)) return data.users;
+  return [];
+};
+
+export const normalizeTerritoriesResponse = data => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.rows)) return data.rows;
+  return [];
+};
 
 const AdminUsersPage = () => {
   const { user } = useAuth();
@@ -35,7 +52,7 @@ const AdminUsersPage = () => {
     queryKey: ['admin', 'users'],
     queryFn: async () => {
       const { data } = await apiClient.get('/admin/users');
-      return Array.isArray(data?.data) ? data.data : data;
+      return normalizeAdminUsersResponse(data);
     },
     enabled: isAdmin,
     staleTime: 30_000,
@@ -45,8 +62,7 @@ const AdminUsersPage = () => {
     queryKey: ['admin', 'territories'],
     queryFn: async () => {
       const { data } = await apiClient.get('/territories?page=1&pageSize=500');
-      const rows = data?.data || data || [];
-      return Array.isArray(rows) ? rows : [];
+      return normalizeTerritoriesResponse(data);
     },
     enabled: isAdmin,
     staleTime: 5 * 60_000,
@@ -138,8 +154,9 @@ const AdminUsersPage = () => {
 
   const userRoleLabel = userRow => {
     if (userRow.salesRep?.repType === 'medical_rep') return 'مندوب طبي';
-    if (userRow.role?.slug === 'sales_manager') return 'مدير';
-    if (userRow.role?.slug === 'sales_rep') return 'مندوب مبيعات';
+    if (userRow.role?.slug === 'sales_manager') return 'مدير مبيعات';
+    if (userRow.role?.slug === 'sales_rep') return 'مندوب طبي';
+    if (userRow.role?.slug === 'admin') return 'مدير النظام';
     return 'مستخدم';
   };
 
@@ -153,11 +170,11 @@ const AdminUsersPage = () => {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+    <div className="admin-users-page">
+      <header className="admin-users-header">
         <div>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>مستخدمو الإدارة</h1>
-          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)' }}>إدارة المستخدمين والأدوار والأقاليم.</p>
+          <h1 className="page-heading">مستخدمو الإدارة</h1>
+          <p className="page-subtitle">إدارة المستخدمين والأدوار والأقاليم.</p>
         </div>
         <button type="button" className="btn btn-primary" onClick={openCreate}>
           مستخدم جديد
@@ -165,18 +182,17 @@ const AdminUsersPage = () => {
       </header>
 
       {usersQuery.error && (
-        <div className="alert alert-danger" style={{ marginBottom: '12px' }}>
+        <div className="admin-users-alert">
           {usersQuery.error.message}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', alignItems: 'start' }}>
-        <div className="card">
-          <div className="card__body">
+      <div className="admin-users-grid">
+        <section className="table-card admin-users-table">
             {isLoading ? (
               <p>جاري تحميل المستخدمين...</p>
             ) : (
-              <table className="table">
+              <table>
                 <thead>
                   <tr>
                     <th>الاسم</th>
@@ -191,7 +207,7 @@ const AdminUsersPage = () => {
                   {users.map(u => (
                     <tr key={u.id}>
                       <td>{u.name}</td>
-                      <td>{u.email}</td>
+                      <td>{redactEmail(u.email)}</td>
                       <td>{userRoleLabel(u)}</td>
                       <td>{u.salesRep?.territoryName || '-'}</td>
                       <td>{statusLabel(u.isActive)}</td>
@@ -220,14 +236,12 @@ const AdminUsersPage = () => {
                 </tbody>
               </table>
             )}
-          </div>
-        </div>
+        </section>
 
-        <div className="card">
-          <div className="card__body">
-            <h3 style={{ marginTop: 0 }}>{formTitle}</h3>
+        <section className="page-card admin-users-form-card">
+            <h2>{formTitle}</h2>
             {formError && (
-              <div className="alert alert-danger" style={{ marginBottom: '8px' }}>
+              <div className="admin-users-alert">
                 {formError}
               </div>
             )}
@@ -247,6 +261,7 @@ const AdminUsersPage = () => {
                   type="email"
                   value={form.email}
                   onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))}
+                  autoComplete="username"
                   required
                 />
               </label>
@@ -257,6 +272,7 @@ const AdminUsersPage = () => {
                   value={form.password}
                   onChange={e => setForm(prev => ({ ...prev, password: e.target.value }))}
                   minLength={formMode === 'create' ? 6 : undefined}
+                  autoComplete="new-password"
                   required={formMode === 'create'}
                 />
               </label>
@@ -301,7 +317,7 @@ const AdminUsersPage = () => {
                 </label>
               )}
 
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <div className="admin-users-actions">
                 <button type="submit" className="btn btn-primary" disabled={saveUserMutation.isPending}>
                   {saveUserMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
                 </button>
@@ -312,8 +328,7 @@ const AdminUsersPage = () => {
                 )}
               </div>
             </form>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );

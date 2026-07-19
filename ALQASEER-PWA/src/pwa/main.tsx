@@ -11,6 +11,11 @@ if (!rootEl) {
   throw new Error("Root element #root not found");
 }
 
+document.documentElement.setAttribute("dir", "rtl");
+document.documentElement.setAttribute("data-theme", "dark");
+document.body.setAttribute("dir", "rtl");
+document.body.setAttribute("data-theme", "dark");
+
 ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <BrowserRouter>

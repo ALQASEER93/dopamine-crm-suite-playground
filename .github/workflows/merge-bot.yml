@@ -1,0 +1,192 @@
+name: Merge Bot
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Execution mode"
+        required: true
+        default: safe
+        type: choice
+        options:
+          - safe
+          - safe+dev
+          - close-legacy
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-bot:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      MODE: ${{ inputs.mode }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure GH CLI is available
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y gh
+          fi
+          gh --version
+
+      - name: Merge/Close PRs per strict policy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LEGACY_PRS=(42 45 46 47 48 49)
+          DEV_HELPER_PRS=(76 77)
+          HOTFIX_SAFE_PRS=(80)
+          SENSITIVE_RE='(visits?|gps|offline|pwa|export|rbac)'
+
+          in_list() {
+            local needle="$1"
+            shift
+            for item in "$@"; do
+              if [[ "$item" == "$needle" ]]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          checks_green() {
+            local pr_json="$1"
+            jq -e '
+              (.statusCheckRollup // []) as $checks
+              | ($checks | length) > 0
+              and (
+                [ $checks[]? |
+                  (((.status // .state // "COMPLETED") | ascii_upcase) as $s
+                    | ($s != "PENDING" and $s != "IN_PROGRESS" and $s != "QUEUED" and $s != "EXPECTED"))
+                ] | all
+              )
+              and (
+                [ $checks[]? |
+                  (((.conclusion // .state // "SUCCESS") | ascii_upcase) as $c
+                    | ($c == "SUCCESS" or $c == "NEUTRAL" or $c == "SKIPPED"))
+                ] | all
+              )
+            ' >/dev/null <<<"$pr_json"
+          }
+
+          docs_only() {
+            local files="$1"
+            [[ -n "$files" ]] || return 1
+            while IFS= read -r path; do
+              [[ -z "$path" ]] && continue
+              if [[ ! "$path" =~ ^docs/ ]] && [[ ! "$path" =~ \.(md|mdx|markdown)$ ]]; then
+                return 1
+              fi
+            done <<<"$files"
+            return 0
+          }
+
+          touches_sensitive() {
+            local files="$1"
+            [[ -z "$files" ]] && return 1
+            if grep -Eiq "$SENSITIVE_RE" <<<"$files"; then
+              return 0
+            fi
+            return 1
+          }
+
+          ensure_triage_label() {
+            gh label create "needs-triage" \
+              --repo "$REPO" \
+              --color "B60205" \
+              --description "Needs manual triage before merge/close" >/dev/null 2>&1 || true
+          }
+
+          merge_pr() {
+            local pr_number="$1"
+            gh pr merge "$pr_number" --repo "$REPO" --merge --delete-branch
+          }
+
+          close_pr() {
+            local pr_number="$1"
+            gh pr close "$pr_number" --repo "$REPO" \
+              --comment "Superseded by V1 Pilot closeout" \
+              --delete-branch
+          }
+
+          ensure_triage_label
+          open_prs="$(gh pr list --repo "$REPO" --state open --limit 200 --json number,title,baseRefName,headRefName,labels,mergeable,mergeStateStatus,statusCheckRollup,files)"
+
+          count="$(jq 'length' <<<"$open_prs")"
+          echo "Open PR count: $count"
+
+          for pr in $(jq -r '.[].number' <<<"$open_prs"); do
+            pr_json="$(jq -c ".[] | select(.number == $pr)" <<<"$open_prs")"
+            base="$(jq -r '.baseRefName' <<<"$pr_json")"
+            mergeable="$(jq -r '.mergeable' <<<"$pr_json")"
+            files="$(jq -r '.files[]?.path // empty' <<<"$pr_json")"
+
+            should_merge=false
+            should_close=false
+            reason="none"
+
+            if in_list "$pr" "${LEGACY_PRS[@]}"; then
+              gh pr edit "$pr" --repo "$REPO" --add-label "needs-triage" || true
+              if [[ "$MODE" == "close-legacy" ]]; then
+                should_close=true
+                reason="legacy_close_mode"
+              else
+                reason="legacy_needs_triage"
+              fi
+            elif docs_only "$files"; then
+              reason="docs_only_safe"
+              if [[ "$MODE" == "safe" || "$MODE" == "safe+dev" ]]; then
+                should_merge=true
+              fi
+            elif in_list "$pr" "${HOTFIX_SAFE_PRS[@]}"; then
+              if [[ "$base" == "staging" ]]; then
+                reason="allowlisted_hotfix_staging"
+                if [[ "$MODE" == "safe" || "$MODE" == "safe+dev" ]]; then
+                  should_merge=true
+                fi
+              else
+                reason="hotfix_allowlist_wrong_base"
+              fi
+            elif in_list "$pr" "${DEV_HELPER_PRS[@]}"; then
+              if [[ "$MODE" == "safe+dev" && "$base" == "main" ]]; then
+                reason="allowlisted_dev_main"
+                should_merge=true
+              else
+                reason="dev_allowlist_mode_or_base_mismatch"
+              fi
+            elif touches_sensitive "$files"; then
+              reason="sensitive_area_never_auto"
+            else
+              reason="not_allowlisted"
+            fi
+
+            if [[ "$should_merge" == "true" ]]; then
+              if [[ "$mergeable" != "MERGEABLE" ]]; then
+                echo "Skip PR #$pr: mergeable=$mergeable reason=$reason"
+                continue
+              fi
+              if ! checks_green "$pr_json"; then
+                echo "Skip PR #$pr: checks not green reason=$reason"
+                continue
+              fi
+              echo "Merging PR #$pr reason=$reason"
+              merge_pr "$pr"
+              continue
+            fi
+
+            if [[ "$should_close" == "true" ]]; then
+              echo "Closing PR #$pr reason=$reason"
+              close_pr "$pr"
+              continue
+            fi
+
+            echo "No action on PR #$pr reason=$reason"
+          done

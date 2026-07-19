@@ -11,6 +11,7 @@
     "test:ci": "node ./scripts/vitest-ci.cjs",
     "smoke:dashboard": "set \"RUN_SMOKE_DASHBOARD=1\" && node -r ./scripts/windows-spawn-patch.cjs ./node_modules/vitest/vitest.mjs run --watch=false src/pages/DashboardPage.smoke.test.jsx",
     "smoke:dashboard:node": "node ./scripts/smoke-dashboard.mjs",
+    "e2e": "node ./scripts/playwright-e2e-runner.mjs",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -19,9 +20,10 @@
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.27.0"
+    "react-router-dom": "^6.30.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@vitejs/plugin-react": "^5.1.1",
@@ -38,5 +40,3 @@
     "minimatch": "^10.2.1"
   }
 }
-
-

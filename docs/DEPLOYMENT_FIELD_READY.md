@@ -24,6 +24,26 @@ Enable non-local access for reps across Jordan with a safe CI path and minimal o
 Cloudflare Pages for `ALQASEER-PWA` with a safe GitHub workflow (`workflow_dispatch`).
 Vercel workflow remains optional for teams that already use Vercel.
 
+Current production test domain:
+
+```text
+https://dopamine-crm-suite-playground.pages.dev
+```
+
+Browser API calls must stay same-origin:
+
+```text
+https://dopamine-crm-suite-playground.pages.dev/api/v1/*
+```
+
+`ALQASEER-PWA/functions/api/v1/[[path]].js` proxies those requests to the Vercel FastAPI upstream:
+
+```text
+https://dopamine-crm-api.vercel.app/api/v1/*
+```
+
+The direct Vercel URL is upstream-only and diagnostic-only. It is not the field browser API target.
+
 ## Deployment model
 - Trigger: `workflow_dispatch` for Cloudflare workflow.
 - Behavior when secrets missing: workflow exits successfully with a clear message (no CI break).
@@ -37,9 +57,16 @@ Vercel workflow remains optional for teams that already use Vercel.
 ## Owner UI-only steps
 1. Create a Cloudflare Pages project for `ALQASEER-PWA`.
 2. Add repository secrets in GitHub Actions.
-3. Optional: add custom domain and DNS records in Cloudflare dashboard.
+3. Optional after field testing: add custom CRM subdomain in Cloudflare dashboard.
 4. If using optional Vercel workflow, remember Hobby is non-commercial.
+
+Future custom CRM subdomain options are planned only and not activated in this task:
+
+- `crm.dopaminepharma.com`
+- `app.dopaminepharma.com`
+
+Official company emails/domain are available for later operational setup, but email and DNS records are out of scope here.
 
 ## Security notes
 - No store publishing/signing in this flow.
-- Keep API base URL configured via environment (`VITE_API_BASE_URL`).
+- Keep field API base URL set to same-origin (`VITE_API_BASE_URL=/api/v1`) for Cloudflare Pages.

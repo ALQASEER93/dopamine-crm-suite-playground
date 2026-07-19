@@ -17,6 +17,11 @@ __pycache__/
 *.env
 !.env.example
 !.env.*.example
+.codex-local/
+*.storageState.json
+storageState*.json
+playwright/.auth/
+.wrangler/
 
 # IDE / OS
 .vscode/
@@ -29,6 +34,13 @@ __pycache__/
 FINAL_STATUS.md
 PR_BLOCKER_ANALYSIS.md
 /_runs/
+.codex_run_id.tmp
+.tmp/
+.tmp_*/
+.tmp_fix_*/
+.tmp_rc_*/
+CRM/frontend/.vercel/
+CRM/backend/.vercel/
 
 # docs/_runs hygiene
 docs/_runs/*
@@ -38,11 +50,17 @@ docs/_runs/*.zip
 docs/_runs/*.log
 docs/_runs/*.json
 docs/_runs/LATEST.txt
+docs/project_context/docs/_runs/
+docs/project_context/*.zip
 
 CRM/backend/data/
 
 # Local archives
 ARCHIVE/
+docs/DPM_HCPs_CRM_Import_Location_Preparation.xlsx
+docs/from chatgpt/
+docs/run_20260602_041449.zip
+scripts/local/
 
 # Binaries
 *.exe
@@ -56,3 +74,26 @@ AI-Orchestrator/set-ai-env.ps1
 
 CRM/package-lock.ROOT_UNUSED.json
 
+# Local ALQASEER backend artifacts not used by the current Vercel PWA runtime.
+ALQASEER-PWA/CRM/backend/.vercel/
+ALQASEER-PWA/CRM/backend/LOG.md
+ALQASEER-PWA/CRM/backend/LOG_WRITE_TEST.tmp
+ALQASEER-PWA/CRM/backend/legacy-express/
+ALQASEER-PWA/CRM/backend/package.json
+ALQASEER-PWA/CRM/backend/package-lock.json
+ALQASEER-PWA/CRM/backend/jest.config.js
+ALQASEER-PWA/CRM/backend/jest.setup.js
+ALQASEER-PWA/CRM/backend/Dockerfile
+ALQASEER-PWA/CRM/backend/render.yaml
+ALQASEER-PWA/CRM/backend/alembic.ini
+ALQASEER-PWA/CRM/backend/vercel.json
+ALQASEER-PWA/CRM/backend/api/index.py
+ALQASEER-PWA/CRM/backend/run-backend-dev.ps1
+ALQASEER-PWA/CRM/backend/scripts/*.ps1
+ALQASEER-PWA/CRM/backend/scripts/smoke_*.py
+ALQASEER-PWA/CRM/backend/README.md
+ALQASEER-PWA/CRM/backend/README_FASTAPI.md
+ALQASEER-PWA/CRM/backend/WSL_SETUP.md
+ALQASEER-PWA/CRM/backend/ai_agents_overview.md
+
+.vercel
