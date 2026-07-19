@@ -309,10 +309,11 @@ def test_geofence_override_logs_audit_context(client: TestClient, auth_headers: 
         assert "GPS override used for visit start" in caplog.text
         assert "visit_id=" in caplog.text
         assert "user_id=" in caplog.text
-        assert "lat=31.96" in caplog.text
-        assert "lng=35.91" in caplog.text
-        assert "accuracy=12.5" in caplog.text
-        assert "reason=field exception" in caplog.text
+        assert "reason_supplied=True" in caplog.text
+        assert "lat=31.96" not in caplog.text
+        assert "lng=35.91" not in caplog.text
+        assert "accuracy=12.5" not in caplog.text
+        assert "field exception" not in caplog.text
     finally:
         settings.geofence_enabled = original_enabled
         settings.geofence_radius_m = original_radius

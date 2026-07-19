@@ -119,26 +119,30 @@ function generateQueueId() {
   return `fallback-${Date.now()}-${new Date().toISOString()}`;
 }
 
-function buildIdempotencyKey(input: Omit<QueuedMutation, "id" | "createdAt" | "idempotencyKey" | "retryCount">) {
-  const payloadRaw =
-    typeof input.payload === "string"
-      ? input.payload
-      : (() => {
-          try {
-            return JSON.stringify(input.payload);
-          } catch {
-            return String(input.payload);
-          }
-        })();
+function stablePayloadFingerprint(payload: unknown) {
+  let serialized: string;
+  try {
+    serialized = typeof payload === "string" ? payload : JSON.stringify(payload);
+  } catch {
+    serialized = "unserializable";
+  }
+  let hash = 2166136261;
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash ^= serialized.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
 
-  return [
-    input.method,
-    input.endpoint,
-    input.type,
-    input.localVisitId || "",
-    input.visitId || "",
-    payloadRaw,
-  ].join(":");
+function buildIdempotencyKey(input: Omit<QueuedMutation, "id" | "createdAt" | "idempotencyKey" | "retryCount">) {
+  const subject = input.localVisitId || input.visitId;
+  if (subject) {
+    return ["dpm", input.type, subject].join(":").replace(/[^a-zA-Z0-9:_-]/g, "-").slice(0, 200);
+  }
+  return ["dpm", input.type, input.method, input.endpoint, stablePayloadFingerprint(input.payload)]
+    .join(":")
+    .replace(/[^a-zA-Z0-9:_-]/g, "-")
+    .slice(0, 200);
 }
 
 export function generateOfflineVisitId() {
@@ -328,7 +332,7 @@ export async function replayQueuedMutations() {
     try {
       const response = await apiFetch<{ id?: string | number }>(endpoint || mutation.endpoint, {
         method: mutation.method,
-        headers: { "X-Idempotency-Key": mutation.idempotencyKey },
+        headers: { "X-Idempotency-Key": buildIdempotencyKey(mutation) },
         body:
           typeof mutation.payload === "string"
             ? mutation.payload

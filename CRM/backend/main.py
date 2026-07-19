@@ -41,7 +41,7 @@ def should_skip_startup_db_init() -> bool:
     """Avoid serverless cold-start failures; migrations/seeding are explicit outside Vercel."""
     if _env_flag_enabled(os.getenv("DPM_SKIP_STARTUP_DB_INIT")):
         return True
-    return settings.app_env.lower() == "production" and _env_flag_enabled(os.getenv("VERCEL"))
+    return _env_flag_enabled(os.getenv("VERCEL"))
 
 
 def init_database() -> None:
@@ -51,8 +51,7 @@ def init_database() -> None:
     """
     import models  # noqa: F401
 
-    db_url = str(engine.url)
-    logger.info("Initializing database at %s", db_url)
+    logger.info("Initializing database from configured source %s.", settings.database_url_source)
     try:
         Base.metadata.create_all(bind=engine)
     except OperationalError as exc:
@@ -61,10 +60,8 @@ def init_database() -> None:
             swap_engine(fallback_engine)
             Base.metadata.create_all(bind=fallback_engine)
             logger.warning(
-                "Database I/O error on primary path (%s); using fallback %s. "
-                "Consider moving DB to a writable drive.",
-                db_url,
-                fallback_engine.url,
+                "Database I/O error on the configured local source; using a local writable fallback. "
+                "Consider moving the database to a writable drive."
             )
         else:
             raise

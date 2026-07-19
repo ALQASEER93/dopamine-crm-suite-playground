@@ -324,6 +324,7 @@ class Visit(Base):
     end_lng = Column(Float, nullable=True)
     end_accuracy = Column(Float, nullable=True)
     duration_seconds = Column(Integer, nullable=True)
+    client_request_id = Column(String(200), nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
@@ -341,6 +342,7 @@ class Visit(Base):
         Index("idx_visit_doctor_id", "doctor_id"),
         Index("idx_visit_status", "status"),
         Index("idx_visit_is_deleted", "is_deleted"),
+        Index("uq_visit_rep_client_request", "rep_id", "client_request_id", unique=True),
     )
 
     rep = relationship(User)

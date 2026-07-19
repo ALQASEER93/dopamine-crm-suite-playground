@@ -3,12 +3,10 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import logging
-from pathlib import Path
-from typing import Any
 
 from sqlalchemy.orm import Session
-from openpyxl import load_workbook
 
+from core.config import settings
 from models.crm import (
     Collection,
     Doctor,
@@ -31,91 +29,11 @@ from services.auth import seed_admin_and_rep
 logger = logging.getLogger(__name__)
 
 
-def _normalize_string(value: Any) -> str | None:
-    if value is None:
-        return None
-    text = str(value).strip()
-    return text or None
-
-
-def _normalize_phone(value: Any) -> str | None:
-    if value is None:
-        return None
-    text = str(value).replace(" ", "").replace("-", "").strip()
-    return text or None
-
-
-def _pick_value(row: dict[str, Any], *keys: str) -> Any:
-    for key in keys:
-        if key in row and row[key] is not None:
-            return row[key]
-    return None
-
-
-def _load_accounts_from_excel() -> tuple[list[dict[str, Any]], list[dict[str, Any]]] | None:
-    excel_path = Path(__file__).resolve().parents[2] / "hcps.xlsx"
-    if not excel_path.exists():
-        return None
-
-    workbook = load_workbook(excel_path, read_only=True, data_only=True)
-    sheet = None
-    for name in ("Name", "HCPs"):
-        if name in workbook.sheetnames:
-            sheet = workbook[name]
-            break
-    if sheet is None:
-        sheet = workbook[workbook.sheetnames[0]]
-
-    rows = list(sheet.iter_rows(values_only=True))
-    if not rows:
-        return None
-
-    headers = [str(cell).strip() if cell is not None else "" for cell in rows[0]]
-    doctors: list[dict[str, Any]] = []
-    pharmacies: list[dict[str, Any]] = []
-
-    for row in rows[1:]:
-        row_dict = {headers[idx]: row[idx] for idx in range(min(len(headers), len(row)))}
-        name = _normalize_string(_pick_value(row_dict, "Name", "name"))
-        if not name:
-            continue
-
-        client_tag = _normalize_string(_pick_value(row_dict, "Client Tag", "clientTag"))
-        specialty = _normalize_string(_pick_value(row_dict, "Speciality", "Specialty", "speciality", "specialty"))
-        is_pharmacy = False
-        if specialty and specialty.lower() == "pharmacy":
-            is_pharmacy = True
-        if client_tag and client_tag.lower() == "pharmacy":
-            is_pharmacy = True
-
-        if is_pharmacy:
-            pharmacies.append(
-                {
-                    "name": name,
-                    "city": _normalize_string(_pick_value(row_dict, "City", "city")),
-                    "area": _normalize_string(_pick_value(row_dict, "Area", "area")),
-                    "phone": _normalize_phone(_pick_value(row_dict, "Phone", "phone")),
-                    "segment": "Retail",
-                }
-            )
-        else:
-            doctors.append(
-                {
-                    "name": name,
-                    "specialty": specialty,
-                    "clinic": _normalize_string(_pick_value(row_dict, "Clinic", "Hospital", "clinic")),
-                    "city": _normalize_string(_pick_value(row_dict, "City", "city")),
-                    "area": _normalize_string(_pick_value(row_dict, "Area", "area")),
-                    "classification": _normalize_string(_pick_value(row_dict, "Classification", "Class", "class")),
-                    "phone": _normalize_phone(_pick_value(row_dict, "Phone", "phone")),
-                }
-            )
-
-    return doctors, pharmacies
-
-
 def seed_reference_data(db: Session) -> None:
     seed_admin_and_rep(db)
+    if not settings.seed_demo_data:
+        logger.info("Demo reference-data seeding is disabled for this runtime.")
+        return
 
     seed_doctors = [
         {
@@ -181,27 +99,6 @@ def seed_reference_data(db: Session) -> None:
         existing = db.query(Pharmacy).filter(Pharmacy.name == pharmacy_item["name"]).first()
         if not existing:
             db.add(Pharmacy(**pharmacy_item))
-
-    excel_accounts = _load_accounts_from_excel()
-    if excel_accounts:
-        excel_doctors, excel_pharmacies = excel_accounts
-        for doc in excel_doctors:
-            if not doc.get("name"):
-                continue
-            existing = db.query(Doctor).filter(Doctor.name == doc["name"]).first()
-            if not existing:
-                db.add(Doctor(**doc))
-        for pharmacy_item in excel_pharmacies:
-            if not pharmacy_item.get("name"):
-                continue
-            existing = db.query(Pharmacy).filter(Pharmacy.name == pharmacy_item["name"]).first()
-            if not existing:
-                db.add(Pharmacy(**pharmacy_item))
-        logger.info(
-            "Seeded %s doctor(s) and %s pharmacy record(s) from hcps.xlsx.",
-            len(excel_doctors),
-            len(excel_pharmacies),
-        )
 
     product = db.query(Product).filter(Product.code == "DPM-001").first()
     if not product:

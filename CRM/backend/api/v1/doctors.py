@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
-from core.security import get_current_user, require_roles
-from models.crm import Doctor, RouteAccount
+from core.security import get_current_user, has_any_role, require_roles
+from models.crm import Doctor, Route, RouteAccount, User
 from schemas.common import PaginatedResponse
 from schemas.crm import DoctorCreate, DoctorOut, DoctorUpdate
 
@@ -28,9 +28,22 @@ def list_doctors(
     classification: str | None = Query(None, pattern="^[ABC]$"),
     search: str | None = None,
     route_id: int | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[DoctorOut]:
     query = db.query(Doctor)
+    route_scope_joined = False
+    if has_any_role(current_user, ["medical_rep"]):
+        query = (
+            query.join(RouteAccount, RouteAccount.doctor_id == Doctor.id)
+            .join(Route, Route.id == RouteAccount.route_id)
+            .filter(
+                Route.rep_id == current_user.id,
+                RouteAccount.account_type == "doctor",
+            )
+            .distinct()
+        )
+        route_scope_joined = True
     if area:
         query = query.filter(Doctor.area.ilike(f"%{area}%"))
     if city:
@@ -41,11 +54,12 @@ def list_doctors(
         lowered = f"%{search.lower()}%"
         query = query.filter(or_(func.lower(Doctor.name).like(lowered), func.lower(Doctor.clinic).like(lowered)))
     if route_id:
-        query = (
-            query.join(RouteAccount, RouteAccount.doctor_id == Doctor.id)
-            .filter(RouteAccount.route_id == route_id, RouteAccount.account_type == "doctor")
-            .distinct()
-        )
+        if not route_scope_joined:
+            query = query.join(RouteAccount, RouteAccount.doctor_id == Doctor.id)
+        query = query.filter(
+            RouteAccount.route_id == route_id,
+            RouteAccount.account_type == "doctor",
+        ).distinct()
 
     page_size = clamp_page_size(page_size)
     doctors, total = paginate(query.order_by(Doctor.name.asc()), page, page_size)
@@ -60,14 +74,14 @@ def list_doctors(
     "",
     status_code=status.HTTP_201_CREATED,
     response_model=DoctorOut,
-    dependencies=[Depends(require_roles("sales_manager", "admin", "medical_rep"))],
+    dependencies=[Depends(require_roles("sales_manager", "admin"))],
     include_in_schema=False,
 )
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=DoctorOut,
-    dependencies=[Depends(require_roles("sales_manager", "admin", "medical_rep"))],
+    dependencies=[Depends(require_roles("sales_manager", "admin"))],
 )
 def create_doctor(payload: DoctorCreate, db: Session = Depends(get_db)) -> Doctor:
     doctor = Doctor(**payload.model_dump())
@@ -78,10 +92,27 @@ def create_doctor(payload: DoctorCreate, db: Session = Depends(get_db)) -> Docto
 
 
 @router.get("/{doctor_id}", response_model=DoctorOut)
-def get_doctor(doctor_id: int, db: Session = Depends(get_db)) -> Doctor:
+def get_doctor(
+    doctor_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Doctor:
     doctor = db.get(Doctor, doctor_id)
     if not doctor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found.")
+    if has_any_role(current_user, ["medical_rep"]):
+        assigned = (
+            db.query(RouteAccount.id)
+            .join(Route, Route.id == RouteAccount.route_id)
+            .filter(
+                Route.rep_id == current_user.id,
+                RouteAccount.account_type == "doctor",
+                RouteAccount.doctor_id == doctor_id,
+            )
+            .first()
+        )
+        if not assigned:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
     return doctor
 
 

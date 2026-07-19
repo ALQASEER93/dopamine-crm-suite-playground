@@ -177,5 +177,10 @@ describe("offline queue", () => {
     expect(result.pending).toBe(0);
     expect(apiFetchMock.mock.calls[1]?.[0]).toBe("visits/901/start");
     expect(apiFetchMock.mock.calls[2]?.[0]).toBe("visits/901/end");
+    const replayHeaders = apiFetchMock.mock.calls.map((call) => call[1]?.headers?.["X-Idempotency-Key"]);
+    expect(new Set(replayHeaders).size).toBe(3);
+    expect(replayHeaders.every((value) => /^dpm:[a-z-]+:offline-visit-1$/.test(String(value)))).toBe(true);
+    expect(replayHeaders.join(" ")).not.toContain("صيدلية الحياة");
+    expect(replayHeaders.join(" ")).not.toContain("31.95");
   });
 });

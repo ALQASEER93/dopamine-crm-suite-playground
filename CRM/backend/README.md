@@ -14,22 +14,9 @@ python -m pytest -q
 
 ### Database seeding
 
-Legacy seed scripts live under `legacy-express/scripts/` and can target any SQLite database by
-setting the `SQLITE_STORAGE` environment variable (defaults to
-`../data/database.sqlite`). Run them in the following order when preparing a new
-environment:
-
-1. `npm run seed:roles` - Creates the default `admin`, `manager`, and `rep` roles.
-2. `npm run seed:users` - Inserts demo users with bcrypt-hashed passwords and
-   associates them with roles.
-3. `npm run seed:visits` - Upserts territories, sales reps, HCPs, and sample
-   visits that match the Visits dashboard.
-
-For convenience, `npm run seed:all` executes the full sequence, and the legacy
-`npm run seed` alias still populates the visit data only. Each script is
-idempotent and can be re-run safely (useful for CI or resetting a dev database).
-
-The legacy Express server (deprecated) lives at `legacy-express/index.js`.
+Legacy Express and seed sources remain under `legacy-express/` as historical reference only.
+They are not installed, executed, deployed, or used by CI. The active backend and all supported
+data workflows are Python/FastAPI based.
 
 ## Legacy Express Endpoints (deprecated)
 
@@ -63,12 +50,12 @@ with a `Content-Disposition: attachment; filename="visits.csv"` header.
 - Entry: `main.py` (run with `python -m uvicorn main:app --reload --port 8000` or `.\run-backend-dev.ps1`).
 - Uses SQLite by default (`data/fastapi.db` unless `DATABASE_URL` is set).
 - For PostgreSQL production, set `APP_ENV=production` and provide `PROD_DATABASE_URL` (SQLAlchemy DSN such as `postgresql+psycopg://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>`); optional `PROD_ECHO_SQL=false` keeps logs quiet.
-- Auth/roles: validates JWT signed with `JWT_SECRET`; when `DPM_ENV=production`, startup fails if `JWT_SECRET` is missing/weak (short/default secrets are rejected), `SEED_DEFAULT_USERS=true`, or `ALLOWED_ORIGINS` contains insecure entries (non-HTTPS, wildcard, localhost).
-- Vercel/serverless: startup schema creation and seeding are skipped automatically when `DPM_ENV=production` and `VERCEL=1` so cold starts do not fail before `/api/v1/health` can respond. Use explicit migration/bootstrap actions for production data setup.
-- One-time production bootstrap: set `DPM_BOOTSTRAP_ADMIN_ONCE=true` plus `DPM_BOOTSTRAP_ADMIN_EMAIL` and `DPM_BOOTSTRAP_ADMIN_PASSWORD` (optional `DPM_BOOTSTRAP_ADMIN_NAME`) to create the first admin only when the users table is empty.
+- Auth/roles: validates JWT signed with `JWT_SECRET`; protected Preview and Production runtimes fail closed when the secret is missing/weak, user or demo seeding is enabled, GPS override is enabled, or CORS contains insecure entries.
+- Vercel/serverless: startup schema creation and seeding are skipped for every Vercel runtime so cold starts never mutate a managed database. Apply reviewed migrations explicitly to the isolated target before deploying source that depends on them.
+- Local-only bootstrap: `DPM_BOOTSTRAP_ADMIN_ONCE` is blocked in Preview/Production and exists only for an explicit local empty-database setup. Managed environments require an audited out-of-band admin lifecycle.
 - Legacy ERP API guard: `DPM_ENABLE_LEGACY_ERP_API` defaults to `false`. In the default Field CRM runtime, order, stock, collections, ledger, and ERP-like admin AI collection-plan routes are not mounted and do not appear in OpenAPI. Production startup rejects `DPM_ENABLE_LEGACY_ERP_API=true`; enabling it would require a future audited decision outside the default field-force CRM scope.
 - GPS guardrails:
-  - `ALLOW_GPS_OVERRIDE` controls `gpsOverride=true` usage in visit start. Defaults to `true` in non-production and `false` in production when unset.
+  - `ALLOW_GPS_OVERRIDE` controls test-only `gpsOverride=true` usage in visit start. It defaults to `false` in every runtime and is rejected in protected Preview/Production runtimes.
   - `GEOFENCE_REQUIRE_TARGET_COORDS` controls strict geofence target enforcement. Defaults to `false` in non-production and `true` in production when unset.
   - Override execution is still role-restricted to `admin`/`sales_manager`, and override logs include visit/user/location metadata.
 - If the project drive blocks SQLite writes, the app falls back to `%TEMP%\crm_fastapi_fallback.sqlite`; set `DATABASE_URL` to an accessible path to persist data.

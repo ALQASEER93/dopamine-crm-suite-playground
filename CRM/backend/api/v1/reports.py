@@ -88,6 +88,8 @@ def rep_performance(
                 "scheduledVisits": 0,
                 "cancelledVisits": 0,
                 "uniqueAccounts": set(),
+                "hcpVisits": 0,
+                "pharmacyVisits": 0,
             }
         entry = metrics[rep_id]
         entry["totalVisits"] += 1
@@ -99,8 +101,10 @@ def rep_performance(
             entry["cancelledVisits"] += 1
         if visit.doctor_id:
             entry["uniqueAccounts"].add(f"doctor:{visit.doctor_id}")
+            entry["hcpVisits"] += 1
         if visit.pharmacy_id:
             entry["uniqueAccounts"].add(f"pharmacy:{visit.pharmacy_id}")
+            entry["pharmacyVisits"] += 1
 
     results = []
     for rep_id, entry in metrics.items():
@@ -122,9 +126,9 @@ def rep_performance(
                 "scheduledVisits": entry["scheduledVisits"],
                 "cancelledVisits": entry["cancelledVisits"],
                 "uniqueAccounts": len(entry["uniqueAccounts"]),
-                "hcpVisits": 0,
-                "pharmacyVisits": 0,
-                "avgRating": 0,
+                "hcpVisits": entry["hcpVisits"],
+                "pharmacyVisits": entry["pharmacyVisits"],
+                "avgRating": None,
             }
         )
 
@@ -187,8 +191,8 @@ def product_performance(
             {
                 "productName": product.name,
                 "productLine": product.line,
-                "visitsCount": 0,
-                "sampleRequestCount": 0,
+                "visitsCount": None,
+                "sampleRequestCount": None,
             }
         )
 
@@ -243,7 +247,7 @@ def territory_performance(
                 "totalVisits": entry["totalVisits"],
                 "completedVisits": entry["completedVisits"],
                 "uniqueAccounts": len(entry["uniqueAccounts"]),
-                "avgRating": 0,
+                "avgRating": None,
             }
         )
     return results

@@ -90,6 +90,8 @@ export const redactEmail = value => {
 
 export const hasTrustedCoordinates = customer => {
   const location = customer?.location || customer?.coordinates;
+  if (location?.lat === null || location?.lat === undefined || location?.lat === '') return false;
+  if (location?.lng === null || location?.lng === undefined || location?.lng === '') return false;
   return Number.isFinite(Number(location?.lat)) && Number.isFinite(Number(location?.lng));
 };
 
@@ -97,7 +99,7 @@ export const extractTrustedLocation = value => {
   const location = value?.location || value?.coordinates || value?.startLocation || value?.start_location || null;
   const lat = location?.lat ?? value?.latitude ?? value?.lat ?? value?.start_lat ?? null;
   const lng = location?.lng ?? value?.longitude ?? value?.lng ?? value?.start_lng ?? null;
-  if (lat === '' || lng === '') return null;
+  if (lat === null || lat === undefined || lat === '' || lng === null || lng === undefined || lng === '') return null;
   if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
   return {
     lat: Number(lat),

@@ -13,6 +13,9 @@ from sqlalchemy.exc import OperationalError
 tmp_dir = Path(tempfile.gettempdir())
 test_db_path = tmp_dir / "crm_backend_pytest.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{test_db_path.as_posix()}"
+os.environ["SEED_DEFAULT_USERS"] = "true"
+os.environ["SEED_DEMO_DATA"] = "true"
+os.environ["ALLOW_GPS_OVERRIDE"] = "true"
 test_db_path.parent.mkdir(parents=True, exist_ok=True)
 for suffix in ("", "-journal"):
     candidate = Path(f"{test_db_path}{suffix}")
@@ -23,6 +26,12 @@ for suffix in ("", "-journal"):
             pass
 
 from main import app, init_database  # noqa: E402
+
+# The imported application keeps these explicit test-only settings. Remove the
+# environment overrides so isolated Settings() and subprocess security tests
+# continue to exercise the field-safe defaults.
+for test_only_setting in ("SEED_DEFAULT_USERS", "SEED_DEMO_DATA", "ALLOW_GPS_OVERRIDE"):
+    os.environ.pop(test_only_setting, None)
 
 
 @pytest.fixture(scope="session", autouse=True)

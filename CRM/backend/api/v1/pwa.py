@@ -3,15 +3,17 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils_gps import GPSValidationError, validate_accuracy
 from core.db import get_db
-from core.security import get_current_user, require_roles
+from core.security import get_current_user, has_any_role, require_roles
 from models.crm import Doctor, Pharmacy, Route, RouteAccount, User, Visit
 from services.customer_assignment import monthly_target_from_frequency
+from services.customer_scope import is_customer_assigned_to_rep
 
 router = APIRouter(
     prefix="/pwa",
@@ -92,11 +94,15 @@ def list_customers(
 ) -> list[dict]:
     normalized_type = (type or "").lower()
     results: list[dict] = []
-    route_accounts = (
+    route_accounts_query = (
         db.query(RouteAccount)
         .options(joinedload(RouteAccount.route).joinedload(Route.rep))
-        .all()
     )
+    if has_any_role(current_user, ["medical_rep"]):
+        route_accounts_query = route_accounts_query.join(
+            Route, Route.id == RouteAccount.route_id
+        ).filter(Route.rep_id == current_user.id)
+    route_accounts = route_accounts_query.all()
     assignment_by_customer = {
         (account.account_type, str(account.doctor_id or account.pharmacy_id)): account
         for account in route_accounts
@@ -111,6 +117,7 @@ def list_customers(
                 "visitFrequency": None,
                 "monthlyFrequencyTarget": None,
                 "frequencyPlanSource": "none",
+                "isAssignedToCurrentRep": False,
             }
         target = monthly_target_from_frequency(account.visit_frequency or account.route.frequency)
         return {
@@ -123,6 +130,17 @@ def list_customers(
 
     if normalized_type in {"", "doctor"}:
         query = db.query(Doctor)
+        if has_any_role(current_user, ["medical_rep"]):
+            assigned_doctor_ids = {
+                account.doctor_id
+                for account in route_accounts
+                if account.account_type == "doctor" and account.doctor_id is not None
+            }
+            query = (
+                query.filter(Doctor.id.in_(assigned_doctor_ids))
+                if assigned_doctor_ids
+                else query.filter(Doctor.id == -1)
+            )
         if search:
             term = f"%{search.strip().lower()}%"
             query = query.filter(
@@ -160,6 +178,17 @@ def list_customers(
 
     if normalized_type in {"", "pharmacy"}:
         query = db.query(Pharmacy)
+        if has_any_role(current_user, ["medical_rep"]):
+            assigned_pharmacy_ids = {
+                account.pharmacy_id
+                for account in route_accounts
+                if account.account_type == "pharmacy" and account.pharmacy_id is not None
+            }
+            query = (
+                query.filter(Pharmacy.id.in_(assigned_pharmacy_ids))
+                if assigned_pharmacy_ids
+                else query.filter(Pharmacy.id == -1)
+            )
         if search:
             term = f"%{search.strip().lower()}%"
             query = query.filter(
@@ -273,14 +302,35 @@ def list_visits(
 
     if status_filter:
         status_filter = status_filter.strip().lower()
-        results = [visit for visit in results if visit.get("status") == status_filter]
+        results = [
+            visit
+            for visit in results
+            if visit.get("status") == status_filter or visit.get("serverStatus") == status_filter
+        ]
 
     return results
+
+
+def _serialize_created_visit(visit: Visit, *, customer_name: str, customer_type: str) -> dict:
+    return {
+        "id": str(visit.id),
+        "repId": str(visit.rep_id),
+        "customerId": str(visit.doctor_id or visit.pharmacy_id),
+        "customerName": customer_name,
+        "customerType": customer_type,
+        "visitType": "follow-up",
+        "status": "scheduled",
+        "serverStatus": visit.status,
+        "notes": visit.notes,
+        "coordinates": None,
+        "visitedAt": (visit.created_at or datetime.now(timezone.utc)).isoformat(),
+    }
 
 
 @router.post("/visits", status_code=status.HTTP_201_CREATED)
 def create_visit(
     payload: dict,
+    idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     _user: User = Depends(require_roles("sales_manager", "medical_rep", "admin")),
@@ -293,21 +343,71 @@ def create_visit(
 
     doctor_id = None
     pharmacy_id = None
+    customer_name = ""
     if customer_type == "doctor":
         doctor_id = int(customer_id)
-        if not db.get(Doctor, doctor_id):
+        customer = db.get(Doctor, doctor_id)
+        if not customer:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Doctor not found.")
+        customer_name = customer.name
     elif customer_type == "pharmacy":
         pharmacy_id = int(customer_id)
-        if not db.get(Pharmacy, pharmacy_id):
+        customer = db.get(Pharmacy, pharmacy_id)
+        if not customer:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Pharmacy not found.")
+        customer_name = customer.name
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid customer type.")
+
+    resolved_customer_id = doctor_id or pharmacy_id
+    if has_any_role(current_user, ["medical_rep"]) and not is_customer_assigned_to_rep(
+        db,
+        rep_id=current_user.id,
+        customer_type=customer_type,
+        customer_id=resolved_customer_id,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Customer is not assigned to the current representative.",
+        )
+
+    normalized_idempotency_key = (idempotency_key or "").strip() or None
+    if normalized_idempotency_key:
+        if len(normalized_idempotency_key) > 200 or not all(
+            char.isalnum() or char in {"-", "_", ":"}
+            for char in normalized_idempotency_key
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid idempotency key.",
+            )
+        existing_visit = (
+            db.query(Visit)
+            .filter(
+                Visit.rep_id == current_user.id,
+                Visit.client_request_id == normalized_idempotency_key,
+            )
+            .first()
+        )
+        if existing_visit:
+            same_customer = (
+                existing_visit.doctor_id == doctor_id
+                and existing_visit.pharmacy_id == pharmacy_id
+            )
+            if not same_customer:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Idempotency key was already used for a different customer.",
+                )
+            return _serialize_created_visit(
+                existing_visit,
+                customer_name=customer_name,
+                customer_type=customer_type,
+            )
 
     # Lifecycle integrity: PWA creation only schedules a visit.
     # Start/end timestamps and GPS are accepted only via /visits/{id}/start and /visits/{id}/end.
     visit_date = date.today()
-    visited_at = datetime.now(timezone.utc).isoformat()
     visit = Visit(
         visit_date=visit_date,
         rep_id=current_user.id,
@@ -315,24 +415,36 @@ def create_visit(
         pharmacy_id=pharmacy_id,
         notes=payload.get("notes"),
         status="scheduled",
+        client_request_id=normalized_idempotency_key,
     )
     db.add(visit)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if not normalized_idempotency_key:
+            raise
+        existing_visit = (
+            db.query(Visit)
+            .filter(
+                Visit.rep_id == current_user.id,
+                Visit.client_request_id == normalized_idempotency_key,
+            )
+            .first()
+        )
+        if not existing_visit:
+            raise
+        return _serialize_created_visit(
+            existing_visit,
+            customer_name=customer_name,
+            customer_type=customer_type,
+        )
     db.refresh(visit)
-
-    return {
-        "id": str(visit.id),
-        "repId": str(visit.rep_id),
-        "customerId": str(doctor_id or pharmacy_id),
-        "customerName": payload.get("customerName") or "",
-        "customerType": customer_type,
-        "visitType": payload.get("visitType") or "follow-up",
-        "status": "scheduled",
-        "serverStatus": "scheduled",
-        "notes": visit.notes,
-        "coordinates": None,
-        "visitedAt": visited_at,
-    }
+    return _serialize_created_visit(
+        visit,
+        customer_name=customer_name,
+        customer_type=customer_type,
+    )
 
 
 @router.post("/tracking/pings")

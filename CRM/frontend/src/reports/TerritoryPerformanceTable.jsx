@@ -53,7 +53,7 @@ const TerritoryPerformanceTable = ({ from, to }) => {
                   <td>{row.totalVisits}</td>
                   <td>{row.completedVisits}</td>
                   <td>{row.uniqueAccounts}</td>
-                  <td>{row.avgRating}</td>
+                  <td>{row.avgRating ?? 'غير متاح'}</td>
                 </tr>
               ))}
             </tbody>

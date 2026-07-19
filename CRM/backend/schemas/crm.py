@@ -263,18 +263,18 @@ class VisitOut(VisitBase):
 
 class VisitStart(BaseModel):
     started_at: Optional[datetime] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    accuracy: Optional[float] = None
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    accuracy: Optional[float] = Field(None, ge=0)
 
     model_config = ConfigDict(populate_by_name=True)
 
 
 class VisitEnd(BaseModel):
     ended_at: Optional[datetime] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    accuracy: Optional[float] = None
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    accuracy: Optional[float] = Field(None, ge=0)
 
     model_config = ConfigDict(populate_by_name=True)
 

@@ -17,6 +17,12 @@ DATABASE_URL = _db_url("primary.example.invalid", "dpm_primary")
 PREVIEW_DATABASE_URL = _db_url("preview.example.invalid", "dpm_preview")
 PROD_DATABASE_URL = _db_url("prod.example.invalid", "dpm_prod")
 SAME_DATABASE_URL = _db_url("same.example.invalid", "dpm")
+PROTECTED_SETTINGS = {
+    "JWT_SECRET": "StrongProtectedSecret123!",
+    "ALLOWED_ORIGINS": "https://crm.example.com",
+    "ALLOW_DEV_TOKEN_ENDPOINT": False,
+    "ALLOW_DEV_TOKEN": False,
+}
 
 
 def test_development_database_url_wins_when_present() -> None:
@@ -35,6 +41,7 @@ def test_development_database_url_wins_when_present() -> None:
 
 def test_preview_uses_preview_database_url_when_present() -> None:
     settings = Settings(
+        **PROTECTED_SETTINGS,
         DATABASE_URL=DATABASE_URL,
         PREVIEW_DATABASE_URL=PREVIEW_DATABASE_URL,
         PROD_DATABASE_URL=PROD_DATABASE_URL,
@@ -47,11 +54,8 @@ def test_preview_uses_preview_database_url_when_present() -> None:
 
 def test_preview_uses_preview_database_url_when_dpm_env_is_production() -> None:
     settings = Settings(
+        **PROTECTED_SETTINGS,
         DPM_ENV="production",
-        JWT_SECRET="StrongProductionSecret123!",
-        ALLOWED_ORIGINS="https://crm.example.com",
-        ALLOW_DEV_TOKEN_ENDPOINT=False,
-        ALLOW_DEV_TOKEN=False,
         DATABASE_URL=PROD_DATABASE_URL,
         PREVIEW_DATABASE_URL=PREVIEW_DATABASE_URL,
         PROD_DATABASE_URL=PROD_DATABASE_URL,
@@ -64,6 +68,7 @@ def test_preview_uses_preview_database_url_when_dpm_env_is_production() -> None:
 
 def test_preview_branch_fallback_uses_preview_database_url() -> None:
     settings = Settings(
+        **PROTECTED_SETTINGS,
         DATABASE_URL="",
         PREVIEW_DATABASE_URL=PREVIEW_DATABASE_URL,
         PROD_DATABASE_URL=PROD_DATABASE_URL,
@@ -76,6 +81,7 @@ def test_preview_branch_fallback_uses_preview_database_url() -> None:
 
 def test_preview_app_env_fallback_uses_preview_database_url() -> None:
     settings = Settings(
+        **PROTECTED_SETTINGS,
         DPM_ENV="vercel-preview",
         DATABASE_URL="",
         PREVIEW_DATABASE_URL=PREVIEW_DATABASE_URL,
@@ -84,6 +90,69 @@ def test_preview_app_env_fallback_uses_preview_database_url() -> None:
 
     assert settings.database_url == PREVIEW_DATABASE_URL
     assert settings.database_url_source == "PREVIEW_DATABASE_URL"
+
+
+def test_exact_vercel_preview_branch_accepts_scoped_database_url() -> None:
+    settings = Settings(
+        **PROTECTED_SETTINGS,
+        DATABASE_URL=PREVIEW_DATABASE_URL,
+        PREVIEW_DATABASE_URL="",
+        PROD_DATABASE_URL="",
+        VERCEL_ENV="preview",
+        VERCEL_GIT_COMMIT_REF="codex/field-ready-completion",
+    )
+
+    assert settings.database_url == PREVIEW_DATABASE_URL
+    assert settings.database_url_source == "DATABASE_URL_SCOPED_PREVIEW"
+
+
+def test_scoped_preview_database_url_requires_exact_branch() -> None:
+    with pytest.raises(ValueError, match="exact branch-scoped"):
+        Settings(
+            **PROTECTED_SETTINGS,
+            DATABASE_URL=PREVIEW_DATABASE_URL,
+            PREVIEW_DATABASE_URL="",
+            PROD_DATABASE_URL="",
+            VERCEL_ENV="preview",
+            VERCEL_GIT_COMMIT_REF="feature/not-approved",
+        )
+
+
+def test_preview_inherits_protected_security_defaults() -> None:
+    settings = Settings(
+        **PROTECTED_SETTINGS,
+        DATABASE_URL="",
+        PREVIEW_DATABASE_URL=PREVIEW_DATABASE_URL,
+        PROD_DATABASE_URL=PROD_DATABASE_URL,
+        VERCEL_ENV="preview",
+    )
+
+    assert settings.seed_default_users is False
+    assert settings.seed_demo_data is False
+    assert settings.allow_gps_override is False
+    assert settings.geofence_require_target_coords is True
+
+
+def test_preview_rejects_demo_seed_and_gps_override() -> None:
+    with pytest.raises(ValueError, match="SEED_DEMO_DATA"):
+        Settings(
+            **PROTECTED_SETTINGS,
+            DATABASE_URL="",
+            PREVIEW_DATABASE_URL=PREVIEW_DATABASE_URL,
+            PROD_DATABASE_URL=PROD_DATABASE_URL,
+            VERCEL_ENV="preview",
+            SEED_DEMO_DATA=True,
+        )
+
+    with pytest.raises(ValueError, match="ALLOW_GPS_OVERRIDE"):
+        Settings(
+            **PROTECTED_SETTINGS,
+            DATABASE_URL="",
+            PREVIEW_DATABASE_URL=PREVIEW_DATABASE_URL,
+            PROD_DATABASE_URL=PROD_DATABASE_URL,
+            VERCEL_ENV="preview",
+            ALLOW_GPS_OVERRIDE=True,
+        )
 
 
 def test_preview_fails_closed_when_only_prod_database_url_is_present() -> None:
@@ -107,12 +176,14 @@ def test_fallback_blocks_if_preview_database_url_equals_prod_database_url() -> N
 
 
 def test_preview_fails_closed_when_database_url_equals_production_without_preview_url() -> None:
-    with pytest.raises(ValueError, match="PREVIEW_DATABASE_URL"):
+    with pytest.raises(ValueError, match="not isolated"):
         Settings(
+            **PROTECTED_SETTINGS,
             DATABASE_URL=PROD_DATABASE_URL,
             PREVIEW_DATABASE_URL="",
             PROD_DATABASE_URL=PROD_DATABASE_URL,
             VERCEL_ENV="preview",
+            VERCEL_GIT_COMMIT_REF="codex/field-ready-completion",
         )
 
 

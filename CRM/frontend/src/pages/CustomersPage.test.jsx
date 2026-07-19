@@ -63,6 +63,9 @@ describe('customer assigned rep display helpers', () => {
       accuracy: 12,
     });
     expect(extractTrustedLocation({ location: { lat: '', lng: '' } })).toBeNull();
+    expect(extractTrustedLocation({ location: { lat: null, lng: null } })).toBeNull();
+    expect(extractTrustedLocation({})).toBeNull();
+    expect(extractTrustedLocation({ location: { lat: 0, lng: 0 } })).toMatchObject({ lat: 0, lng: 0 });
     expect(dueStatusLabel('overdue')).toBe('متأخر');
     expect(dueStatusLabel('completed')).toBe('مكتمل');
     expect(dueStatusLabel('planned')).toBe('مخطط');

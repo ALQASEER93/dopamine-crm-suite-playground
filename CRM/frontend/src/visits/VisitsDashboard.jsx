@@ -453,7 +453,7 @@ const VisitsDashboard = () => {
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         appliedFilters={appliedFilters}
-        onExport={userRole === 'sales_manager' ? handleExport : null}
+        onExport={['sales_manager', 'admin'].includes(userRole) ? handleExport : null}
         exporting={exporting}
       />
 

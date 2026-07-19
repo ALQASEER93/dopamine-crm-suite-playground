@@ -39,7 +39,7 @@ From `C:\\Users\\M\ S\ I\\ALQASEER_CRM_SUITE_FINAL\CRM\backend`:
    - Or use the helper script: `.\run-backend-dev.ps1`
 
 ## Frontend pairing and default login
-- Backend: run uvicorn on port 8000 (above). It seeds default users into `data/fastapi.db`.
+- Backend: run uvicorn on port 8000 (above). User and demo-data seeding are disabled by default; test fixtures opt in explicitly.
 - Frontend: from `../frontend`, run `npm install` (first time) then `npm run dev -- --host --port 5173`. The SPA local-dev default is `http://127.0.0.1:8000/api/v1` (primary env `VITE_API_BASE_URL`, fallback alias `VITE_API_URL`).
 - PWA local-dev default is also `http://127.0.0.1:8000/api/v1` (`VITE_API_BASE_URL`). Next-based PWA utilities read `NEXT_PUBLIC_CRM2_API_BASE` (fallback `NEXT_PUBLIC_API_BASE`) when configured.
 - Default credentials: `<ADMIN_EMAIL>` / `<ADMIN_PASSWORD>` (admin),
@@ -53,7 +53,7 @@ From `C:\\Users\\M\ S\ I\\ALQASEER_CRM_SUITE_FINAL\CRM\backend`:
 - Production profile: set `APP_ENV=production` and supply `PROD_DATABASE_URL=postgresql+psycopg://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>` (plus optional `PROD_ECHO_SQL=false` to keep logs lean).
 - Security-critical production requirements:
   - `JWT_SECRET` must be strong (16+ chars and not default/dev values).
-  - `SEED_DEFAULT_USERS` is forced off in production.
+  - `SEED_DEFAULT_USERS` and `SEED_DEMO_DATA` are forced off in protected Preview and Production runtimes.
   - `ALLOWED_ORIGINS` must not contain `*`, `localhost`, or `127.0.0.1`.
   - Optional JWT hardening: set `JWT_ISSUER` and `JWT_AUDIENCE` to enforce issuer/audience validation.
 

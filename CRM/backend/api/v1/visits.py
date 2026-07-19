@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import logging
 import csv
 import io
@@ -18,6 +18,7 @@ from core.security import get_current_user, has_any_role, require_roles
 from models.crm import Doctor, Pharmacy, User, Visit
 from schemas.common import PaginatedResponse
 from schemas.crm import VisitCreate, VisitEnd, VisitOut, VisitStart, VisitUpdate
+from services.customer_scope import is_customer_assigned_to_rep
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,18 @@ router = APIRouter(
 
 VISIT_STATUSES = {"scheduled", "in_progress", "completed", "cancelled"}
 FORMULA_PREFIXES = ("=", "+", "-", "@")
+MAX_CLIENT_CLOCK_SKEW = timedelta(minutes=5)
+
+
+def _validate_lifecycle_timestamp(value: datetime | None, field_name: str) -> datetime:
+    timestamp = value or datetime.now(timezone.utc)
+    comparable = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
+    if comparable.astimezone(timezone.utc) > datetime.now(timezone.utc) + MAX_CLIENT_CLOCK_SKEW:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{field_name} cannot be in the future.",
+        )
+    return timestamp
 
 
 def _calculate_duration_seconds(started_at: datetime | None, ended_at: datetime | None) -> int | None:
@@ -383,6 +396,18 @@ def create_visit(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rep not found.")
     if has_any_role(current_user, ["medical_rep"]) and payload.rep_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to assign another rep.")
+    customer_type = "doctor" if payload.doctor_id else "pharmacy"
+    customer_id = payload.doctor_id or payload.pharmacy_id
+    if has_any_role(current_user, ["medical_rep"]) and not is_customer_assigned_to_rep(
+        db,
+        rep_id=current_user.id,
+        customer_type=customer_type,
+        customer_id=customer_id,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Customer is not assigned to the current representative.",
+        )
 
     visit = Visit(**payload.model_dump())
     db.add(visit)
@@ -657,6 +682,19 @@ def update_visit(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Provide only one of doctor_id or pharmacy_id.",
         )
+    if has_any_role(current_user, ["medical_rep"]):
+        customer_type = "doctor" if visit.doctor_id else "pharmacy"
+        customer_id = visit.doctor_id or visit.pharmacy_id
+        if not is_customer_assigned_to_rep(
+            db,
+            rep_id=current_user.id,
+            customer_type=customer_type,
+            customer_id=customer_id,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Customer is not assigned to the current representative.",
+            )
 
     db.commit()
     db.refresh(visit)
@@ -682,8 +720,11 @@ def start_visit(
     if visit.started_at:
         logger.info("Start visit called for already-started visit (visit_id=%s user_id=%s).", visit.id, current_user.id)
         return visit
-    if visit.status == "completed":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Visit already completed.")
+    if visit.status != "scheduled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only a scheduled visit can be started.",
+        )
 
     allow_override = (
         gps_override
@@ -693,13 +734,10 @@ def start_visit(
     if allow_override:
         normalized_reason = (gps_override_reason or "").strip() or None
         logger.warning(
-            "GPS override used for visit start (visit_id=%s user_id=%s lat=%s lng=%s accuracy=%s reason=%s).",
+            "GPS override used for visit start (visit_id=%s user_id=%s reason_supplied=%s).",
             visit.id,
             current_user.id,
-            payload.lat,
-            payload.lng,
-            payload.accuracy,
-            normalized_reason,
+            bool(normalized_reason),
         )
     else:
         try:
@@ -712,7 +750,7 @@ def start_visit(
         except GPSValidationError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
-    started_at = payload.started_at or datetime.now(timezone.utc)
+    started_at = _validate_lifecycle_timestamp(payload.started_at, "Visit start time")
     visit.started_at = started_at
     visit.start_lat = payload.lat
     visit.start_lng = payload.lng
@@ -742,8 +780,11 @@ def end_visit(
     if visit.ended_at:
         logger.info("End visit called for already-ended visit (visit_id=%s user_id=%s).", visit.id, current_user.id)
         return visit
-    if visit.status == "cancelled":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cancelled visits cannot be completed.")
+    if visit.status != "in_progress" or not visit.started_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only an active visit can be completed.",
+        )
 
     try:
         validate_accuracy(payload.accuracy)
@@ -756,9 +797,20 @@ def end_visit(
     except GPSValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
-    ended_at = payload.ended_at or datetime.now(timezone.utc)
-    if not visit.started_at:
-        visit.started_at = ended_at
+    ended_at = _validate_lifecycle_timestamp(payload.ended_at, "Visit end time")
+    comparable_started_at = visit.started_at
+    comparable_ended_at = ended_at
+    if comparable_started_at.tzinfo is None and comparable_ended_at.tzinfo:
+        comparable_started_at = comparable_started_at.replace(tzinfo=comparable_ended_at.tzinfo)
+    if comparable_ended_at.tzinfo is None and comparable_started_at.tzinfo:
+        comparable_ended_at = comparable_ended_at.replace(tzinfo=comparable_started_at.tzinfo)
+    if comparable_ended_at <= comparable_started_at:
+        if payload.ended_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Visit end time must be after visit start time.",
+            )
+        ended_at = visit.started_at + timedelta(microseconds=1)
     visit.ended_at = ended_at
     visit.end_lat = payload.lat
     visit.end_lng = payload.lng

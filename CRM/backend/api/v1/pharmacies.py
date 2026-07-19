@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
-from core.security import get_current_user, require_roles
-from models.crm import Pharmacy
+from core.security import get_current_user, has_any_role, require_roles
+from models.crm import Pharmacy, Route, RouteAccount, User
 from schemas.common import PaginatedResponse
 from schemas.crm import PharmacyFieldCreate, PharmacyFieldOut, PharmacyFieldUpdate
 
@@ -26,9 +26,20 @@ def list_pharmacies(
     city: str | None = None,
     segment: str | None = None,
     search: str | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[PharmacyFieldOut]:
     query = db.query(Pharmacy)
+    if has_any_role(current_user, ["medical_rep"]):
+        query = (
+            query.join(RouteAccount, RouteAccount.pharmacy_id == Pharmacy.id)
+            .join(Route, Route.id == RouteAccount.route_id)
+            .filter(
+                Route.rep_id == current_user.id,
+                RouteAccount.account_type == "pharmacy",
+            )
+            .distinct()
+        )
     if area:
         query = query.filter(Pharmacy.area.ilike(f"%{area}%"))
     if city:
@@ -52,7 +63,7 @@ def list_pharmacies(
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=PharmacyFieldOut,
-    dependencies=[Depends(require_roles("sales_manager", "admin", "medical_rep"))],
+    dependencies=[Depends(require_roles("sales_manager", "admin"))],
 )
 def create_pharmacy(payload: PharmacyFieldCreate, db: Session = Depends(get_db)) -> Pharmacy:
     pharmacy = Pharmacy(**payload.model_dump())
@@ -63,10 +74,27 @@ def create_pharmacy(payload: PharmacyFieldCreate, db: Session = Depends(get_db))
 
 
 @router.get("/{pharmacy_id}", response_model=PharmacyFieldOut)
-def get_pharmacy(pharmacy_id: int, db: Session = Depends(get_db)) -> Pharmacy:
+def get_pharmacy(
+    pharmacy_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Pharmacy:
     pharmacy = db.get(Pharmacy, pharmacy_id)
     if not pharmacy:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pharmacy not found.")
+    if has_any_role(current_user, ["medical_rep"]):
+        assigned = (
+            db.query(RouteAccount.id)
+            .join(Route, Route.id == RouteAccount.route_id)
+            .filter(
+                Route.rep_id == current_user.id,
+                RouteAccount.account_type == "pharmacy",
+                RouteAccount.pharmacy_id == pharmacy_id,
+            )
+            .first()
+        )
+        if not assigned:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
     return pharmacy
 
 

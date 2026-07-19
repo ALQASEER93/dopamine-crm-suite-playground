@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from api.v1.utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, clamp_page_size, paginate
 from core.db import get_db
-from core.security import get_current_user, require_roles
+from core.security import get_current_user, has_any_role, require_roles
 from models.crm import Role, Route, RouteAccount, User
 from schemas.common import PaginatedResponse
 from schemas.crm import RouteCreate, RouteOut, RouteStopOut
@@ -78,9 +78,12 @@ def list_reps(
     email: Optional[str] = None,
     route_id: Optional[int] = None,
     include_inactive: bool = False,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[User]:
     query = _rep_query(db)
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(User.id == current_user.id)
     if not include_inactive:
         query = query.filter(User.is_active.is_(True))
     if name:
@@ -97,16 +100,25 @@ def list_reps(
 @router.get("/sales-reps", response_model=list[UserOut])
 def list_sales_reps(
     include_inactive: bool = False,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[User]:
     query = _rep_query(db)
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(User.id == current_user.id)
     if not include_inactive:
         query = query.filter(User.is_active.is_(True))
     return query.order_by(User.name.asc()).all()
 
 
 @router.get("/reps/{rep_id}", response_model=UserOut)
-def get_rep(rep_id: int, db: Session = Depends(get_db)) -> User:
+def get_rep(
+    rep_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    if has_any_role(current_user, ["medical_rep"]) and rep_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
     return _get_rep_or_404(db, rep_id)
 
 
@@ -188,10 +200,13 @@ def list_routes(
     page: int = Query(DEFAULT_PAGE, ge=1),
     page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500),
     rep_id: int | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[RouteOut]:
     query = db.query(Route)
-    if rep_id:
+    if has_any_role(current_user, ["medical_rep"]):
+        query = query.filter(Route.rep_id == current_user.id)
+    elif rep_id:
         query = query.filter(Route.rep_id == rep_id)
 
     page_size = clamp_page_size(page_size)
@@ -287,8 +302,14 @@ def get_today_route(
 
 
 @router.get("/routes/{route_id}", response_model=RouteOut)
-def get_route(route_id: int, db: Session = Depends(get_db)) -> Route:
+def get_route(
+    route_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Route:
     route = db.get(Route, route_id)
     if not route:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
+    if has_any_role(current_user, ["medical_rep"]) and route.rep_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not permitted.")
     return route

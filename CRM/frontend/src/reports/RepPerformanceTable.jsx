@@ -20,7 +20,7 @@ const RepPerformanceTable = ({ from, to }) => {
   });
 
   const rows = repQuery.data || [];
-  const canExport = useMemo(() => userRole === 'sales_manager', [userRole]);
+  const canExport = useMemo(() => ['sales_manager', 'admin'].includes(userRole), [userRole]);
 
   const handleExport = async () => {
     if (!token || !canExport) return;
@@ -123,7 +123,7 @@ const RepPerformanceTable = ({ from, to }) => {
                   <td>{row.scheduledVisits}</td>
                   <td>{row.cancelledVisits}</td>
                   <td>{row.uniqueAccounts}</td>
-                  <td>{row.avgRating}</td>
+                  <td>{row.avgRating ?? 'غير متاح'}</td>
                 </tr>
               ))}
             </tbody>

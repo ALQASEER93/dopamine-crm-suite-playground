@@ -51,7 +51,7 @@ const ProductPerformanceTable = ({ from, to }) => {
               {rows.map(row => (
                 <tr key={row.productName}>
                   <td>{row.productName}</td>
-                  <td>{row.visitsCount}</td>
+                  <td>{row.visitsCount ?? 'غير متاح'}</td>
                 </tr>
               ))}
             </tbody>

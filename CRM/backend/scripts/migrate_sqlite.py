@@ -59,6 +59,15 @@ def _ensure_optional_column(
         conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {sqlite_type}"))
 
 
+def _ensure_sqlite_index(engine: Engine, *, index_name: str, ddl: str) -> None:
+    if engine.url.get_backend_name() != "sqlite":
+        return
+    with engine.begin() as conn:
+        indexes = {row[1] for row in conn.execute(text("PRAGMA index_list('visits')"))}
+        if index_name not in indexes:
+            conn.execute(text(ddl))
+
+
 def run_sqlite_migrations(engine: Engine) -> None:
     """
     Run lightweight SQLite migrations to keep schema aligned with models.
@@ -75,6 +84,7 @@ def run_sqlite_migrations(engine: Engine) -> None:
         ("visits", "start_lng", "REAL"),
         ("visits", "end_lat", "REAL"),
         ("visits", "end_lng", "REAL"),
+        ("visits", "client_request_id", "VARCHAR(200)"),
         ("orders", "rep_id", "INTEGER"),
         ("collections", "rep_id", "INTEGER"),
     ):
@@ -84,3 +94,11 @@ def run_sqlite_migrations(engine: Engine) -> None:
             column_name=column_name,
             sqlite_type=sqlite_type,
         )
+    _ensure_sqlite_index(
+        engine,
+        index_name="uq_visit_rep_client_request",
+        ddl=(
+            "CREATE UNIQUE INDEX uq_visit_rep_client_request "
+            "ON visits (rep_id, client_request_id)"
+        ),
+    )

@@ -63,13 +63,22 @@ def resolve_database_url(
     )
 
     if preview_runtime:
-        if not preview_url:
-            raise ValueError("PREVIEW_DATABASE_URL is required in Vercel Preview.")
-        if not prod_url:
-            raise ValueError("PROD_DATABASE_URL is required to validate Preview database isolation.")
-        if preview_url == prod_url:
-            raise ValueError("Preview database URL is not isolated from production database URL.")
-        return preview_url, "PREVIEW_DATABASE_URL"
+        if preview_url:
+            if prod_url and preview_url == prod_url:
+                raise ValueError("Preview database URL is not isolated from production database URL.")
+            return preview_url, "PREVIEW_DATABASE_URL"
+        if (
+            normalized_vercel_env == "preview"
+            and _clean_env_value(vercel_git_commit_ref) == PREVIEW_DB_BRANCH
+            and db_url
+            and db_url != DEFAULT_DATABASE_URL
+        ):
+            if prod_url and db_url == prod_url:
+                raise ValueError("Preview database URL is not isolated from production database URL.")
+            return db_url, "DATABASE_URL_SCOPED_PREVIEW"
+        raise ValueError(
+            "PREVIEW_DATABASE_URL or an exact branch-scoped Vercel Preview DATABASE_URL is required."
+        )
 
     if normalized_app_env == "production":
         if db_url and db_url != DEFAULT_DATABASE_URL:
@@ -126,6 +135,7 @@ class Settings(BaseSettings):
     debug: bool = False
     app_version: str = "1.0.0"
     seed_default_users: bool | None = None
+    seed_demo_data: bool | None = Field(default=None, validation_alias="SEED_DEMO_DATA")
     bootstrap_code: str | None = None
     allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=_default_allowed_origins,
@@ -154,7 +164,7 @@ class Settings(BaseSettings):
             return value.strip()
         return value
 
-    @field_validator("seed_default_users", mode="before")
+    @field_validator("seed_default_users", "seed_demo_data", mode="before")
     @classmethod
     def normalize_seed_flag(cls, value):  # noqa: ANN001
         if isinstance(value, str):
@@ -197,17 +207,36 @@ class Settings(BaseSettings):
         )
         object.__setattr__(self, "database_url", effective_database_url)
         object.__setattr__(self, "database_url_source", database_url_source)
-        if env == "production":
+        protected_runtime = (
+            env == "production"
+            or _clean_env_value(self.vercel_env).lower() == "production"
+            or _is_preview_runtime(
+                app_env=self.app_env,
+                vercel_env=self.vercel_env,
+                vercel_git_commit_ref=self.vercel_git_commit_ref,
+            )
+        )
+        if protected_runtime:
             if self.prod_echo_sql is not None:
                 object.__setattr__(self, "echo_sql", self.prod_echo_sql)
             if bool(self.seed_default_users):
-                raise ValueError("SEED_DEFAULT_USERS must be disabled when DPM_ENV=production.")
-            # Never auto-seed default users in production.
+                raise ValueError("SEED_DEFAULT_USERS must be disabled in protected runtimes.")
+            if bool(self.seed_demo_data):
+                raise ValueError("SEED_DEMO_DATA must be disabled in protected runtimes.")
+            # Never auto-seed users or demo records in Preview/production.
             object.__setattr__(self, "seed_default_users", False)
+            object.__setattr__(self, "seed_demo_data", False)
             secret = (self.jwt_secret or "").strip()
-            weak_secrets = {"", "development-secret", "change-me", "changeme", "default-secret"}
+            weak_secrets = {
+                "",
+                "development-secret",
+                "development-secret-not-for-deployment",
+                "change-me",
+                "changeme",
+                "default-secret",
+            }
             if secret.lower() in weak_secrets or len(secret) < 16:
-                raise ValueError("JWT_SECRET is required and must be strong when DPM_ENV=production.")
+                raise ValueError("JWT_SECRET is required and must be strong in protected runtimes.")
             object.__setattr__(self, "jwt_secret", secret)
             restricted = {
                 origin
@@ -221,34 +250,37 @@ class Settings(BaseSettings):
             }
             if restricted:
                 raise ValueError(
-                    "ALLOWED_ORIGINS in production must use trusted https origins only."
+                    "ALLOWED_ORIGINS in protected runtimes must use trusted https origins only."
                 )
             if bool(self.allow_dev_token_endpoint) or bool(self.allow_dev_token):
                 raise ValueError(
-                    "Dev token toggles must be disabled when DPM_ENV=production."
+                    "Dev token toggles must be disabled in protected runtimes."
                 )
             if bool(self.enable_legacy_erp_api):
                 raise ValueError(
-                    "DPM_ENABLE_LEGACY_ERP_API must stay disabled in production."
+                    "DPM_ENABLE_LEGACY_ERP_API must stay disabled in protected runtimes."
                 )
             if self.database_url.strip().lower().startswith("sqlite"):
-                raise ValueError("DATABASE_URL or PROD_DATABASE_URL must use managed PostgreSQL in production.")
-            if self.allow_gps_override is None:
-                object.__setattr__(self, "allow_gps_override", False)
-            if self.geofence_require_target_coords is None:
-                object.__setattr__(self, "geofence_require_target_coords", True)
-        elif self.seed_default_users is None:
-            object.__setattr__(self, "seed_default_users", True)
+                raise ValueError("Protected runtimes must use managed PostgreSQL.")
+            if bool(self.allow_gps_override):
+                raise ValueError("ALLOW_GPS_OVERRIDE must be disabled in protected runtimes.")
+            object.__setattr__(self, "allow_gps_override", False)
+            object.__setattr__(self, "geofence_require_target_coords", True)
+        else:
+            if self.seed_default_users is None:
+                object.__setattr__(self, "seed_default_users", False)
+            if self.seed_demo_data is None:
+                object.__setattr__(self, "seed_demo_data", False)
         if self.allow_dev_token_endpoint is None:
             object.__setattr__(self, "allow_dev_token_endpoint", False)
         if self.allow_dev_token is None:
             object.__setattr__(self, "allow_dev_token", False)
         if self.allow_gps_override is None:
-            object.__setattr__(self, "allow_gps_override", True)
+            object.__setattr__(self, "allow_gps_override", False)
         if self.geofence_require_target_coords is None:
             object.__setattr__(self, "geofence_require_target_coords", False)
         if not self.jwt_secret:
-            object.__setattr__(self, "jwt_secret", "development-secret")
+            object.__setattr__(self, "jwt_secret", "development-secret-not-for-deployment")
 
 
 settings = Settings()
