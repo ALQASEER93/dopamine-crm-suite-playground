@@ -52,24 +52,14 @@ def _format_address(*parts: Optional[str]) -> Optional[str]:
     return ", ".join(cleaned) if cleaned else None
 
 
-_DEMO_CUSTOMER_NAMES = {
-    "Dr. Lina Haddad",
-    "Dr. Omar Saleh",
-    "Dr. Rana Qasem",
-    "WellCare Pharmacy",
-    "CityCare Pharmacy",
-    "Hope Pharmacy",
-}
-
-
 def _is_demo_customer(name: str | None) -> bool:
-    return bool(name and name.strip() in _DEMO_CUSTOMER_NAMES)
+    return bool(name and name.strip().upper().startswith(("QA ", "[QA] ")))
 
 
 def _display_customer_name(name: str | None) -> str:
     if not name:
         return ""
-    return f"[DEMO] {name}" if _is_demo_customer(name) and not name.startswith("[DEMO]") else name
+    return name
 
 
 @router.get("/reps", response_model=list[UserOut])
@@ -292,7 +282,7 @@ def get_today_route(
                 scheduled_for=None,
                 location=None,
                 is_demo=_is_demo_customer(customer.name),
-                data_origin="DEMO_SEED" if _is_demo_customer(customer.name) else "UNVERIFIED_SOURCE",
+                data_origin="QA_TEST_ONLY" if _is_demo_customer(customer.name) else "UNVERIFIED_SOURCE",
                 visit_frequency=account.visit_frequency or route.frequency,
                 monthly_frequency_target=monthly_target_from_frequency(account.visit_frequency or route.frequency),
             )

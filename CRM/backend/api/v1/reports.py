@@ -150,16 +150,16 @@ def rep_performance_export(
     writer = csv.DictWriter(
         buffer,
         fieldnames=[
-            "repId",
-            "repName",
-            "repEmail",
-            "territoryNames",
-            "totalVisits",
-            "completedVisits",
-            "scheduledVisits",
-            "cancelledVisits",
-            "uniqueAccounts",
-            "avgRating",
+            "معرف المندوب / repId",
+            "اسم المندوب / repName",
+            "البريد / repEmail",
+            "الأقاليم / territoryNames",
+            "إجمالي الزيارات / totalVisits",
+            "الزيارات المكتملة / completedVisits",
+            "الزيارات المجدولة / scheduledVisits",
+            "الزيارات الملغاة / cancelledVisits",
+            "العملاء الفريدون / uniqueAccounts",
+            "متوسط التقييم / avgRating",
         ],
         extrasaction="ignore",
     )
@@ -167,11 +167,19 @@ def rep_performance_export(
     for row in rows:
         writer.writerow(
             {
-                **row,
-                "territoryNames": ", ".join(row.get("territoryNames") or []),
+                "معرف المندوب / repId": row.get("repId"),
+                "اسم المندوب / repName": row.get("repName"),
+                "البريد / repEmail": row.get("repEmail"),
+                "الأقاليم / territoryNames": ", ".join(row.get("territoryNames") or []),
+                "إجمالي الزيارات / totalVisits": row.get("totalVisits"),
+                "الزيارات المكتملة / completedVisits": row.get("completedVisits"),
+                "الزيارات المجدولة / scheduledVisits": row.get("scheduledVisits"),
+                "الزيارات الملغاة / cancelledVisits": row.get("cancelledVisits"),
+                "العملاء الفريدون / uniqueAccounts": row.get("uniqueAccounts"),
+                "متوسط التقييم / avgRating": row.get("avgRating"),
             }
         )
-    csv_data = buffer.getvalue()
+    csv_data = "\ufeff" + buffer.getvalue()
     headers = {"Content-Disposition": 'attachment; filename="rep-performance.csv"'}
     return Response(content=csv_data, media_type="text/csv", headers=headers)
 

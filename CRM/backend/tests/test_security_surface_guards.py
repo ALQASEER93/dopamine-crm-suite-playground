@@ -4,8 +4,6 @@ import json
 from pathlib import Path
 import re
 
-from api import _should_mount_dev_router
-
 REPO_ROOT = Path(__file__).resolve().parents[3]
 AUTH_ROUTE_FILES = [
     REPO_ROOT / "CRM/backend/api/v1/auth.py",
@@ -60,30 +58,27 @@ def test_no_auth_bootstrap_or_provisioning_route_in_backend_copies():
             assert not pattern.search(source), f"{label} found in {route_file.relative_to(REPO_ROOT)}"
 
 
-def test_dev_token_router_mount_guard_refuses_preview_and_production(monkeypatch):
-    monkeypatch.setattr("api.settings.app_env", "development")
-    monkeypatch.setattr("api.settings.vercel_env", "preview")
-    assert _should_mount_dev_router() is False
-
-    monkeypatch.setattr("api.settings.app_env", "production")
-    monkeypatch.setattr("api.settings.vercel_env", "production")
-    assert _should_mount_dev_router() is False
-
-
-def test_dev_token_endpoint_unavailable_outside_development(client, monkeypatch):
-    monkeypatch.setattr("api.dev.settings.app_env", "production")
-
+def test_runtime_dev_token_endpoint_does_not_exist(client):
+    assert not (REPO_ROOT / "CRM/backend/api/dev.py").exists()
     resp = client.get("/api/dev/token")
-
     assert resp.status_code == 404
+    paths = client.get("/openapi.json").json().get("paths", {})
+    assert all("/dev/token" not in path for path in paths)
 
 
-def test_legacy_erp_api_flag_disabled_by_default():
-    from api import _legacy_erp_api_enabled
-    from core.config import settings
+def test_runtime_auth_service_has_no_hardcoded_default_passwords():
+    source = (REPO_ROOT / "CRM/backend/services/auth.py").read_text(encoding="utf-8")
+    assert "DEFAULT_USERS" not in source
+    assert "Admin12345!" not in source
+    assert "Sales12345!" not in source
+    assert "Rep12345!" not in source
 
-    assert settings.enable_legacy_erp_api is False
-    assert _legacy_erp_api_enabled() is False
+
+def test_legacy_erp_router_mount_code_is_absent():
+    source = (REPO_ROOT / "CRM/backend/api/__init__.py").read_text(encoding="utf-8")
+    assert "dpm_ledger" not in source
+    assert "admin_ai" not in source
+    assert "enable_legacy_erp_api" not in source
 
 
 def test_forbidden_legacy_routes_unavailable_in_default_runtime(client, auth_headers):

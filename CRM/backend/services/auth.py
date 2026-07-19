@@ -80,91 +80,9 @@ def seed_default_roles(db: Session) -> dict[str, Role]:
     return slug_to_role
 
 
-DEFAULT_USERS = [
-    (
-        "admin@example.com",
-        "Admin User",
-        "admin",
-        "Admin12345!",
-        ["admin@dopaminepharma.com", "admin@dpm.test"],
-    ),
-    (
-        "sales_manager@example.com",
-        "Sales Manager",
-        "sales_manager",
-        "Sales12345!",
-        ["manager@example.com", "manager@dopaminepharma.com"],
-    ),
-    (
-        "rep1@example.com",
-        "Medical Rep 1",
-        "medical_rep",
-        "Rep12345!",
-        ["rep@example.com", "rep@dopaminepharma.com", "rep@dpm.test"],
-    ),
-    (
-        "rep2@example.com",
-        "Medical Rep 2",
-        "medical_rep",
-        "Rep12345!",
-        [],
-    ),
-    (
-        "rep3@example.com",
-        "Medical Rep 3",
-        "medical_rep",
-        "Rep12345!",
-        [],
-    ),
-]
-
-
-def seed_default_users(db: Session, roles: dict[str, Role]) -> None:
-    legacy_sales_reps = db.query(User).join(Role).filter(Role.slug == "sales_rep").all()
-    for rep in legacy_sales_reps:
-        rep.role_id = roles["medical_rep"].id
-
-    for email, name, role_slug, password, aliases in DEFAULT_USERS:
-        role_id = roles[role_slug].id
-        candidates = [email, *aliases]
-
-        user = db.query(User).filter(User.email.in_(candidates)).first()
-        if not user:
-            user = db.query(User).filter(User.role_id == role_id).first()
-
-        if not user:
-            user = User(email=email, name=name, role_id=role_id, is_active=True, password_hash="")
-            db.add(user)
-
-        user.email = email
-        user.name = name
-        user.role_id = role_id
-        user.is_active = True
-        user.password_hash = hash_password(password)
-    db.commit()
-
-
 def seed_admin_and_rep(db: Session) -> None:
-    roles = seed_default_roles(db)
-    if not settings.seed_default_users:
-        logger.info("Default user seeding disabled.")
-        if settings.app_env.lower() == "production":
-            deactivate_default_users_if_insecure(db)
-        return
-    seed_default_users(db, roles)
-
-
-def deactivate_default_users_if_insecure(db: Session) -> None:
-    for email, _name, _role_slug, password, aliases in DEFAULT_USERS:
-        candidates = [email, *aliases]
-        users = db.query(User).filter(User.email.in_(candidates)).all()
-        for user in users:
-            if not user.is_active:
-                continue
-            if verify_password(password, user.password_hash):
-                user.is_active = False
-                logger.warning("Disabled default user %s with unchanged password.", user.email)
-    db.commit()
+    seed_default_roles(db)
+    logger.info("Runtime default-user seeding is unavailable; use reviewed admin or CLI provisioning.")
 
 
 def has_admin_user(db: Session) -> bool:

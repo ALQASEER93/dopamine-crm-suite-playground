@@ -43,24 +43,14 @@ _PWA_LIFECYCLE_FIELDS = {
     "endLng",
     "endAccuracy",
 }
-_DEMO_CUSTOMER_NAMES = {
-    "Dr. Lina Haddad",
-    "Dr. Omar Saleh",
-    "Dr. Rana Qasem",
-    "WellCare Pharmacy",
-    "CityCare Pharmacy",
-    "Hope Pharmacy",
-}
-
-
 def _is_demo_customer(name: str | None) -> bool:
-    return bool(name and name.strip() in _DEMO_CUSTOMER_NAMES)
+    return bool(name and name.strip().upper().startswith(("QA ", "[QA] ")))
 
 
 def _display_customer_name(name: str | None) -> str:
     if not name:
         return ""
-    return f"[DEMO] {name}" if _is_demo_customer(name) and not name.startswith("[DEMO]") else name
+    return name
 
 
 def _format_address(*parts: Optional[str]) -> Optional[str]:
@@ -171,7 +161,7 @@ def list_customers(
                     "lastVisit": None,
                     "location": None,
                     "isDemo": _is_demo_customer(doc.name),
-                    "dataOrigin": "DEMO_SEED" if _is_demo_customer(doc.name) else "UNVERIFIED_SOURCE",
+                    "dataOrigin": "QA_TEST_ONLY" if _is_demo_customer(doc.name) else "UNVERIFIED_SOURCE",
                     **meta,
                 }
             )
@@ -216,7 +206,7 @@ def list_customers(
                     "lastVisit": None,
                     "location": None,
                     "isDemo": _is_demo_customer(pharmacy.name),
-                    "dataOrigin": "DEMO_SEED" if _is_demo_customer(pharmacy.name) else "UNVERIFIED_SOURCE",
+                    "dataOrigin": "QA_TEST_ONLY" if _is_demo_customer(pharmacy.name) else "UNVERIFIED_SOURCE",
                     **meta,
                 }
             )

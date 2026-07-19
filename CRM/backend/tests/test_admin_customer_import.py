@@ -117,7 +117,7 @@ def _create_import_staging(client: TestClient, auth_headers: dict[str, str], pre
 
 def _seed_route() -> tuple[int, str]:
     with SessionLocal() as db:
-        route = db.query(Route).filter(Route.name == "Amman North").first()
+        route = db.query(Route).filter(Route.name == "QA Route").first()
         assert route is not None
         assert route.rep is not None
         return route.id, route.rep.email

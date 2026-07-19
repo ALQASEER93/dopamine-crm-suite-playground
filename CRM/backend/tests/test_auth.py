@@ -68,7 +68,7 @@ def test_login_unsupported_password_hash_returns_controlled_unauthorized(client)
             db.commit()
 
 
-def test_login_default_seeded_users(client):
+def test_login_explicit_test_fixture_users(client):
     users = [
         ("admin@example.com", "Admin12345!", "admin"),
         ("sales_manager@example.com", "Sales12345!", "sales_manager"),

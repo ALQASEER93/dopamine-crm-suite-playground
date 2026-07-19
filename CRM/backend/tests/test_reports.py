@@ -28,6 +28,7 @@ def test_reports_rep_performance_export(client: TestClient, auth_headers: dict[s
     assert resp.status_code == 200, resp.text
     assert "text/csv" in resp.headers.get("content-type", "")
     assert "rep-performance.csv" in resp.headers.get("content-disposition", "")
+    assert "اسم المندوب / repName" in resp.text
 
 
 def test_reports_product_performance(client: TestClient, auth_headers: dict[str, str]) -> None:
