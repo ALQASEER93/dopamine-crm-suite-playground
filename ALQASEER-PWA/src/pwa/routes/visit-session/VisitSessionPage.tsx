@@ -12,7 +12,12 @@ import {
   visitStatusLabel,
   visitSyncLabel,
 } from "../../utils/fieldCrm";
-import { enqueueMutation, getQueuedMutations, upsertOfflineVisit } from "../../offline/queue";
+import {
+  enqueueMutation,
+  getQueuedMutations,
+  OFFLINE_QUEUE_CHANGED_EVENT,
+  upsertOfflineVisit,
+} from "../../offline/queue";
 
 type PositionSnapshot = {
   coords: { lat: number; lng: number };
@@ -31,12 +36,29 @@ function useTicker(active: boolean, startedAt?: string | null) {
   return Math.max(0, Math.floor((now - (Date.parse(startedAt) || now)) / 1000));
 }
 
-function geolocationErrorMessage(error: unknown) {
-  if (!(error instanceof GeolocationPositionError)) return "تعذر الحصول على موقع GPS.";
-  if (error.code === error.PERMISSION_DENIED) return "تم رفض إذن الموقع. فعّل GPS من إعدادات المتصفح.";
-  if (error.code === error.POSITION_UNAVAILABLE) return "الموقع غير متاح حالياً. حاول من مكان مفتوح.";
-  if (error.code === error.TIMEOUT) return "انتهت مهلة GPS. حاول مرة أخرى.";
+export function geolocationErrorMessage(error: unknown) {
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? Number((error as { code?: unknown }).code)
+      : 0;
+  if (code === 1) return "تم رفض إذن الموقع. فعّل GPS من إعدادات المتصفح.";
+  if (code === 2) return "الموقع غير متاح حالياً. حاول من مكان مفتوح.";
+  if (code === 3) return "انتهت مهلة GPS. حاول مرة أخرى.";
   return "تعذر الحصول على موقع GPS.";
+}
+
+export function isValidPositionSnapshot(position: PositionSnapshot) {
+  const { lat, lng } = position.coords;
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180 &&
+    (position.accuracy === null || (Number.isFinite(position.accuracy) && position.accuracy >= 0)) &&
+    !Number.isNaN(Date.parse(position.timestamp))
+  );
 }
 
 export default function VisitSessionPage() {
@@ -85,6 +107,15 @@ export default function VisitSessionPage() {
     void load();
   }, [visitId]);
 
+  useEffect(() => {
+    const handleQueueChanged = (event: Event) => {
+      const count = (event as CustomEvent<{ count?: number }>).detail?.count;
+      if (typeof count === "number") setQueueCount(count);
+    };
+    window.addEventListener(OFFLINE_QUEUE_CHANGED_EVENT, handleQueueChanged);
+    return () => window.removeEventListener(OFFLINE_QUEUE_CHANGED_EVENT, handleQueueChanged);
+  }, []);
+
   const readPosition = () =>
     new Promise<PositionSnapshot>((resolve, reject) => {
       if (!("geolocation" in navigator)) {
@@ -106,6 +137,10 @@ export default function VisitSessionPage() {
   const capturePosition = async () => {
     try {
       const position = await readPosition();
+      if (!isValidPositionSnapshot(position)) {
+        setMessage("قراءة GPS غير صالحة ولم يتم إرسالها.");
+        return null;
+      }
       if (position.accuracy !== null && position.accuracy > 80) {
         setMessage(`دقة GPS منخفضة (${Math.round(position.accuracy)}م). اقترب من مكان مفتوح قبل الإرسال.`);
       }
@@ -254,6 +289,11 @@ export default function VisitSessionPage() {
 
   return (
     <div className="page">
+      {import.meta.env.VITE_GPS_QA_SOURCE === "simulated_test_context" ? (
+        <div className="card notice--warning" data-testid="gps-test-context-marker">
+          GPS QA: simulated_test_context — اختبار برمجي فقط، وليس GPS جهازاً فعلياً.
+        </div>
+      ) : null}
       <section className="hero-band">
         <div className="card-header">
           <div>

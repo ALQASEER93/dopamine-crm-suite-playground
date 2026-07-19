@@ -41,6 +41,13 @@ const MAX_QUEUE_LENGTH = 200;
 const MAX_OFFLINE_SECONDS_PER_DAY = 60 * 60;
 const RETRY_BASE_MS = 15_000;
 const RETRY_MAX_MS = 5 * 60_000;
+export const OFFLINE_QUEUE_CHANGED_EVENT = "dpm-offline-queue-changed";
+
+function notifyQueueChanged(count: number) {
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new CustomEvent(OFFLINE_QUEUE_CHANGED_EVENT, { detail: { count } }));
+  }
+}
 
 const supportsIndexedDb = () => typeof indexedDB !== "undefined";
 
@@ -244,6 +251,7 @@ export async function enqueueMutation(
   const trimmedQueue = queue.slice(-MAX_QUEUE_LENGTH);
   const droppedCount = (meta.droppedCount || 0) + Math.max(0, queue.length - trimmedQueue.length);
   const storage = await writeQueue(trimmedQueue);
+  notifyQueueChanged(trimmedQueue.length);
   await setQueueMeta({
     ...meta,
     droppedCount,
@@ -308,6 +316,7 @@ export async function replayQueuedMutations() {
   if (!queue.length) {
     const meta = await getQueueMeta();
     await setQueueMeta({ ...meta, lastAttemptAt: now, lastSyncAt: now });
+    notifyQueueChanged(0);
     return { attempted: 0, pending: 0 };
   }
 
@@ -403,6 +412,7 @@ export async function replayQueuedMutations() {
   }
 
   const storage = await writeQueue(remaining);
+  notifyQueueChanged(remaining.length);
   meta = {
     ...meta,
     lastAttemptAt: now,

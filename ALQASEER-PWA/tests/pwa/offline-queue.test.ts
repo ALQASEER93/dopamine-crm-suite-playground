@@ -40,6 +40,22 @@ describe("offline queue", () => {
     expect(queue).toHaveLength(1);
   });
 
+  it("announces queue counts for visible offline and sync state", async () => {
+    const events: number[] = [];
+    window.addEventListener("dpm-offline-queue-changed", (event) => {
+      events.push((event as CustomEvent<{ count: number }>).detail.count);
+    }, { once: true });
+    const { enqueueMutation } = await import("../../src/pwa/offline/queue");
+    await enqueueMutation({
+      endpoint: "pwa/visits",
+      method: "POST",
+      payload: { customerId: "qa-hcp" },
+      type: "visit",
+      localVisitId: "offline-visit-visible-count",
+    });
+    expect(events).toEqual([1]);
+  });
+
   it("replays successful mutations and clears queue", async () => {
     const { enqueueMutation, replayQueuedMutations, getQueuedMutations } = await import(
       "../../src/pwa/offline/queue"
