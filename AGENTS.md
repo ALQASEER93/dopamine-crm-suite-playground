@@ -1,5 +1,9 @@
 # AGENTS.md — dopamine-crm-suite-playground
 
+## Shared ChatGPT / Cue workflow
+- Read `docs/OPERATIONS/CRM_AGENT_PLAYBOOK.md` for task ownership, targeted skill loading, PR evidence and token measurement.
+- Project skills live in `.agents/skills/`; load only the skill matching the current task. Preserve the rules below and the closest AGENTS.md.
+
 ## Phase 0 guardrails (must stay in future phases)
 - No destructive operations (no `rm -rf`, no folder wipes).
 - Always branch + PR; keep commits small and traceable.
