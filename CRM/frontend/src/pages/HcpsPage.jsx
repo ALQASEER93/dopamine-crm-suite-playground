@@ -4,8 +4,31 @@ import { useAuth } from '../auth/AuthContext';
 import { apiClient } from '../api/client';
 import DetailDrawer from '../components/DetailDrawer';
 import './EntityListPage.css';
+import './HcpsPage.css';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
+const PROFILE_FIELDS = [
+  ['specialty', 'التخصص'],
+  ['class', 'الفئة'],
+  ['classification', 'التصنيف'],
+  ['frequency', 'التكرار'],
+  ['flags', 'العلامات'],
+  ['source', 'المصدر'],
+  ['external_id', 'المعرف الخارجي'],
+  ['areaTag', 'وسم المنطقة'],
+  ['segment', 'الشريحة'],
+  ['city', 'المدينة'],
+  ['area', 'المنطقة'],
+  ['phone', 'الهاتف'],
+  ['mobile', 'الجوال'],
+  ['email', 'البريد الإلكتروني'],
+];
+
+const displayProfileValue = value => {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+};
 
 const HcpsPage = () => {
   const { token } = useAuth();
@@ -41,9 +64,22 @@ const HcpsPage = () => {
     keepPreviousData: true,
   });
 
+  const hcpDetailQuery = useQuery({
+    queryKey: ['hcps', 'detail', selected?.id ?? null],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/hcps/${selected.id}`);
+      return data?.data ?? data;
+    },
+    enabled: !!token && selected?.id !== null && selected?.id !== undefined,
+  });
+
   const items = hcpsQuery.data?.rows || [];
   const total = hcpsQuery.data?.total || 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const selectedHcp = hcpDetailQuery.data || selected;
+  const selectedFields = PROFILE_FIELDS.filter(([key]) =>
+    Object.prototype.hasOwnProperty.call(selectedHcp || {}, key),
+  );
 
   const distinctAreaTags = useMemo(() => {
     const values = new Set();
@@ -186,33 +222,46 @@ const HcpsPage = () => {
         </div>
       </section>
 
-      <DetailDrawer title={selected?.name || ''} isOpen={Boolean(selected)} onClose={() => setSelected(null)}>
+      <DetailDrawer
+        title={selectedHcp?.name || selected?.name || ''}
+        isOpen={Boolean(selected)}
+        onClose={() => setSelected(null)}
+      >
         {selected && (
-          <div className="detail-grid">
-            <p>
-              <strong>التخصص:</strong> {selected.specialty || '-'}
-            </p>
-            <p>
-              <strong>وسم المنطقة:</strong> {selected.areaTag || '-'}
-            </p>
-            <p>
-              <strong>الشريحة:</strong> {selected.segment || '-'}
-            </p>
-            <p>
-              <strong>المدينة:</strong> {selected.city || '-'}
-            </p>
-            <p>
-              <strong>المنطقة:</strong> {selected.area || '-'}
-            </p>
-            <p>
-              <strong>الهاتف:</strong> {selected.phone || '-'}
-            </p>
-            <p>
-              <strong>الجوال:</strong> {selected.mobile || '-'}
-            </p>
-            <p>
-              <strong>البريد الإلكتروني:</strong> {selected.email || '-'}
-            </p>
+          <div className="hcp-profile">
+            {hcpDetailQuery.isLoading && <p role="status">جاري تحميل بيانات الملف...</p>}
+            {hcpDetailQuery.error && (
+              <p className="hcp-profile__error" role="alert">
+                تعذر تحميل تفاصيل الملف: {hcpDetailQuery.error.message}
+              </p>
+            )}
+
+            <section className="hcp-profile__section" aria-labelledby="hcp-profile-details-title">
+              <h3 id="hcp-profile-details-title">بيانات مقدم الرعاية</h3>
+              <dl className="hcp-profile__grid">
+                <div className="hcp-profile__item">
+                  <dt>الاسم</dt>
+                  <dd>{displayProfileValue(selectedHcp?.name)}</dd>
+                </div>
+                {selectedFields.map(([key, label]) => (
+                  <div className="hcp-profile__item" key={key}>
+                    <dt>{label}</dt>
+                    <dd>{displayProfileValue(selectedHcp[key])}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <section className="hcp-profile__section" aria-labelledby="hcp-profile-history-title">
+              <h3 id="hcp-profile-history-title">السجل الزمني</h3>
+              <div className="hcp-profile__history-unavailable" role="status" aria-live="polite">
+                <strong>السجل غير متاح حالياً</strong>
+                <p>
+                  لا توفر واجهة API الحالية نقطة نهاية مخوّلة لعرض نشاط مرتبط بمعرّف HCP. لن تُعرض أحداث
+                  تاريخية غير متاحة.
+                </p>
+              </div>
+            </section>
           </div>
         )}
       </DetailDrawer>
