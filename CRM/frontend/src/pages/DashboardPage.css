@@ -1,27 +1,307 @@
-.table-card__header {
+.dashboard-home {
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
+  margin-inline: auto;
+  gap: 1rem;
+}
+
+.dashboard-home__header {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.dashboard-home__header .page-heading {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+}
+
+.dashboard-home__header .page-subtitle {
+  margin-top: 0.4rem;
+}
+
+.dashboard-home__header .btn {
+  flex: 0 0 auto;
+}
+
+.dashboard-home__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.dashboard-home__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.dashboard-home__metric > span {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-home__metric-value {
+  min-height: 1.8rem;
+  color: var(--color-primary);
+  font-size: 1.45rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-home__metric-value--error {
+  color: var(--color-text-muted);
+}
+
+.dashboard-home__inline-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-danger, #dc2626);
+  font-size: 0.85rem;
+}
+
+.dashboard-home__sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.dashboard-home__card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.dashboard-home__card-header {
+  display: flex;
   align-items: center;
-  padding: 1rem 1.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem 1.1rem;
   border-bottom: 1px solid var(--color-border);
 }
 
-.table-card__header h2 {
-  margin: 0;
-  font-size: 1.2rem;
+.dashboard-home__card-header > div:first-child {
+  min-width: 0;
 }
 
-.table-card__header p {
+.dashboard-home__card-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.dashboard-home__card-header p {
   margin: 0.25rem 0 0;
   color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
-.table-card__empty {
-  padding: 1.5rem;
+.dashboard-home__card-content {
+  min-width: 0;
+  padding: 0.9rem 1.1rem 1rem;
+}
+
+.dashboard-home__text-link {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 2rem;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dashboard-home__text-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.dashboard-home__text-link:focus-visible,
+.dashboard-home__search-input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.dashboard-home__visit-list,
+.dashboard-home__record-list {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-home__visit,
+.dashboard-home__record {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-home__visit:last-child,
+.dashboard-home__record:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.dashboard-home__visit-main,
+.dashboard-home__record-main,
+.dashboard-home__visit-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.dashboard-home__visit-main strong,
+.dashboard-home__record-main strong {
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.dashboard-home__visit-side {
+  flex: 0 0 auto;
+  align-items: flex-end;
   color: var(--color-text-muted);
-  text-align: center;
+  font-size: 0.82rem;
+  text-align: end;
 }
 
-.table-card__meta {
-  text-align: start;
+.dashboard-home__visit-meta {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-home__state {
+  margin: 0;
+  padding: 0.7rem 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.dashboard-home__state--error,
+.dashboard-home__record-errors {
+  color: var(--color-danger, #dc2626);
+}
+
+.dashboard-home__records-header {
+  align-items: flex-start;
+}
+
+.dashboard-home__directory-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.dashboard-home__search-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.dashboard-home__search-input {
+  display: block;
+  min-width: 0;
+  margin-bottom: 0.65rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dashboard-home__record-errors {
+  margin: 0.4rem 0;
+  font-size: 0.85rem;
+}
+
+.dashboard-home__record-errors p {
+  margin: 0.25rem 0;
+}
+
+@media (max-width: 760px) {
+  .dashboard-home__sections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-home {
+    gap: 0.8rem;
+  }
+
+  .dashboard-home__header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .dashboard-home__header .btn {
+    width: 100%;
+  }
+
+  .dashboard-home__metrics {
+    gap: 0.5rem;
+  }
+
+  .dashboard-home__metric {
+    padding: 0.7rem 0.6rem;
+  }
+
+  .dashboard-home__metric > span {
+    font-size: 0.75rem;
+  }
+
+  .dashboard-home__metric-value {
+    font-size: 1.2rem;
+  }
+
+  .dashboard-home__card-header,
+  .dashboard-home__card-content {
+    padding-inline: 0.8rem;
+  }
+
+  .dashboard-home__card-header {
+    align-items: flex-start;
+  }
+
+  .dashboard-home__records-header {
+    flex-direction: column;
+  }
+
+  .dashboard-home__visit,
+  .dashboard-home__record {
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .dashboard-home__visit-side {
+    max-width: 42%;
+  }
 }
