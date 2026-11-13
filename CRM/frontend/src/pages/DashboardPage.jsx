@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { apiClient } from '../api/client';
 import { listDoctors } from '../api/endpoints/doctors';
-import { listPharmacies } from '../api/endpoints/pharmacies';
 import { listVisits } from '../api/visits';
 import './DashboardPage.css';
 
@@ -202,7 +201,12 @@ const DashboardPage = () => {
 
   const pharmaciesQuery = useQuery({
     queryKey: ['dashboard', 'recordSearch', 'pharmacies', queryIdentity, debouncedSearch],
-    queryFn: () => listPharmacies({ page: 1, pageSize: 5, search: debouncedSearch }),
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: '1', page_size: '5' });
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      const { data } = await apiClient.get(`/pharmacies?${params.toString()}`, { token });
+      return data;
+    },
     enabled: !!token,
     staleTime: 20_000,
   });

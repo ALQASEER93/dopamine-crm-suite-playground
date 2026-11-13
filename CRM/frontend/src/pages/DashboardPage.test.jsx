@@ -7,12 +7,10 @@ import DashboardPage from './DashboardPage';
 import { AuthContext } from '../auth/AuthContext';
 import { apiClient } from '../api/client';
 import { listDoctors } from '../api/endpoints/doctors';
-import { listPharmacies } from '../api/endpoints/pharmacies';
 import { listVisits } from '../api/visits';
 
 vi.mock('../api/client', () => ({ apiClient: { get: vi.fn() } }));
 vi.mock('../api/endpoints/doctors', () => ({ listDoctors: vi.fn() }));
-vi.mock('../api/endpoints/pharmacies', () => ({ listPharmacies: vi.fn() }));
 vi.mock('../api/visits', () => ({ listVisits: vi.fn() }));
 
 const summary = {
@@ -51,10 +49,13 @@ const renderDashboard = (user = { id: 7, language: 'ar' }) => {
 const emptyVisitResult = { data: [], pagination: { total: 0 } };
 
 beforeEach(() => {
-  apiClient.get.mockResolvedValue({ data: { data: summary } });
+  apiClient.get.mockImplementation(path =>
+    path.startsWith('/pharmacies?')
+      ? Promise.resolve({ data: { data: [], pagination: { total: 0 } } })
+      : Promise.resolve({ data: { data: summary } }),
+  );
   listVisits.mockResolvedValue(emptyVisitResult);
   listDoctors.mockResolvedValue({ data: [], pagination: { total: 0 } });
-  listPharmacies.mockResolvedValue({ data: [], pagination: { total: 0 } });
 });
 
 afterEach(() => {
@@ -94,10 +95,16 @@ describe('DashboardPage operational home', () => {
       data: [{ id: 11, name: 'د. ندى', specialty: 'باطنية' }],
       pagination: { total: 1 },
     });
-    listPharmacies.mockResolvedValue({
-      data: [{ id: 21, name: 'صيدلية القمر', city: 'عمّان', area: 'الرابية' }],
-      pagination: { total: 1 },
-    });
+    apiClient.get.mockImplementation(path =>
+      path.startsWith('/pharmacies?')
+        ? Promise.resolve({
+            data: {
+              data: [{ id: 21, name: 'صيدلية القمر', city: 'عمّان', area: 'الرابية' }],
+              pagination: { total: 1 },
+            },
+          })
+        : Promise.resolve({ data: { data: summary } }),
+    );
 
     renderDashboard();
 
@@ -123,7 +130,16 @@ describe('DashboardPage operational home', () => {
     });
     await waitFor(() => {
       expect(listDoctors).toHaveBeenCalledWith(expect.objectContaining({ search: 'مركز الشفاء' }));
-      expect(listPharmacies).toHaveBeenCalledWith(expect.objectContaining({ search: 'مركز الشفاء' }));
+      const pharmacySearchCall = apiClient.get.mock.calls.find(([path]) => {
+        const params = new URLSearchParams(path.split('?')[1] || '');
+        return path.startsWith('/pharmacies?') && params.get('search') === 'مركز الشفاء';
+      });
+      expect(pharmacySearchCall).toBeDefined();
+      const pharmacySearchParams = new URLSearchParams(pharmacySearchCall[0].split('?')[1]);
+      expect(pharmacySearchParams.get('page')).toBe('1');
+      expect(pharmacySearchParams.get('page_size')).toBe('5');
+      expect(pharmacySearchParams.has('pageSize')).toBe(false);
+      expect(pharmacySearchCall[1]).toEqual({ token: 'synthetic-token' });
     });
   });
 
@@ -132,11 +148,15 @@ describe('DashboardPage operational home', () => {
     const todayDeferred = createDeferred();
     const doctorsDeferred = createDeferred();
     const pharmaciesDeferred = createDeferred();
+    apiClient.get.mockImplementation(path =>
+      path.startsWith('/pharmacies?')
+        ? pharmaciesDeferred.promise
+        : Promise.resolve({ data: { data: summary } }),
+    );
     listVisits.mockImplementation(filters =>
       filters.statuses?.includes('in_progress') ? activeDeferred.promise : todayDeferred.promise,
     );
     listDoctors.mockReturnValue(doctorsDeferred.promise);
-    listPharmacies.mockReturnValue(pharmaciesDeferred.promise);
 
     renderDashboard();
 
@@ -144,7 +164,7 @@ describe('DashboardPage operational home', () => {
     activeDeferred.resolve(emptyVisitResult);
     todayDeferred.resolve(emptyVisitResult);
     doctorsDeferred.resolve({ data: [], pagination: { total: 0 } });
-    pharmaciesDeferred.resolve({ data: [], pagination: { total: 0 } });
+    pharmaciesDeferred.resolve({ data: { data: [], pagination: { total: 0 } } });
 
     expect(await screen.findByText('لا توجد زيارات جارية الآن.')).toBeInTheDocument();
     expect(screen.getByText('لا توجد زيارات مسجلة لهذا اليوم.')).toBeInTheDocument();
@@ -154,7 +174,6 @@ describe('DashboardPage operational home', () => {
   it('shows independent error states without hiding navigation to the existing visit workflow', async () => {
     listVisits.mockRejectedValue(new Error('synthetic visit error'));
     listDoctors.mockRejectedValue(new Error('synthetic doctor error'));
-    listPharmacies.mockResolvedValue({ data: [], pagination: { total: 0 } });
     apiClient.get.mockRejectedValue(new Error('synthetic summary error'));
 
     renderDashboard();
