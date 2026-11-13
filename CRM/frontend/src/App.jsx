@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import VisitsPage from './pages/VisitsPage.jsx';
 import RoutesPage from './pages/RoutesPage.jsx';
 import DoctorsPage from './pages/DoctorsPage.jsx';
+import HcpsPage from './pages/HcpsPage.jsx';
 import PharmaciesPage from './pages/PharmaciesPage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
 import OrdersPage from './pages/OrdersPage.jsx';
@@ -46,7 +47,7 @@ const AppRoutes = () => {
         <Route path="/routes" element={<RoutesPage />} />
         <Route path="/reps" element={<RepsPage />} />
         <Route path="/doctors" element={<DoctorsPage />} />
-        <Route path="/hcps" element={<Navigate to="/doctors" replace />} />
+        <Route path="/hcps" element={<HcpsPage />} />
         <Route path="/pharmacies" element={<PharmaciesPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/orders" element={<OrdersPage />} />
